@@ -3,16 +3,26 @@ Quadratic Voting system, for local development and consortium demos only.
 
 Accepts batches of EntityCandidate on POST /candidates, then after a
 configurable delay calls back FEN Bridge's inbound webhook with a
-synthetic GovernanceDecision. The "decision logic" here is a placeholder
-rule (validate if entity_label present, reject otherwise) — it MUST NOT be
-mistaken for real DAO/Quadratic Voting governance, which lives entirely
-outside this repository (see ADR-002).
+synthetic GovernanceDecision.
+
+Decision logic (in priority order):
+1. If an OpenAI-compatible LLM endpoint is configured (FEN_LLM_BASE_URL —
+   OpenAI, DeepSeek, local vLLM/Ollama, or GRAPHIA services such as
+   LLM4SSH/Quagga exposing such an API), the LLM judges the candidate
+   (validated/disputed/rejected). This works for ANY dataset payload, not
+   just linguistic entities.
+2. Otherwise a deterministic placeholder rule applies (non-empty
+   entity_label -> validated, else rejected).
+
+This MUST NOT be mistaken for real DAO/Quadratic Voting governance, which
+lives entirely outside this repository (see ADR-002).
 
 Runs as the `mock-fen-api` container (see docker-compose.yml).
 """
 from __future__ import annotations
 
 import itertools
+import json
 import logging
 import os
 import time
@@ -21,6 +31,8 @@ from datetime import datetime, timezone
 
 import requests
 from fastapi import FastAPI
+
+from services.common.llm import LLMConfig, chat_completion, parse_outcome
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -39,21 +51,47 @@ _reputation_counter = itertools.count(1)
 # (audit finding: daemon threads + sleep can pile up without a limit).
 _executor = ThreadPoolExecutor(max_workers=MAX_WORKERS, thread_name_prefix="mock-fen")
 
+# Optional OpenAI-compatible LLM judge (any provider; DeepSeek by example).
+_llm_config = LLMConfig()
+
+_LLM_SYSTEM = (
+    "You are a strict validator for a community data-governance layer. "
+    "Review the candidate record for factual quality and cultural sensitivity. "
+    "Reply with exactly one word: validated, disputed, or rejected."
+)
+
+
+def _decide_outcome(candidate: dict) -> str:
+    """LLM judge with deterministic rule fallback. Generic — works for any
+    dataset payload, not just linguistic entities.
+    """
+    if _llm_config.enabled:
+        answer = chat_completion(
+            _llm_config,
+            _LLM_SYSTEM,
+            json.dumps(candidate, ensure_ascii=False),
+        )
+        outcome = parse_outcome(answer, ("validated", "disputed", "rejected"))
+        if outcome:
+            logger.info("LLM judge decided %r for %s", outcome, candidate.get("annotation_id"))
+            return outcome
+        logger.warning(
+            "LLM judge unavailable/indecisive for %s; falling back to rule",
+            candidate.get("annotation_id"),
+        )
+    # Placeholder rule standing in for real Quadratic Voting. Replace only
+    # this branch when wiring up a real DAO backend.
+    return "validated" if candidate.get("entity_label") else "rejected"
+
 
 def _fake_decide(candidate: dict) -> dict:
-    """Placeholder rule standing in for real Quadratic Voting: everything
-    with a non-empty entity_label is 'validated', anything else
-    'rejected'. Replace this function's body — nothing else — when wiring
-    up a real DAO backend.
-    """
     decision_seq = next(_decision_counter)
     reputation_seq = next(_reputation_counter)
-    outcome = "validated" if candidate.get("entity_label") else "rejected"
     return {
         "annotation_id": candidate["annotation_id"],
         "document_id": candidate.get("document_id"),
         "decision_id": f"g{decision_seq:05d}",
-        "outcome": outcome,
+        "outcome": _decide_outcome(candidate),
         "method": "quadratic_voting",
         "quorum_reached": True,
         "reputation_snapshot_id": f"r{reputation_seq:05d}",

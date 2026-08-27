@@ -1,0 +1,61 @@
+﻿# fen-shapes.ttl — SHACL validation shapes for the gfen: namespace (ADR-001/003).
+# Enforces that governance provenance is well-formed: status present and
+# singular, PIDs are IRIs (dereferenceable), ledgerAnchor is a literal.
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix oa:    <http://www.w3.org/ns/oa#> .
+@prefix gfen:  <https://w3id.org/got/fen/ontology#> .
+
+gfen:AnnotatedEntityShape a sh:NodeShape ;
+  sh:targetClass oa:Annotation ;
+  sh:property [
+    sh:path gfen:validationStatus ;
+    sh:class gfen:ValidationStatus ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:validationMethod ;
+    sh:class gfen:ValidationMethod ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:governanceDecisionId ;
+    sh:nodeKind sh:IRI ;              # dereferenceable PID, never a literal (ADR-003)
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:reputationSnapshot ;
+    sh:nodeKind sh:IRI ;              # dereferenceable PID (ADR-003)
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:ledgerAnchor ;
+    sh:datatype xsd:string ;          # on-chain tx hash, anchor only (ADR-001)
+    sh:maxCount 1 ;
+  ] .
+
+gfen:GovernanceDecisionShape a sh:NodeShape ;
+  sh:targetClass gfen:GovernanceDecision ;
+  sh:property [
+    sh:path gfen:appliesTo ;
+    sh:minCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:outcome ;
+    sh:class gfen:ValidationStatus ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:quorumReached ;
+    sh:datatype xsd:boolean ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:decidedAt ;
+    sh:datatype xsd:dateTime ;
+    sh:maxCount 1 ;
+  ] .

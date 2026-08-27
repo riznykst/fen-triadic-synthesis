@@ -47,6 +47,14 @@ class _FakeClient:
         self.submitted.append(batch)
 
 
+class _FakeProducer:
+    def __init__(self):
+        self.sent = []
+
+    def send(self, topic, value):
+        self.sent.append((topic, value))
+
+
 def test_outbound_forwards_batch():
     config = FenBridgeConfig.from_env()
     records = {None: [_FakeMessage({"annotation_id": "a1"}), _FakeMessage({"annotation_id": "a2"})]}
@@ -68,10 +76,16 @@ def test_outbound_empty_batch_is_noop():
     assert client.submitted == []
 
 
-def test_webhook_accepts_valid_decision_and_publishes():
+def _webhook_client(token=None):
+    """TestClient with a fresh fake producer and explicit webhook token state."""
     producer = _FakeProducer()
     app.state.producer = producer
-    client = TestClient(app)
+    app.state.webhook_token = token
+    return TestClient(app), producer
+
+
+def test_webhook_accepts_valid_decision_and_publishes():
+    client, producer = _webhook_client(token=None)
 
     resp = client.post("/webhook/decision", json=VALID_DECISION)
 
@@ -83,9 +97,7 @@ def test_webhook_accepts_valid_decision_and_publishes():
 
 
 def test_webhook_rejects_malformed_payload():
-    producer = _FakeProducer()
-    app.state.producer = producer
-    client = TestClient(app)
+    client, producer = _webhook_client(token=None)
 
     resp = client.post("/webhook/decision", json={"annotation_id": "x"})
 
@@ -93,9 +105,17 @@ def test_webhook_rejects_malformed_payload():
     assert producer.sent == []
 
 
-class _FakeProducer:
-    def __init__(self):
-        self.sent = []
+def test_webhook_requires_token_when_configured():
+    client, producer = _webhook_client(token="s3cret")
 
-    def send(self, topic, value):
-        self.sent.append((topic, value))
+    resp = client.post("/webhook/decision", json=VALID_DECISION)
+    assert resp.status_code == 401
+    assert producer.sent == []
+
+    resp_ok = client.post(
+        "/webhook/decision",
+        json=VALID_DECISION,
+        headers={"Authorization": "Bearer s3cret"},
+    )
+    assert resp_ok.status_code == 202
+    assert len(producer.sent) == 1

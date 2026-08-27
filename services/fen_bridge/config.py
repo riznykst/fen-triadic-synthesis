@@ -17,6 +17,8 @@ class FenBridgeConfig:
     batch_size: int
     poll_timeout_ms: int
     fen_naan: str
+    webhook_token: str
+
 
     @classmethod
     def from_env(cls) -> "FenBridgeConfig":
@@ -29,4 +31,5 @@ class FenBridgeConfig:
             batch_size=int(os.getenv("FEN_BRIDGE_BATCH_SIZE", "10")),
             poll_timeout_ms=int(os.getenv("FEN_BRIDGE_POLL_TIMEOUT_MS", "1000")),
             fen_naan=os.getenv("FEN_NAAN", "99999"),
+            webhook_token=os.getenv("FEN_WEBHOOK_TOKEN", ""),
         )

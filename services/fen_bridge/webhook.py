@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from pydantic import ValidationError
 
 from services.common.messages import GovernanceDecision
@@ -34,7 +34,18 @@ def get_producer():
 
 
 @app.post("/webhook/decision", status_code=status.HTTP_202_ACCEPTED)
-def receive_decision(payload: dict):
+def receive_decision(request: Request, payload: dict):
+    """Bearer-token check when FEN_WEBHOOK_TOKEN is configured. Open when
+    unset (local dev) — in any non-local deployment a token MUST be set,
+    otherwise anyone could forge a DAO decision and overwrite
+    gfen:validationStatus.
+    """
+    token = getattr(app.state, "webhook_token", None) or _config.webhook_token
+    if token:
+        auth = request.headers.get("Authorization")
+        if auth != f"Bearer {token}":
+            raise HTTPException(status_code=401, detail="missing or invalid bearer token")
+
     """Accepts a raw dict, validates it as a GovernanceDecision, and
     publishes it. Returns 422 on a malformed payload rather than silently
     dropping it — this is the one point in the pipeline where we DO want a

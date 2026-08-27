@@ -98,8 +98,11 @@ fen-triadic-synthesis/
 │   │   ├── ADR-001-rdf-anchoring-not-full-onchain.md
 │   │   ├── ADR-002-federation-node-not-embedded.md
 │   │   └── ADR-003-fen-pid-scheme.md
-│   └── ontology/
-│       └── fen-ontology.ttl          the gfen: namespace
+│   ├── ontology/
+│   │   ├── fen-ontology.ttl          the gfen: namespace
+│   │   └── fen-shapes.ttl            SHACL shapes for gfen: (ADR-001/003)
+│   └── research/
+│       └── graphia-tech-stack-2026-08.pdf   GRAPHIA tech-stack research (source for the audit)
 ├── schemas/
 │   └── kafka-events/                 JSON Schemas, generated from services/common/messages.py
 │       ├── entity-candidate.schema.json
@@ -112,7 +115,7 @@ fen-triadic-synthesis/
 │   ├── fen_bridge/                   outbound consumer + inbound webhook (2 containers)
 │   └── validation_consumer/          SPARQL Update logic + Kafka consumer
 ├── mock_fen_api/                     demo DAO stand-in — NOT production governance
-├── tests/                            22 tests, all offline (mocked Kafka/HTTP, in-memory RDF)
+├── tests/                            31 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
@@ -164,12 +167,61 @@ Resolution: `https://n2t.net/ark:{NAAN}/...` redirects to the w3id URI
 aggregated decision records are published — no individual votes (GDPR).
 Implementation: [`services/common/pid.py`](services/common/pid.py).
 
+## Pluggable LLM judge (demo)
+
+The mock DAO can use **any OpenAI-compatible chat API** as its decision judge
+— OpenAI, DeepSeek, a local vLLM/Ollama instance, or GRAPHIA's own services
+(LLM4SSH, Quagga) if they expose such an endpoint. Configured purely via env:
+
+```
+FEN_LLM_BASE_URL=https://api.deepseek.com/v1   # any OpenAI-compatible base URL
+FEN_LLM_API_KEY=...
+FEN_LLM_MODEL=deepseek-chat
+```
+
+The judge is deliberately **generic**: it reviews the whole candidate payload,
+so the same validation layer works for *any dataset type*, not just linguistic
+entities. If the LLM is unavailable or indecisive, the mock falls back to a
+deterministic rule — the pipeline never blocks. Implementation:
+[`services/common/llm.py`](services/common/llm.py).
+
+## Positioning vs GRAPHIA's own AI services
+
+GRAPHIA already ships LLM services — LLM4SSH (open-weight LLM on HPC/OKD),
+Quagga (KGQA with RAG), TALLMesh (thematic analysis), IMeTo (fine-tuned
+indexing), and the EHRI Pilot (LLM-assisted subject indexing **with
+human-in-the-loop**). FEN does **not** duplicate them:
+
+- **Scaffolding** — FEN's Agentic Scaffolding can *reuse* LLM4SSH/Quagga as
+  the LLM backend instead of running its own model fleet.
+- **Validation** — GRAPHIA's human-in-the-loop is *single-expert review*;
+  FEN is *collective decision-making* (DAO, Quadratic Voting, reputation,
+  sybil resistance). Different governance models, different niche.
+- **Niche** — FEN targets community-owned, culturally sensitive data
+  (low-resource languages, minority dialects, community datasets) where
+  expert-only review does not scale.
+
+## Integration contract (to be verified with the consortium)
+
+The following assumptions come from D2.2/whitepaper and **must be confirmed
+against a live GRAPHIA test instance** before production integration (see
+whitepaper §7 "Request to the Consortium"):
+
+| Contract | Current assumption | Verification needed |
+|---|---|---|
+| Kafka topics | `dap.entities.pending_validation.v1`, `fen.governance.decisions.v1`, `dap.entities.validated.v1` | real DAP topic names + event bus availability |
+| WP4 message schema | `EntityCandidate` (`schemas/kafka-events/`) | align with actual extracted-entity schema (no transformation) |
+| Named graphs | `urn:graphia:document:{id}:graph` | DAP's real named-graph URI scheme (D2.2 §3.5) |
+| SPARQL endpoint | `SPARQL_UPDATE_ENDPOINT` (Fuseki locally) | Virtuoso dialect compatibility of `build_update_query` |
+| PID NAAN | `FEN_NAAN=99999` (dev) | registered NAAN + N2T/w3id redirects (ADR-003) |
+| Deployment | docker-compose (dev) | OKD (OpenShift)/Kubernetes manifests for the DAP stack |
+
 ## Status
 
 🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka
 message contracts, the `gfen:` ontology extension, the FEN Bridge (outbound +
 webhook), the Validation Result Consumer's SPARQL Update logic, and a mock DAO for
-local demos are in place — 22 tests pass offline (mocked Kafka/HTTP, in-memory RDF
+local demos are in place — tests pass offline (mocked Kafka/HTTP/LLM, in-memory RDF
 via `rdflib`).
 
 **Not yet done:** integration against a live GRAPHIA test instance (real Kafka
@@ -193,6 +245,7 @@ to start that.
 
 - **Companion paper:** *Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis* (Riznyk, 2026)
 - **Integrates with:** [GRAPHIA](https://graphia-project.eu) — D2.2 Technical Architecture (SSH Knowledge Graph, Data Acquisition Platform)
+- **Research source:** [`docs/research/graphia-tech-stack-2026-08.pdf`](docs/research/graphia-tech-stack-2026-08.pdf) — GRAPHIA technology-stack research (RDF/LPG, Ontology, DAP, OKD/HPC, LLM services), the basis for the integration audit
 
 ## License
 

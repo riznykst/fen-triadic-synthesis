@@ -1,0 +1,30 @@
+﻿name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-common.txt
+      - name: Run tests
+        run: pytest -q
+      - name: Verify imports
+        run: |
+          python -c "import services.common.messages, services.common.gfen_ontology, services.common.pid, services.common.kafka_io, services.common.llm, services.fen_bridge.webhook, services.validation_consumer.sparql_updater, mock_fen_api.main; print('imports OK')"
+      - name: Parse RDF artefacts
+        run: |
+          python -c "from rdflib import Graph, Dataset; g=Graph(); g.parse('docs/ontology/fen-ontology.ttl', format='turtle'); d=Dataset(); d.parse('examples/sample-validation-flow.trig', format='trig'); print('RDF OK', len(g), len(d))"
