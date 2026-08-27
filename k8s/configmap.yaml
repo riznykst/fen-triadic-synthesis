@@ -1,0 +1,22 @@
+# Shared environment for the three FEN application deployments. Kafka and
+# the RDF store (Virtuoso in production, Fuseki in local dev) are EXTERNAL
+# to this deployment — see docs/architecture.md, "Kubernetes / OKD
+# deployment". Values below are placeholders; replace before deploying.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fen-config
+  labels:
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+data:
+  # --- Kafka (DAP's real broker in production) ---------------------------
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092" # TODO: point at the DAP/GRAPHIA broker
+  # --- Topics (same names as docker-compose.yml) --------------------------
+  TOPIC_PENDING_VALIDATION: "dap.entities.pending_validation.v1"
+  TOPIC_GOVERNANCE_DECISIONS: "fen.governance.decisions.v1"
+  TOPIC_VALIDATED: "dap.entities.validated.v1"
+  # --- External services --------------------------------------------------
+  FEN_API_BASE_URL: "http://fen-api:8080" # TODO: real Agentic Scaffolding + DAO endpoint
+  SPARQL_UPDATE_ENDPOINT: "http://virtuoso:8890/sparql" # TODO: GRAPHIA Virtuoso update endpoint
+  # --- PIDs (ADR-003) -----------------------------------------------------
+  FEN_NAAN: "99999" # TODO: FEN's registered NAAN

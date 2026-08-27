@@ -1,0 +1,69 @@
+# fen-bridge-webhook — receives GovernanceDecision callbacks from the FEN
+# system and republishes them onto fen.governance.decisions.v1
+# (services/fen_bridge/webhook.py). Image tag is a PLACEHOLDER; the build
+# pipeline replaces it with the real tag.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fen-bridge-webhook
+  labels:
+    app.kubernetes.io/name: fen-bridge-webhook
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  replicas: 2 # stateless HTTP endpoint — scale freely
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fen-bridge-webhook
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fen-bridge-webhook
+    spec:
+      containers:
+        - name: webhook
+          image: fen/fen-bridge-webhook:latest # placeholder — tag replaced at build
+          ports:
+            - containerPort: 8101
+          envFrom:
+            - configMapRef:
+                name: fen-config
+          env:
+            - name: FEN_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: fen-webhook-token
+                  key: FEN_WEBHOOK_TOKEN
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8101
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8101
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fen-bridge-webhook
+  labels:
+    app.kubernetes.io/name: fen-bridge-webhook
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  selector:
+    app.kubernetes.io/name: fen-bridge-webhook
+  ports:
+    - name: http
+      port: 8101
+      targetPort: 8101

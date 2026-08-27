@@ -1,0 +1,51 @@
+# fen-bridge-outbound — consumes dap.entities.pending_validation.v1 and
+# forwards batches to the FEN API (services/fen_bridge/outbound.py).
+# Image tag is a PLACEHOLDER; the build pipeline replaces it with the real
+# tag (e.g. registry.example.org/fen/fen-bridge-outbound:<commit>).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fen-bridge-outbound
+  labels:
+    app.kubernetes.io/name: fen-bridge-outbound
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fen-bridge-outbound
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fen-bridge-outbound
+    spec:
+      containers:
+        - name: outbound
+          image: fen/fen-bridge-outbound:latest # placeholder — tag replaced at build
+          envFrom:
+            - configMapRef:
+                name: fen-config
+          env:
+            - name: FEN_BRIDGE_GROUP_ID
+              value: "fen-bridge-outbound"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# Headless Service kept for uniform service discovery; the outbound process
+# exposes no HTTP port (it only consumes Kafka + calls the FEN API).
+apiVersion: v1
+kind: Service
+metadata:
+  name: fen-bridge-outbound
+  labels:
+    app.kubernetes.io/name: fen-bridge-outbound
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: fen-bridge-outbound

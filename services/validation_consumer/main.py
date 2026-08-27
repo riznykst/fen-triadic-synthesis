@@ -1,10 +1,15 @@
-﻿"""Validation Result Consumer.
+"""Validation Result Consumer.
 
 Reads fen.governance.decisions.v1, applies the governance update into the
 named graph via SPARQL (sparql_updater.py), then publishes an EntityValidated
 confirmation to dap.entities.validated.v1.
 
 Runs as the `validation-consumer` container (see docker-compose.yml).
+
+Delivery guarantee (at-least-once): each message's offset is committed only
+AFTER it was fully processed (SPARQL update + EntityValidated published). A
+failure is logged loudly and the offset is NOT committed, so the message is
+redelivered on the next rebalance or restart.
 """
 from __future__ import annotations
 
@@ -40,6 +45,52 @@ def handle_decision(config: ValidationConsumerConfig, payload: dict) -> Governan
     return decision
 
 
+def handle_message(config: ValidationConsumerConfig, producer, payload: dict) -> GovernanceDecision:
+    """Full per-message pipeline: validate, apply the SPARQL update, publish
+    the EntityValidated confirmation. Raises on failure — the caller leaves
+    the message's offset uncommitted so it is redelivered (at-least-once).
+    """
+    decision = handle_decision(config, payload)
+    confirmation = EntityValidated(
+        annotation_id=decision.annotation_id,
+        document_id=decision.document_id,
+        decision_id=decision.decision_id,
+        outcome=decision.outcome,
+    )
+    kafka_io.send(producer, config.topic_validated, confirmation.model_dump())
+    logger.info(
+        "applied decision %s -> %s for %s",
+        decision.decision_id,
+        decision.outcome.value,
+        decision.annotation_id,
+    )
+    return decision
+
+
+def process_cycle(config: ValidationConsumerConfig, consumer, producer) -> None:
+    """Poll one batch and process it message by message, committing each
+    message's offset immediately after it was fully processed
+    (commit-after-processing). On failure: log loudly and stop the cycle
+    WITHOUT committing — the failed message, and anything after it in the
+    batch, stays uncommitted and is redelivered. This is the pattern that
+    gives the pipeline its at-least-once guarantee.
+    """
+    records = kafka_io.poll_batch_with_offsets(consumer, batch_size=10, poll_timeout_ms=1000)
+    for record in records:
+        try:
+            handle_message(config, producer, record.value)
+        except Exception:  # noqa: BLE001 - loud failure, no commit (at-least-once)
+            logger.exception(
+                "failed to process message topic=%s partition=%d offset=%d; "
+                "offset NOT committed — will be redelivered (at-least-once)",
+                record.topic,
+                record.partition,
+                record.offset,
+            )
+            return
+        kafka_io.commit_offsets(consumer, [record])
+
+
 def main() -> None:
     config = ValidationConsumerConfig.from_env()
     consumer = kafka_io.make_consumer(
@@ -53,22 +104,7 @@ def main() -> None:
     backoff_s = 1.0
     while True:
         try:
-            batch = kafka_io.poll_batch(consumer, batch_size=10, poll_timeout_ms=1000)
-            for payload in batch:
-                decision = handle_decision(config, payload)
-                confirmation = EntityValidated(
-                    annotation_id=decision.annotation_id,
-                    document_id=decision.document_id,
-                    decision_id=decision.decision_id,
-                    outcome=decision.outcome,
-                )
-                kafka_io.send(producer, config.topic_validated, confirmation.model_dump())
-                logger.info(
-                    "applied decision %s -> %s for %s",
-                    decision.decision_id,
-                    decision.outcome.value,
-                    decision.annotation_id,
-                )
+            process_cycle(config, consumer, producer)
             backoff_s = 1.0
         except Exception:  # noqa: BLE001 - keep consuming; failures are loud in logs
             logger.exception("consumer cycle failed; retrying in %.1fs", backoff_s)

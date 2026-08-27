@@ -1,4 +1,4 @@
-﻿# Architecture
+# Architecture
 
 Full rationale lives in [`whitepaper.docx`](whitepaper.docx) and the three ADRs in
 [`adr/`](adr/). This document is the quick-reference version: what talks to what,
@@ -86,3 +86,55 @@ See [`adr/ADR-003-fen-pid-scheme.md`](adr/ADR-003-fen-pid-scheme.md).
 Swapping any row on the right only requires changing environment variables
 (`SPARQL_UPDATE_ENDPOINT`, `FEN_API_BASE_URL`, `KAFKA_BOOTSTRAP_SERVERS`,
 `FEN_NAAN`) — no application code changes.
+
+## Kafka delivery guarantees
+
+The pipeline is **at-least-once** end to end — messages are never silently
+dropped, but a crash between processing and commit can redeliver a message
+(downstream steps must be idempotent; the SPARQL update already is, see
+`services/validation_consumer/sparql_updater.py`):
+
+- **Producer** (`services/common/kafka_io.py::make_producer`):
+  `acks='all'` (the leader acks only once every in-sync replica holds the
+  record) + `retries=5` with `enable_idempotence=True` (producer-side retries
+  never duplicate a record) + `linger_ms=50` for small batches.
+  `send()` attaches delivery callbacks, so broker-side delivery failures
+  (`KafkaError`) are logged loudly instead of silently dropped.
+- **Consumer** (`make_consumer`): `enable_auto_commit=False` — offsets are
+  committed **only after processing** (commit-after-processing).
+- **FEN Bridge outbound** (`outbound.py::run`): the batch's offsets are
+  committed only when `submit_candidates` returned True; on False they stay
+  uncommitted and the batch is redelivered.
+- **Validation Result Consumer** (`main.py::process_cycle`): each message's
+  offset is committed explicitly (`commit_offsets`, offset+1) only after the
+  SPARQL update AND the EntityValidated publication succeeded. A failure is
+  logged loudly and the cycle stops without committing, so the failed message
+  is redelivered on the next rebalance or restart.
+
+Exactly-once is deliberately out of scope: the DAO decision is a state
+update (idempotent SPARQL DELETE/INSERT) and the confirmation event is
+re-publishable, so duplicates are harmless by design (ADR-001).
+
+## Kubernetes / OKD deployment
+
+`k8s/` holds Deployment + Service manifests for the three application
+services, plus shared config:
+
+| Deployment | Manifest | Exposes |
+|---|---|---|
+| `fen-bridge-outbound` | `k8s/fen-bridge-outbound.yaml` | no HTTP port (headless Service) |
+| `fen-bridge-webhook` | `k8s/fen-bridge-webhook.yaml` | HTTP `:8101` (Service `fen-bridge-webhook`) |
+| `validation-consumer` | `k8s/validation-consumer.yaml` | no HTTP port (headless Service) |
+
+Shared environment comes from `k8s/configmap.yaml` (`KAFKA_BOOTSTRAP_SERVERS`,
+`TOPIC_*`, `FEN_API_BASE_URL`, `SPARQL_UPDATE_ENDPOINT`, `FEN_NAAN`).
+`k8s/secret.yaml` carries `FEN_WEBHOOK_TOKEN` — its value is the base64 of the
+empty string (no auth) and **must be replaced with a real secret before any
+non-local deployment**, otherwise anyone could forge a DAO decision and
+overwrite `gfen:validationStatus` (see `webhook.py`).
+
+Kafka and the RDF store (**Virtuoso** in production, Fuseki in local dev) are
+**external** to this deployment — the manifests assume a DAP-managed broker
+and a SPARQL endpoint, and never run them. Image tags
+(`fen/fen-bridge-*:latest`, `fen/validation-consumer:latest`) are placeholders
+replaced by the build pipeline. Apply order: `kubectl apply -f k8s/`.

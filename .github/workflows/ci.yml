@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -28,3 +28,25 @@ jobs:
       - name: Parse RDF artefacts
         run: |
           python -c "from rdflib import Graph, Dataset; g=Graph(); g.parse('docs/ontology/fen-ontology.ttl', format='turtle'); d=Dataset(); d.parse('examples/sample-validation-flow.trig', format='trig'); print('RDF OK', len(g), len(d))"
+
+  # End-to-end smoke test against the real docker-compose stack: publishes an
+  # EntityCandidate and waits for the full pipeline (decision -> SPARQL ->
+  # validated) to complete. Requires a Docker runner.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-common.txt
+      - name: Start the stack
+        run: docker compose up --build -d
+      - name: Run end-to-end smoke test
+        run: python scripts/smoke_test.py
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down

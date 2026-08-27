@@ -1,0 +1,49 @@
+# validation-consumer — reads fen.governance.decisions.v1, applies the
+# governance update into the named graph via SPARQL, and publishes
+# EntityValidated (services/validation_consumer/main.py).
+# Image tag is a PLACEHOLDER; the build pipeline replaces it with the real
+# tag.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: validation-consumer
+  labels:
+    app.kubernetes.io/name: validation-consumer
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  replicas: 1 # Kafka consumer group — scale-out must not exceed partitions
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: validation-consumer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: validation-consumer
+    spec:
+      containers:
+        - name: consumer
+          image: fen/validation-consumer:latest # placeholder — tag replaced at build
+          envFrom:
+            - configMapRef:
+                name: fen-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# Headless Service kept for uniform service discovery; the consumer process
+# exposes no HTTP port (it only consumes Kafka + issues SPARQL updates).
+apiVersion: v1
+kind: Service
+metadata:
+  name: validation-consumer
+  labels:
+    app.kubernetes.io/name: validation-consumer
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: validation-consumer

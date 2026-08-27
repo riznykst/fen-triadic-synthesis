@@ -1,4 +1,4 @@
-﻿# FEN — Triadic Synthesis Framework
+# FEN — Triadic Synthesis Framework
 
 **A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-project.eu) SSH Knowledge Graph as an autonomous federation node.**
 
@@ -67,10 +67,18 @@ docker compose up --build
 
 This starts Kafka, a Fuseki instance (SPARQL 1.1 stand-in for Virtuoso — see
 `docker-compose.yml`'s comment), the mock DAO, and all FEN Bridge/consumer
-processes. To run the smoke test described in `AGENT_PLAN.md` Phase 8, publish one
-`EntityCandidate` (see `schemas/kafka-events/entity-candidate.schema.json` for the
-shape) onto `dap.entities.pending_validation.v1` and watch `dap.entities.validated.v1`
-for the confirmation a few seconds later.
+processes. Once the stack is up, run the end-to-end smoke test
+(`scripts/smoke_test.py`, also wired up as the CI `e2e` job): it publishes one
+`EntityCandidate` (see `schemas/kafka-events/entity-candidate.schema.json` for
+the shape) onto `dap.entities.pending_validation.v1`, waits for the governance
+decision, checks the named graph, and verifies the `dap.entities.validated.v1`
+confirmation:
+
+```bash
+docker compose up --build
+# in a second terminal:
+python scripts/smoke_test.py
+```
 
 To run the test suite without Docker (no live Kafka or SPARQL endpoint needed —
 everything is mocked or in-memory):
@@ -109,13 +117,15 @@ fen-triadic-synthesis/
 │       ├── governance-decision.schema.json
 │       └── entity-validated.schema.json
 ├── scripts/
-│   └── generate_schemas.py           regenerates the schemas above — never hand-edit them
+│   ├── generate_schemas.py           regenerates the schemas above — never hand-edit them
+│   └── smoke_test.py                 e2e smoke test against the docker-compose stack (CI `e2e` job)
 ├── services/
-│   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO
+│   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO (at-least-once)
 │   ├── fen_bridge/                   outbound consumer + inbound webhook (2 containers)
 │   └── validation_consumer/          SPARQL Update logic + Kafka consumer
 ├── mock_fen_api/                     demo DAO stand-in — NOT production governance
-├── tests/                            31 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
+├── k8s/                              Kubernetes/OKD manifests: 3 Deployments + ConfigMap + Secret
+├── tests/                            47 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
@@ -222,7 +232,10 @@ whitepaper §7 "Request to the Consortium"):
 message contracts, the `gfen:` ontology extension, the FEN Bridge (outbound +
 webhook), the Validation Result Consumer's SPARQL Update logic, and a mock DAO for
 local demos are in place — tests pass offline (mocked Kafka/HTTP/LLM, in-memory RDF
-via `rdflib`).
+via `rdflib`). Kafka delivery is **at-least-once** (`acks=all`, idempotent
+producer, commit-after-processing — see [`docs/architecture.md`](docs/architecture.md)),
+and an end-to-end smoke test (`scripts/smoke_test.py`) validates the full loop
+against the docker-compose stack (CI `e2e` job).
 
 **Not yet done:** integration against a live GRAPHIA test instance (real Kafka
 topics, real Virtuoso), replacing the mock DAO with the real Quadratic Voting

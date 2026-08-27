@@ -1,4 +1,4 @@
-﻿"""Tests for the FEN Bridge: outbound forwarding and inbound webhook.
+"""Tests for the FEN Bridge: outbound forwarding and inbound webhook.
 All offline — mocked Kafka consumer, mocked HTTP client, TestClient.
 """
 from __future__ import annotations
@@ -23,35 +23,44 @@ VALID_DECISION = {
 
 
 class _FakeMessage:
-    def __init__(self, value: dict):
+    def __init__(self, value: dict, topic: str = "t", partition: int = 0, offset: int = 0):
         self.value = value
+        self.topic = topic
+        self.partition = partition
+        self.offset = offset
 
 
 class _FakeConsumer:
-    """Minimal stand-in for kafka-python's KafkaConsumer.poll()."""
+    """Minimal stand-in for kafka-python's KafkaConsumer.poll()/commit()."""
 
     def __init__(self, records: dict):
         self._records = records
         self.poll_calls = 0
+        self.commit_calls = 0
 
     def poll(self, timeout_ms=None, max_records=None):
         self.poll_calls += 1
         return self._records
 
+    def commit(self, offsets=None):
+        self.commit_calls += 1
+
 
 class _FakeClient:
-    def __init__(self):
+    def __init__(self, result: bool = True):
         self.submitted = []
+        self._result = result
 
     def submit_candidates(self, batch):
         self.submitted.append(batch)
+        return self._result
 
 
 class _FakeProducer:
     def __init__(self):
         self.sent = []
 
-    def send(self, topic, value):
+    def send(self, topic, value=None, key=None):
         self.sent.append((topic, value))
 
 
@@ -74,6 +83,33 @@ def test_outbound_empty_batch_is_noop():
     run(config, client, consumer)
 
     assert client.submitted == []
+    assert consumer.commit_calls == 0
+
+
+def test_outbound_commits_offsets_after_successful_forward():
+    config = FenBridgeConfig.from_env()
+    records = {None: [_FakeMessage({"annotation_id": "a1"}, offset=7), _FakeMessage({"annotation_id": "a2"}, offset=8)]}
+    consumer = _FakeConsumer(records)
+    client = _FakeClient(result=True)
+
+    run(config, client, consumer)
+
+    assert client.submitted == [[{"annotation_id": "a1"}, {"annotation_id": "a2"}]]
+    assert consumer.commit_calls == 1
+
+
+def test_outbound_does_not_commit_on_failed_forward():
+    """At-least-once: a batch the FEN API rejected stays uncommitted so it is
+    redelivered instead of silently dropped."""
+    config = FenBridgeConfig.from_env()
+    records = {None: [_FakeMessage({"annotation_id": "a1"}, offset=7)]}
+    consumer = _FakeConsumer(records)
+    client = _FakeClient(result=False)
+
+    run(config, client, consumer)
+
+    assert client.submitted == [[{"annotation_id": "a1"}]]
+    assert consumer.commit_calls == 0
 
 
 def _webhook_client(token=None):
