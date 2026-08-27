@@ -1,0 +1,5 @@
+﻿# Normalize line endings across platforms (Windows dev + GitHub).
+* text=auto eol=lf
+
+# Binary files
+*.docx binary
