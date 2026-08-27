@@ -1,0 +1,10 @@
+﻿# Combined dependencies for running the test suite locally (README, "Running locally").
+# Docker images install their own per-service requirements.
+pydantic>=2,<3
+fastapi>=0.110
+uvicorn>=0.29
+kafka-python>=2.0,<4
+requests>=2.31
+rdflib>=7.0
+pytest>=8
+httpx>=0.27

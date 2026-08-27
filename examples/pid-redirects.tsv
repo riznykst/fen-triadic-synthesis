@@ -1,0 +1,8 @@
+﻿# pid-redirects.tsv — N2T -> w3id redirect configuration for FEN governance
+# records (ADR-003). To be registered once a real NAAN is granted by the
+# consortium (whitepaper section 7); local dev uses NAAN 99999.
+# Columns: assigned-name pattern | N2T URL | w3id target
+gNNNNN	https://n2t.net/ark:{NAAN}/gNNNNN	https://w3id.org/fen/id/decision/gNNNNN
+vNNNNN	https://n2t.net/ark:{NAAN}/vNNNNN	https://w3id.org/fen/id/validation/vNNNNN
+rNNNNN	https://n2t.net/ark:{NAAN}/rNNNNN	https://w3id.org/fen/id/reputation-snapshot/rNNNNN
+sNNNNN	https://n2t.net/ark:{NAAN}/sNNNNN	https://w3id.org/fen/id/session/sNNNNN

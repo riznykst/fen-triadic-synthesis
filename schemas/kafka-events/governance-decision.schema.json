@@ -1,0 +1,98 @@
+{
+  "$defs": {
+    "ValidationMethod": {
+      "description": "Validation method used by the community (mirrors gfen:ValidationMethod).",
+      "enum": [
+        "quadratic_voting",
+        "peer_review"
+      ],
+      "title": "ValidationMethod",
+      "type": "string"
+    },
+    "ValidationStatus": {
+      "description": "Governance status of a candidate entity (mirrors gfen:ValidationStatus).",
+      "enum": [
+        "pending",
+        "validated",
+        "disputed",
+        "rejected"
+      ],
+      "title": "ValidationStatus",
+      "type": "string"
+    }
+  },
+  "description": "A DAO governance decision returned by the FEN system via webhook.",
+  "properties": {
+    "annotation_id": {
+      "description": "Identifier of the oa:Annotation the decision applies to",
+      "title": "Annotation Id",
+      "type": "string"
+    },
+    "document_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Identifier of the source triple:Document",
+      "title": "Document Id"
+    },
+    "decision_id": {
+      "description": "FEN decision id, e.g. \"g00042\" (ark:{NAAN}/g#####)",
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "outcome": {
+      "$ref": "#/$defs/ValidationStatus",
+      "description": "validated | disputed | rejected"
+    },
+    "method": {
+      "$ref": "#/$defs/ValidationMethod",
+      "description": "quadratic_voting | peer_review"
+    },
+    "quorum_reached": {
+      "default": false,
+      "description": "Whether the DAO quorum was reached",
+      "title": "Quorum Reached",
+      "type": "boolean"
+    },
+    "reputation_snapshot_id": {
+      "description": "Reputation snapshot id, e.g. \"r00042\"",
+      "title": "Reputation Snapshot Id",
+      "type": "string"
+    },
+    "ledger_anchor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "On-chain tx hash \u2014 anchor only, never content",
+      "title": "Ledger Anchor"
+    },
+    "decided_at": {
+      "description": "Decision timestamp (UTC)",
+      "format": "date-time",
+      "title": "Decided At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "annotation_id",
+    "decision_id",
+    "outcome",
+    "method",
+    "reputation_snapshot_id",
+    "decided_at"
+  ],
+  "title": "GovernanceDecision",
+  "type": "object"
+}

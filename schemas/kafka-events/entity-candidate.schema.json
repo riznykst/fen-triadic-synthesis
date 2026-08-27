@@ -1,0 +1,65 @@
+{
+  "description": "A candidate entity emitted by the WP4 extraction pipeline (status=pending).",
+  "properties": {
+    "annotation_id": {
+      "description": "Identifier of the oa:Annotation created by WP4 extraction",
+      "title": "Annotation Id",
+      "type": "string"
+    },
+    "document_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Identifier of the source triple:Document",
+      "title": "Document Id"
+    },
+    "entity_label": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Human-readable label of the extracted entity",
+      "title": "Entity Label"
+    },
+    "entity_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Extracted type, e.g. schema:Person",
+      "title": "Entity Type"
+    },
+    "extracted_by": {
+      "default": "wp4_entity_extractor",
+      "description": "Service that produced the candidate",
+      "title": "Extracted By",
+      "type": "string"
+    },
+    "extracted_at": {
+      "format": "date-time",
+      "title": "Extracted At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "annotation_id"
+  ],
+  "title": "EntityCandidate",
+  "type": "object"
+}

@@ -1,0 +1,35 @@
+﻿# sample-validation-flow.trig — RDF before/after one validation cycle
+# (parser-checked; matches tests/test_sparql_updater.py and sparql_updater.py)
+
+@prefix :      <urn:graphia:> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix oa:    <http://www.w3.org/ns/oa#> .
+@prefix schema: <https://schema.org/> .
+@prefix triple: <https://w3id.org/gotriple/ontology#> .
+@prefix gfen:  <https://w3id.org/got/fen/ontology#> .
+
+# ---- BEFORE: immediately after WP4 extraction (AI, not yet reviewed) ----
+:ng_d12345 {
+  :d12345 a triple:Document .
+
+  :AdaLovelace a schema:Person .
+
+  :annotation_a1 a oa:Annotation ;
+    oa:hasTarget :d12345 ;
+    oa:hasBody :AdaLovelace ;
+    oa:creator "wp4_entity_extractor" ;
+    oa:created "2026-08-25T09:00:00Z"^^xsd:dateTime ;
+    gfen:validationStatus gfen:pending .
+}
+
+# ---- AFTER: community validation (Quadratic Voting DAO) landed ----------
+# The same named graph, updated in place via DELETE/INSERT (idempotent).
+:ng_d12345 {
+  :annotation_a1
+    gfen:validationStatus gfen:validated ;
+    gfen:validationMethod gfen:QuadraticVoting ;
+    gfen:governanceDecisionId <https://w3id.org/fen/id/decision/g00042> ;
+    gfen:reputationSnapshot   <https://w3id.org/fen/id/reputation-snapshot/r00042> ;
+    gfen:ledgerAnchor "0xA1B2...eth-tx" .
+}

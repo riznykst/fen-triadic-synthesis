@@ -1,0 +1,114 @@
+﻿services:
+
+  # ---- Messaging backbone --------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on: [zookeeper]
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---- RDF store ------------------------------------------------------
+  # LOCAL-DEV STAND-IN ONLY. Production uses GRAPHIA's Virtuoso instance
+  # (ADR-002 in the GRAPHIA D2.2 architecture) — Fuseki is used here only
+  # because it is a lightweight, SPARQL-1.1-compatible drop-in for local
+  # testing. Swap SPARQL_UPDATE_ENDPOINT to point at Virtuoso in any
+  # non-local deployment; no application code needs to change.
+  fuseki:
+    image: stain/jena-fuseki:4.9.0
+    environment:
+      ADMIN_PASSWORD: admin
+      FUSEKI_DATASET_1: fen
+    ports:
+      - "3030:3030"
+
+  # ---- Demo DAO (NOT real governance — see ADR-002 and mock_fen_api/main.py) ----
+  mock-fen-api:
+    build:
+      context: .
+      dockerfile: mock_fen_api/Dockerfile
+    depends_on:
+      fen-bridge-webhook:
+        condition: service_healthy
+    ports:
+      - "8100:8100"
+    environment:
+      FEN_BRIDGE_WEBHOOK_URL: http://fen-bridge-webhook:8101/webhook/decision
+      MOCK_FEN_DECISION_DELAY_S: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # ---- FEN Bridge (two independent processes, per AGENT_PLAN.md Phase 2/3) ----
+  fen-bridge-outbound:
+    build:
+      context: .
+      dockerfile: services/fen_bridge/Dockerfile.outbound
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mock-fen-api:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TOPIC_PENDING_VALIDATION: dap.entities.pending_validation.v1
+      FEN_API_BASE_URL: http://mock-fen-api:8100
+      FEN_BRIDGE_GROUP_ID: fen-bridge-outbound
+
+  fen-bridge-webhook:
+    build:
+      context: .
+      dockerfile: services/fen_bridge/Dockerfile.webhook
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8101:8101"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TOPIC_GOVERNANCE_DECISIONS: fen.governance.decisions.v1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8101/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # ---- Validation Result Consumer -------------------------------------
+  validation-consumer:
+    build:
+      context: .
+      dockerfile: services/validation_consumer/Dockerfile
+    depends_on:
+      kafka:
+        condition: service_healthy
+      fuseki:
+        condition: service_started
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TOPIC_GOVERNANCE_DECISIONS: fen.governance.decisions.v1
+      TOPIC_VALIDATED: dap.entities.validated.v1
+      SPARQL_UPDATE_ENDPOINT: http://fuseki:3030/fen/update
+      FEN_NAAN: "99999"

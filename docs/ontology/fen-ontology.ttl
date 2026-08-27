@@ -1,0 +1,34 @@
+﻿# fen-ontology.ttl — the additive gfen: namespace
+# Keep in sync with services/common/gfen_ontology.py (AGENT_PLAN.md, Phase 0).
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix gfen: <https://w3id.org/got/fen/ontology#> .
+
+# ---- Classes -----------------------------------------------------------
+gfen:ValidationStatus a rdfs:Class .
+gfen:pending    a gfen:ValidationStatus .
+gfen:validated  a gfen:ValidationStatus .
+gfen:disputed   a gfen:ValidationStatus .
+gfen:rejected   a gfen:ValidationStatus .
+
+gfen:ValidationMethod a rdfs:Class .
+gfen:QuadraticVoting a gfen:ValidationMethod .
+gfen:PeerReview      a gfen:ValidationMethod .
+
+# Aggregated, GDPR-compatible decision record (ADR-003)
+gfen:GovernanceDecision a rdfs:Class .
+
+# ---- Properties --------------------------------------------------------
+gfen:validationStatus      a rdf:Property ; rdfs:range gfen:ValidationStatus .
+gfen:validationMethod      a rdf:Property ; rdfs:range gfen:ValidationMethod .
+gfen:governanceDecisionId  a rdf:Property ; rdfs:range gfen:GovernanceDecision .
+gfen:reputationSnapshot    a rdf:Property .
+gfen:ledgerAnchor          a rdf:Property .
+gfen:contributorProfile    a rdf:Property .
+
+# GovernanceDecision record properties (ADR-003)
+gfen:appliesTo             a rdf:Property .
+gfen:quorumReached         a rdf:Property .
+gfen:outcome               a rdf:Property ; rdfs:range gfen:ValidationStatus .
+gfen:decidedAt             a rdf:Property .
+gfen:scaffoldingSession    a rdf:Property .

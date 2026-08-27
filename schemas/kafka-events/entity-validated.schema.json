@@ -1,0 +1,53 @@
+{
+  "$defs": {
+    "ValidationStatus": {
+      "description": "Governance status of a candidate entity (mirrors gfen:ValidationStatus).",
+      "enum": [
+        "pending",
+        "validated",
+        "disputed",
+        "rejected"
+      ],
+      "title": "ValidationStatus",
+      "type": "string"
+    }
+  },
+  "description": "Confirmation published to dap.entities.validated.v1 once the SPARQL update lands.",
+  "properties": {
+    "annotation_id": {
+      "title": "Annotation Id",
+      "type": "string"
+    },
+    "document_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Document Id"
+    },
+    "decision_id": {
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "outcome": {
+      "$ref": "#/$defs/ValidationStatus"
+    },
+    "validated_at": {
+      "format": "date-time",
+      "title": "Validated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "annotation_id",
+    "decision_id",
+    "outcome"
+  ],
+  "title": "EntityValidated",
+  "type": "object"
+}

@@ -1,0 +1,4 @@
+﻿kafka-python>=2.0,<4
+requests>=2.31
+pydantic>=2,<3
+rdflib>=7.0
