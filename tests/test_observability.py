@@ -203,7 +203,7 @@ def test_mock_llm_judge_counters_success_and_fallback():
     with mock.patch.object(
         type(mock_main._llm_config), "enabled", new_callable=mock.PropertyMock, return_value=True
     ), mock.patch.object(mock_main, "chat_completion", return_value="validated"):
-        outcome = mock_main._decide_outcome({"annotation_id": "a1", "entity_label": "x"})
+        outcome = mock_main._reviewer_recommendation({"annotation_id": "a1", "entity_label": "x"})
     assert outcome == "validated"
     assert _counter_value(metrics_mod.MOCK_LLM_JUDGE_CALLS, {"outcome": "success"}) == before_success + 1
 
@@ -211,7 +211,7 @@ def test_mock_llm_judge_counters_success_and_fallback():
     with mock.patch.object(
         type(mock_main._llm_config), "enabled", new_callable=mock.PropertyMock, return_value=True
     ), mock.patch.object(mock_main, "chat_completion", return_value=None):
-        outcome = mock_main._decide_outcome({"annotation_id": "a1", "entity_label": "x"})
+        outcome = mock_main._reviewer_recommendation({"annotation_id": "a1", "entity_label": "x"})
     assert outcome == "validated"  # deterministic rule fallback
     assert _counter_value(metrics_mod.MOCK_LLM_JUDGE_CALLS, {"outcome": "fallback"}) == before_fallback + 1
 

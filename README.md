@@ -1,4 +1,4 @@
-# FEN — Triadic Synthesis Framework
+﻿# FEN — Triadic Synthesis Framework
 
 **A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-project.eu) SSH Knowledge Graph as an autonomous federation node.**
 
@@ -113,7 +113,8 @@ fen-triadic-synthesis/
 │   ├── adr/
 │   │   ├── ADR-001-rdf-anchoring-not-full-onchain.md
 │   │   ├── ADR-002-federation-node-not-embedded.md
-│   │   └── ADR-003-fen-pid-scheme.md
+│   │   ├── ADR-003-fen-pid-scheme.md
+│   │   └── ADR-004-llm-judge-decision-support-only.md
 │   ├── user-stories.md               two typical use cases for the validation layer
 │   ├── images/
 │   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
@@ -155,6 +156,7 @@ tested — see [`AGENT_PLAN.md`](AGENT_PLAN.md) for the phase-by-phase build log
 | [ADR-001](docs/adr/ADR-001-rdf-anchoring-not-full-onchain.md) | Blockchain anchors only a hash of each governance decision. All content stays in GRAPHIA's Virtuoso store — no conflict with ADR002, no GDPR right-to-erasure issue. |
 | [ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md) | FEN integrates as an autonomous federation node, not as a component embedded in GoTriple KG or the DAP core. No GRAPHIA partner needs to operate or govern DAO infrastructure. |
 | [ADR-003](docs/adr/ADR-003-fen-pid-scheme.md) | Governance records get ARK + w3id.org PIDs under FEN's own NAAN (`g` decision / `v` validation record / `r` reputation snapshot / `s` scaffolding session). A PID is never bound to a blockchain explorer; the tx hash is only the `gfen:ledgerAnchor` attribute. |
+| [ADR-004](docs/adr/ADR-004-llm-judge-decision-support-only.md) | The LLM judge is decision-support only — it recommends, the community DAO decides. The LLM never votes and never writes `gfen:validationStatus`; within this repo it is used only by the demo mock. |
 
 ## The `gfen:` ontology extension
 
@@ -196,11 +198,12 @@ Resolution: `https://n2t.net/ark:{NAAN}/...` redirects to the w3id URI
 aggregated decision records are published — no individual votes (GDPR).
 Implementation: [`services/common/pid.py`](services/common/pid.py).
 
-## Pluggable LLM judge (demo)
+## Pluggable LLM judge — decision-support only ([ADR-004](docs/adr/ADR-004-llm-judge-decision-support-only.md))
 
-The mock DAO can use **any OpenAI-compatible chat API** as its decision judge
-— OpenAI, DeepSeek, a local vLLM/Ollama instance, or GRAPHIA's own services
-(LLM4SSH, Quagga) if they expose such an endpoint. Configured purely via env:
+The demo mock can use **any OpenAI-compatible chat API** as an
+*AI-assisted reviewer* — OpenAI, DeepSeek, a local vLLM/Ollama instance, or
+GRAPHIA's own services (LLM4SSH, Quagga) if they expose such an endpoint.
+Configured purely via env:
 
 ```
 FEN_LLM_BASE_URL=https://api.deepseek.com/v1   # any OpenAI-compatible base URL
@@ -208,11 +211,19 @@ FEN_LLM_API_KEY=...
 FEN_LLM_MODEL=deepseek-chat
 ```
 
-The judge is deliberately **generic**: it reviews the whole candidate payload,
-so the same validation layer works for *any dataset type*, not just linguistic
-entities. If the LLM is unavailable or indecisive, the mock falls back to a
-deterministic rule — the pipeline never blocks. Implementation:
-[`services/common/llm.py`](services/common/llm.py).
+**The boundary (ADR-004): the LLM recommends, the community decides.** The
+judge may *suggest* an outcome (validated/disputed/rejected) to the DAO — it
+never votes, never renders a verdict and never writes `gfen:validationStatus`.
+The final decision always comes from the community DAO (Quadratic Voting),
+which in production lives outside this repository (ADR-002). Within this repo
+`services/common/llm.py` is called **only** by the demo mock
+(`mock_fen_api/main.py`) to simulate a reviewer whose recommendation the
+simulated DAO quorum adopts; neither the FEN Bridge nor the Validation Result
+Consumer imports it. The judge is deliberately **generic**: it reviews the
+whole candidate payload, so the same validation layer works for *any dataset
+type*, not just linguistic entities. If the LLM is unavailable or indecisive,
+the mock falls back to a deterministic rule — the pipeline never blocks.
+Implementation: [`services/common/llm.py`](services/common/llm.py).
 
 ## Observability
 

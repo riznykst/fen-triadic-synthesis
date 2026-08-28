@@ -1,4 +1,4 @@
-# Architecture
+﻿# Architecture
 
 Full rationale lives in [`whitepaper.docx`](whitepaper.docx) and the three ADRs in
 [`adr/`](adr/). This document is the quick-reference version: what talks to what,
@@ -53,6 +53,12 @@ Two new DAP-side microservices exist: the **FEN Bridge** (two independent
 processes: outbound + webhook) and the **Validation Result Consumer**. Of these,
 only the FEN Bridge talks to the external FEN system — everything else in the
 governance stack lives outside GRAPHIA (ADR-002).
+
+The pluggable LLM judge (`services/common/llm.py`) is **decision-support
+only** (ADR-004): it is invoked solely by the demo mock to simulate a reviewer
+whose recommendation the simulated DAO adopts; it never votes and never writes
+`gfen:validationStatus` — the Validation Result Consumer is the only writer of
+governance provenance in the named graph.
 
 ## Two boundaries that must never move
 

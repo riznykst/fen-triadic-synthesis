@@ -1,4 +1,4 @@
-"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
+﻿"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
 Quadratic Voting system, for local development and consortium demos only.
 
 Accepts batches of EntityCandidate on POST /candidates, then after a
@@ -103,9 +103,13 @@ _LLM_SYSTEM = (
 )
 
 
-def _decide_outcome(candidate: dict) -> str:
-    """LLM judge with deterministic rule fallback. Generic — works for any
-    dataset payload, not just linguistic entities.
+def _reviewer_recommendation(candidate: dict) -> str:
+    """Decision-SUPPORT only (ADR-004): the LLM judge may *recommend* an
+    outcome for the DAO to consider — it never votes, never renders a
+    governance verdict and never writes gfen:validationStatus. The
+    deterministic rule below stands in for the simulated DAO quorum when no
+    LLM is configured (demo keeps working without an API key). Generic —
+    works for any dataset payload, not just linguistic entities.
     """
     if _llm_config.enabled:
         answer = chat_completion(
@@ -113,29 +117,43 @@ def _decide_outcome(candidate: dict) -> str:
             _LLM_SYSTEM,
             json.dumps(candidate, ensure_ascii=False),
         )
-        outcome = parse_outcome(answer, ("validated", "disputed", "rejected"))
-        if outcome:
+        recommendation = parse_outcome(answer, ("validated", "disputed", "rejected"))
+        if recommendation:
             MOCK_LLM_JUDGE_CALLS.labels(outcome="success").inc()
-            logger.info("LLM judge decided %r for %s", outcome, candidate.get("annotation_id"))
-            return outcome
+            logger.info(
+                "LLM judge (decision-support, ADR-004) recommends %r for %s",
+                recommendation,
+                candidate.get("annotation_id"),
+            )
+            return recommendation
         MOCK_LLM_JUDGE_CALLS.labels(outcome="fallback").inc()
         logger.warning(
             "LLM judge unavailable/indecisive for %s; falling back to rule",
             candidate.get("annotation_id"),
         )
-    # Placeholder rule standing in for real Quadratic Voting. Replace only
-    # this branch when wiring up a real DAO backend.
+    # Simulated DAO quorum rule (stands in for real Quadratic Voting).
+    # Replace only this branch when wiring up a real DAO backend (ADR-002).
     return "validated" if candidate.get("entity_label") else "rejected"
 
 
 def _fake_decide(candidate: dict) -> dict:
     decision_seq = next(_decision_counter)
     reputation_seq = next(_reputation_counter)
+    # The simulated DAO quorum adopts the reviewer recommendation as the
+    # governance verdict (quorum_reached=True). In production the verdict
+    # always comes from the real community DAO (external, ADR-002) — the
+    # LLM never decides (ADR-004).
+    outcome = _reviewer_recommendation(candidate)
+    logger.info(
+        "simulated DAO quorum adopted %r for %s",
+        outcome,
+        candidate.get("annotation_id"),
+    )
     return {
         "annotation_id": candidate["annotation_id"],
         "document_id": candidate.get("document_id"),
         "decision_id": f"g{decision_seq:05d}",
-        "outcome": _decide_outcome(candidate),
+        "outcome": outcome,
         "method": "quadratic_voting",
         "quorum_reached": True,
         "reputation_snapshot_id": f"r{reputation_seq:05d}",
