@@ -1,4 +1,4 @@
-﻿# FEN — Triadic Synthesis Framework
+# FEN — Triadic Synthesis Framework
 
 **A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-project.eu) SSH Knowledge Graph as an autonomous federation node.**
 
@@ -105,6 +105,8 @@ fen-triadic-synthesis/
 ├── docker-compose.yml                full local dev stack (Kafka, Fuseki, all services)
 ├── .env.example                      every configurable env var, with local-dev defaults
 ├── requirements-common.txt           combined deps for running tests locally
+├── .github/
+│   └── workflows/ci.yml              CI: unit tests (Python 3.10–3.12) + docker-compose e2e smoke test
 ├── docs/
 │   ├── whitepaper.docx               consortium-facing integration proposal
 │   ├── architecture.md               quick-reference diagrams + component map
@@ -113,6 +115,9 @@ fen-triadic-synthesis/
 │   │   ├── ADR-002-federation-node-not-embedded.md
 │   │   └── ADR-003-fen-pid-scheme.md
 │   ├── user-stories.md               two typical use cases for the validation layer
+│   ├── images/
+│   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
+│   │   └── story2-validation-overlay.svg  user-story infographic (validation overlay)
 │   ├── ontology/
 │   │   ├── fen-ontology.ttl          the gfen: namespace
 │   │   └── fen-shapes.ttl            SHACL shapes for gfen: (ADR-001/003)
@@ -133,7 +138,7 @@ fen-triadic-synthesis/
 │   └── validation_consumer/          SPARQL Update logic + Kafka consumer
 ├── mock_fen_api/                     demo DAO stand-in — NOT production governance
 ├── k8s/                              Kubernetes/OKD manifests: 3 Deployments + ConfigMap + Secret
-├── tests/                            60 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
+├── tests/                            61 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
