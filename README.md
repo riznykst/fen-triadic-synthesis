@@ -1,4 +1,4 @@
-# FEN — Triadic Synthesis Framework
+﻿# FEN — Triadic Synthesis Framework
 
 **A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-project.eu) SSH Knowledge Graph as an autonomous federation node.**
 
@@ -25,6 +25,12 @@ FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 > Current industrial paradigms largely treat language as a raw resource, harvested at scale with limited regard for cultural context or community agency.
 
 This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), which is submitted separately for journal publication and is not included in this repository. The consortium-facing [`docs/whitepaper.docx`](docs/whitepaper.docx) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
+
+## User stories
+
+Two typical use cases — a community contributor of a low-resource-language
+entity and a general dataset owner — are described in
+[`docs/user-stories.md`](docs/user-stories.md).
 
 ## Architecture at a glance
 
@@ -106,6 +112,7 @@ fen-triadic-synthesis/
 │   │   ├── ADR-001-rdf-anchoring-not-full-onchain.md
 │   │   ├── ADR-002-federation-node-not-embedded.md
 │   │   └── ADR-003-fen-pid-scheme.md
+│   ├── user-stories.md               two typical use cases for the validation layer
 │   ├── ontology/
 │   │   ├── fen-ontology.ttl          the gfen: namespace
 │   │   └── fen-shapes.ttl            SHACL shapes for gfen: (ADR-001/003)
