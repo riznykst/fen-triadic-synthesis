@@ -115,6 +115,47 @@ Exactly-once is deliberately out of scope: the DAO decision is a state
 update (idempotent SPARQL DELETE/INSERT) and the confirmation event is
 re-publishable, so duplicates are harmless by design (ADR-001).
 
+## Observability
+
+Every service logs **JSON-structured lines to stdout** (one object per line,
+via `services/common/logging_config.py::setup_logging`): `timestamp`, `level`,
+`service`, `logger`, `message`, any `extra=` fields, and `exception` when one
+is attached. The `LOG_LEVEL` env var (DEBUG/INFO/WARNING/ERROR, default INFO)
+controls verbosity. Both HTTP services additionally expose Prometheus metrics
+in text exposition format on `GET /metrics` (`services/common/metrics.py`):
+
+| Service | /metrics | Key metrics |
+|---|---|---|
+| `fen-bridge-webhook` | `:8101/metrics` | `fen_webhook_decisions_received_total`, `fen_webhook_validation_failures_total` (422), `fen_webhook_auth_rejections_total` (401) |
+| `mock-fen-api` (demo only) | `:8100/metrics` | `fen_mock_candidates_accepted_total`, `fen_mock_decisions_delivered_total`, `fen_mock_delivery_failures_total`, `fen_mock_llm_judge_calls_total{outcome=success\|fallback}`, `fen_mock_delivery_duration_seconds` |
+| `fen-bridge-outbound` | none (no HTTP port) | log-counted `fen_kafka_messages_processed_total` / `fen_kafka_messages_failed_total` (documented for aggregation once the process hosts an endpoint) |
+| `validation-consumer` | none (no HTTP port) | same log-counted Kafka counters |
+
+**Liveness / readiness.** `GET /healthz` answers "process alive" on both HTTP
+services. `GET /readyz` additionally checks real dependencies: the webhook
+probes its Kafka producer with `bootstrap_connected()` (a safe metadata-level
+check that never creates topics) and reports `degraded` while the broker is
+unreachable; the mock depends on nothing external, so it is ready as soon as
+it serves requests (its webhook dependency is probed at delivery time with
+retries). `docker-compose.yml` healthchecks and the k8s readiness probe use
+`/readyz`. The two consumer processes expose no HTTP port, so their
+readiness is simply "process alive" — on crash, Kafka redelivers uncommitted
+messages (at-least-once) and the deployment restarts the container.
+
+**Graceful shutdown.** All three long-running processes handle SIGTERM/SIGINT:
+`outbound.main` and `validation_consumer.main` stop their poll loop, flush the
+producer (`validation-consumer`), and close the consumer; the mock's FastAPI
+lifespan shuts its delivery thread pool down with `executor.shutdown(wait=True)`
+so in-flight deliveries finish before exit.
+
+**In production.** Scrape `/metrics` with **Prometheus** (dashboards in
+**Grafana**: decision throughput, 4xx/5xx webhook rates, delivery failures,
+consumer lag) and ship the JSON stdout logs to **Loki** (or ELK/Splunk) with
+alerting on `fen_webhook_validation_failures_total`, `fen_mock_delivery_failures_total`
+and `fen_kafka_messages_failed_total` growth. Set `LOG_LEVEL` per service and
+keep `/readyz` as the orchestration gate so no service is load-balanced or
+restarted while its dependencies are unreachable.
+
 ## Kubernetes / OKD deployment
 
 `k8s/` holds Deployment + Service manifests for the three application

@@ -1,4 +1,4 @@
-﻿services:
+services:
 
   # ---- Messaging backbone --------------------------------------------
   zookeeper:
@@ -55,7 +55,7 @@
       FEN_BRIDGE_WEBHOOK_URL: http://fen-bridge-webhook:8101/webhook/decision
       MOCK_FEN_DECISION_DELAY_S: "3"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/healthz')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/readyz')"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -90,7 +90,7 @@
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       TOPIC_GOVERNANCE_DECISIONS: fen.governance.decisions.v1
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8101/healthz')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8101/readyz')"]
       interval: 5s
       timeout: 3s
       retries: 10

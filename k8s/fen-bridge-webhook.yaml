@@ -35,7 +35,7 @@ spec:
                   key: FEN_WEBHOOK_TOKEN
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /readyz
               port: 8101
             initialDelaySeconds: 5
             periodSeconds: 10

@@ -1,4 +1,4 @@
-﻿"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
+"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
 Quadratic Voting system, for local development and consortium demos only.
 
 Accepts batches of EntityCandidate on POST /candidates, then after a
@@ -27,17 +27,40 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from typing import Optional
 
 import requests
 from fastapi import FastAPI
 
 from services.common.llm import LLMConfig, chat_completion, parse_outcome
+from services.common.logging_config import log_level_from_env, setup_logging
+from services.common.metrics import (
+    MOCK_CANDIDATES_ACCEPTED,
+    MOCK_DECISIONS_DELIVERED,
+    MOCK_DELIVERY_FAILURES,
+    MOCK_DELIVERY_SECONDS,
+    MOCK_LLM_JUDGE_CALLS,
+    metrics_response,
+)
 
-logging.basicConfig(level=logging.INFO)
+setup_logging("mock-fen-api", level=log_level_from_env())
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Mock FEN API (demo DAO stand-in — not production governance)")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Graceful shutdown: on SIGTERM/SIGINT uvicorn runs this teardown, which
+    stops the delivery pool from accepting new work and waits for in-flight
+    deliveries (``executor.shutdown(wait=True)``). TestClient used without the
+    ``with`` block never triggers the lifespan, so tests keep the pool alive.
+    """
+    yield
+    _shutdown_executor()
+
+
+app = FastAPI(title="Mock FEN API (demo DAO stand-in — not production governance)", lifespan=lifespan)
 
 WEBHOOK_URL = os.getenv("FEN_BRIDGE_WEBHOOK_URL", "http://localhost:8101/webhook/decision")
 DECISION_DELAY_S = float(os.getenv("MOCK_FEN_DECISION_DELAY_S", "3"))
@@ -49,7 +72,26 @@ _reputation_counter = itertools.count(1)
 
 # Bounded pool instead of an unbounded daemon thread per candidate
 # (audit finding: daemon threads + sleep can pile up without a limit).
-_executor = ThreadPoolExecutor(max_workers=MAX_WORKERS, thread_name_prefix="mock-fen")
+# Lazily created and re-creatable so a graceful shutdown of the pool
+# (FastAPI lifespan -> _shutdown_executor) never bricks the process.
+_executor: Optional[ThreadPoolExecutor] = None
+_executor_shutdown = False
+
+
+def _get_executor() -> ThreadPoolExecutor:
+    global _executor, _executor_shutdown
+    if _executor is None or _executor_shutdown:
+        _executor = ThreadPoolExecutor(max_workers=MAX_WORKERS, thread_name_prefix="mock-fen")
+        _executor_shutdown = False
+    return _executor
+
+
+def _shutdown_executor() -> None:
+    """Wait for in-flight deliveries to finish (graceful shutdown)."""
+    global _executor_shutdown
+    if _executor is not None:
+        _executor.shutdown(wait=True)
+        _executor_shutdown = True
 
 # Optional OpenAI-compatible LLM judge (any provider; DeepSeek by example).
 _llm_config = LLMConfig()
@@ -73,8 +115,10 @@ def _decide_outcome(candidate: dict) -> str:
         )
         outcome = parse_outcome(answer, ("validated", "disputed", "rejected"))
         if outcome:
+            MOCK_LLM_JUDGE_CALLS.labels(outcome="success").inc()
             logger.info("LLM judge decided %r for %s", outcome, candidate.get("annotation_id"))
             return outcome
+        MOCK_LLM_JUDGE_CALLS.labels(outcome="fallback").inc()
         logger.warning(
             "LLM judge unavailable/indecisive for %s; falling back to rule",
             candidate.get("annotation_id"),
@@ -106,10 +150,13 @@ def _deliver_decision_after_delay(candidate: dict) -> None:
     """
     time.sleep(DECISION_DELAY_S)
     decision = _fake_decide(candidate)
+    start = time.perf_counter()
     for attempt in range(WEBHOOK_MAX_RETRIES):
         try:
             resp = requests.post(WEBHOOK_URL, json=decision, timeout=10)
             resp.raise_for_status()
+            MOCK_DELIVERY_SECONDS.observe(time.perf_counter() - start)
+            MOCK_DECISIONS_DELIVERED.inc()
             logger.info(
                 "delivered mock decision for %s -> %s",
                 candidate["annotation_id"],
@@ -125,16 +172,35 @@ def _deliver_decision_after_delay(candidate: dict) -> None:
             )
             if attempt < WEBHOOK_MAX_RETRIES - 1:
                 time.sleep(0.5 * (attempt + 1))
+    MOCK_DELIVERY_FAILURES.inc()
 
 
 @app.post("/candidates")
 def submit_candidates(payload: dict):
     candidates = payload.get("candidates", [])
     for candidate in candidates:
-        _executor.submit(_deliver_decision_after_delay, candidate)
+        _get_executor().submit(_deliver_decision_after_delay, candidate)
+    MOCK_CANDIDATES_ACCEPTED.inc(len(candidates))
     return {"accepted": len(candidates)}
 
 
 @app.get("/healthz")
 def healthz():
     return {"status": "ok", "note": "this is a DEMO stand-in for FEN's real DAO — see ADR-002"}
+
+
+@app.get("/readyz")
+def readyz():
+    """Readiness: the mock depends on nothing external, so it is ready as
+    soon as the process serves requests. Its only outbound dependency — the
+    FEN Bridge webhook — is probed at delivery time (with retries), not at
+    startup, so it must not gate readiness.
+    """
+    return {"status": "ok"}
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus metrics in text exposition format
+    (services/common/metrics.py)."""
+    return metrics_response()

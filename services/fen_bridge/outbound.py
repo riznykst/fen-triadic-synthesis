@@ -16,13 +16,17 @@ that never reaches FEN simply stays ``gfen:pending`` and will be retried.
 from __future__ import annotations
 
 import logging
+import signal
+import threading
 import time
 
+from services.common.logging_config import log_level_from_env, setup_logging
+from services.common.metrics import KAFKA_MESSAGES_FAILED, KAFKA_MESSAGES_PROCESSED
 from services.fen_bridge.config import FenBridgeConfig
 from services.fen_bridge.fen_client import FenClient
 from services.fen_bridge.kafka_io import make_consumer, poll_batch_with_offsets
 
-logging.basicConfig(level=logging.INFO)
+setup_logging("fen-bridge-outbound", level=log_level_from_env())
 logger = logging.getLogger(__name__)
 
 
@@ -39,13 +43,29 @@ def run(config: FenBridgeConfig, client: FenClient, consumer) -> None:
         return
     if client.submit_candidates([record.value for record in batch]):
         consumer.commit()
+        KAFKA_MESSAGES_PROCESSED.inc(len(batch))
         logger.info("committed %d message(s) after successful forward", len(batch))
     else:
+        KAFKA_MESSAGES_FAILED.inc(len(batch))
         logger.warning(
             "FEN API did not accept the batch (%d message(s)); offsets NOT committed — "
             "the batch will be redelivered (at-least-once)",
             len(batch),
         )
+
+
+def _install_signal_handlers(stop_event: threading.Event) -> None:
+    """Route SIGTERM/SIGINT to setting ``stop_event`` so the main loop can
+    stop cleanly. Only called from ``main()`` — tests never register signal
+    handlers (they would hijack pytest's own Ctrl+C handling).
+    """
+
+    def _on_signal(signum, frame):  # noqa: ARG001 - signal API shape
+        logger.info("received signal %d; stopping outbound loop", signum)
+        stop_event.set()
+
+    signal.signal(signal.SIGTERM, _on_signal)
+    signal.signal(signal.SIGINT, _on_signal)
 
 
 def main() -> None:
@@ -58,16 +78,23 @@ def main() -> None:
     )
     logger.info("fen-bridge-outbound started, watching %s", config.topic_pending_validation)
 
+    stop_event = threading.Event()
+    _install_signal_handlers(stop_event)
     backoff_s = 1.0
-    while True:
-        try:
-            run(config, client, consumer)
-            backoff_s = 1.0
-        except Exception:  # noqa: BLE001 - keep the loop alive across broker blips
-            logger.exception("outbound cycle failed; retrying in %.1fs", backoff_s)
-            time.sleep(backoff_s)
-            backoff_s = min(backoff_s * 2, 30.0)
-        time.sleep(0.1)
+    try:
+        while not stop_event.is_set():
+            try:
+                run(config, client, consumer)
+                backoff_s = 1.0
+            except Exception:  # noqa: BLE001 - keep the loop alive across broker blips
+                logger.exception("outbound cycle failed; retrying in %.1fs", backoff_s)
+                stop_event.wait(backoff_s)
+                backoff_s = min(backoff_s * 2, 30.0)
+            else:
+                stop_event.wait(0.1)
+    finally:
+        consumer.close()
+        logger.info("fen-bridge-outbound stopped; consumer closed")
 
 
 if __name__ == "__main__":

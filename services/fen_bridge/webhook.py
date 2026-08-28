@@ -1,4 +1,4 @@
-﻿"""FEN Bridge — inbound webhook.
+"""FEN Bridge — inbound webhook.
 
 Receives GovernanceDecision callbacks from the external FEN system (real DAO
 in production, mock_fen_api/ for local dev/demo) and publishes them onto
@@ -13,11 +13,18 @@ import logging
 from fastapi import FastAPI, HTTPException, Request, status
 from pydantic import ValidationError
 
+from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.messages import GovernanceDecision
+from services.common.metrics import (
+    WEBHOOK_AUTH_REJECTIONS,
+    WEBHOOK_DECISIONS_RECEIVED,
+    WEBHOOK_VALIDATION_FAILURES,
+    metrics_response,
+)
 from services.fen_bridge.config import FenBridgeConfig
 from services.fen_bridge.kafka_io import make_producer, send
 
-logging.basicConfig(level=logging.INFO)
+setup_logging("fen-bridge-webhook", level=log_level_from_env())
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="FEN Bridge — inbound webhook")
@@ -44,6 +51,7 @@ def receive_decision(request: Request, payload: dict):
     if token:
         auth = request.headers.get("Authorization")
         if auth != f"Bearer {token}":
+            WEBHOOK_AUTH_REJECTIONS.inc()
             raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
     """Accepts a raw dict, validates it as a GovernanceDecision, and
@@ -55,13 +63,38 @@ def receive_decision(request: Request, payload: dict):
     try:
         decision = GovernanceDecision.model_validate(payload)
     except ValidationError as exc:
+        WEBHOOK_VALIDATION_FAILURES.inc()
         raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
     producer = app.state.producer if hasattr(app.state, "producer") else get_producer()
     send(producer, _config.topic_governance_decisions, decision.model_dump())
+    WEBHOOK_DECISIONS_RECEIVED.inc()
     return {"status": "accepted", "annotation_id": decision.annotation_id}
 
 
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+
+@app.get("/readyz")
+def readyz():
+    """Readiness: the webhook is ready once its Kafka producer can publish.
+    ``bootstrap_connected`` is a safe metadata-level check that never creates
+    topics; test doubles without that method are treated as ready (they
+    cannot be probed offline).
+    """
+    producer = app.state.producer if hasattr(app.state, "producer") else get_producer()
+    probe = getattr(producer, "bootstrap_connected", None)
+    connected = probe() if callable(probe) else True
+    return {
+        "status": "ok" if connected else "degraded",
+        "kafka": "connected" if connected else "unreachable",
+    }
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus metrics in text exposition format
+    (services/common/metrics.py)."""
+    return metrics_response()

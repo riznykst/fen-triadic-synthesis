@@ -120,12 +120,13 @@ fen-triadic-synthesis/
 │   ├── generate_schemas.py           regenerates the schemas above — never hand-edit them
 │   └── smoke_test.py                 e2e smoke test against the docker-compose stack (CI `e2e` job)
 ├── services/
-│   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO (at-least-once)
+│   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO (at-least-once),
+│   │                                JSON logging (`logging_config.py`), Prometheus metrics (`metrics.py`)
 │   ├── fen_bridge/                   outbound consumer + inbound webhook (2 containers)
 │   └── validation_consumer/          SPARQL Update logic + Kafka consumer
 ├── mock_fen_api/                     demo DAO stand-in — NOT production governance
 ├── k8s/                              Kubernetes/OKD manifests: 3 Deployments + ConfigMap + Secret
-├── tests/                            47 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
+├── tests/                            60 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
@@ -194,6 +195,17 @@ so the same validation layer works for *any dataset type*, not just linguistic
 entities. If the LLM is unavailable or indecisive, the mock falls back to a
 deterministic rule — the pipeline never blocks. Implementation:
 [`services/common/llm.py`](services/common/llm.py).
+
+## Observability
+
+All services log JSON-structured lines to stdout (`LOG_LEVEL` env var, see
+[`.env.example`](.env.example)), and the two HTTP services (`fen-bridge-webhook`,
+`mock-fen-api`) expose Prometheus metrics on `GET /metrics` and a dependency-aware
+`GET /readyz` next to their existing `/healthz`. Consumers (outbound,
+validation-consumer) log-count the same Kafka counters and shut down gracefully
+on SIGTERM/SIGINT (producer flush, consumer close, delivery-pool drain). Scrape
+`/metrics` with Prometheus/Grafana and ship the JSON logs to Loki in production —
+full details in the [architecture doc](docs/architecture.md#observability).
 
 ## Positioning vs GRAPHIA's own AI services
 

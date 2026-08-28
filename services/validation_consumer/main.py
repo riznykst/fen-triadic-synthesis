@@ -14,14 +14,18 @@ redelivered on the next rebalance or restart.
 from __future__ import annotations
 
 import logging
+import signal
+import threading
 import time
 
 from services.common import kafka_io
+from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.messages import EntityValidated, GovernanceDecision
+from services.common.metrics import KAFKA_MESSAGES_FAILED, KAFKA_MESSAGES_PROCESSED
 from services.validation_consumer.config import ValidationConsumerConfig
 from services.validation_consumer.sparql_updater import apply_update, build_update_query
 
-logging.basicConfig(level=logging.INFO)
+setup_logging("validation-consumer", level=log_level_from_env())
 logger = logging.getLogger(__name__)
 
 
@@ -80,6 +84,7 @@ def process_cycle(config: ValidationConsumerConfig, consumer, producer) -> None:
         try:
             handle_message(config, producer, record.value)
         except Exception:  # noqa: BLE001 - loud failure, no commit (at-least-once)
+            KAFKA_MESSAGES_FAILED.inc()
             logger.exception(
                 "failed to process message topic=%s partition=%d offset=%d; "
                 "offset NOT committed — will be redelivered (at-least-once)",
@@ -88,7 +93,22 @@ def process_cycle(config: ValidationConsumerConfig, consumer, producer) -> None:
                 record.offset,
             )
             return
+        KAFKA_MESSAGES_PROCESSED.inc()
         kafka_io.commit_offsets(consumer, [record])
+
+
+def _install_signal_handlers(stop_event: threading.Event) -> None:
+    """Route SIGTERM/SIGINT to setting ``stop_event`` so the main loop can
+    stop cleanly. Only called from ``main()`` — tests never register signal
+    handlers (they would hijack pytest's own Ctrl+C handling).
+    """
+
+    def _on_signal(signum, frame):  # noqa: ARG001 - signal API shape
+        logger.info("received signal %d; stopping consumer loop", signum)
+        stop_event.set()
+
+    signal.signal(signal.SIGTERM, _on_signal)
+    signal.signal(signal.SIGINT, _on_signal)
 
 
 def main() -> None:
@@ -101,16 +121,24 @@ def main() -> None:
     producer = kafka_io.make_producer(config.kafka_bootstrap_servers)
     logger.info("validation-consumer started, watching %s", config.topic_governance_decisions)
 
+    stop_event = threading.Event()
+    _install_signal_handlers(stop_event)
     backoff_s = 1.0
-    while True:
-        try:
-            process_cycle(config, consumer, producer)
-            backoff_s = 1.0
-        except Exception:  # noqa: BLE001 - keep consuming; failures are loud in logs
-            logger.exception("consumer cycle failed; retrying in %.1fs", backoff_s)
-            time.sleep(backoff_s)
-            backoff_s = min(backoff_s * 2, 30.0)
-        time.sleep(0.1)
+    try:
+        while not stop_event.is_set():
+            try:
+                process_cycle(config, consumer, producer)
+                backoff_s = 1.0
+            except Exception:  # noqa: BLE001 - keep consuming; failures are loud in logs
+                logger.exception("consumer cycle failed; retrying in %.1fs", backoff_s)
+                stop_event.wait(backoff_s)
+                backoff_s = min(backoff_s * 2, 30.0)
+            else:
+                stop_event.wait(0.1)
+    finally:
+        producer.flush()
+        consumer.close()
+        logger.info("validation-consumer stopped; producer flushed, consumer closed")
 
 
 if __name__ == "__main__":
