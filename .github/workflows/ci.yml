@@ -2,9 +2,12 @@
 
 # TEMPORARY self-hosted-runner mode (GitHub billing block): jobs run on the
 # local runner (label "self-hosted") and CI triggers on push only, so fork
-# PRs cannot execute code on the private machine. Revert to ubuntu-latest +
-# pull_request when the billing issue is resolved — see
-# docs/self-hosted-runner.md, step 7.
+# PRs cannot execute code on the private machine. The matrix is reduced to
+# the system Python (3.10) because actions/setup-python toolchains are wiped
+# by this environment after jobs; the e2e Docker steps are skipped when
+# Docker is unavailable. Revert to ubuntu-latest + pull_request + the full
+# 3.10/3.11/3.12 matrix + setup-python once the billing issue is resolved —
+# see docs/self-hosted-runner.md, step 7.
 on:
   push:
     branches: [main]
@@ -14,12 +17,14 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        # TEMPORARY: system Python (C:\Python310) on the self-hosted runner.
+        # Restore ["3.10", "3.11", "3.12"] together with setup-python below.
+        python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+      # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
+      - name: Use system Python
+        run: python --version
       - name: Install dependencies
         run: |
           pip install --upgrade pip
@@ -35,14 +40,15 @@ jobs:
 
   # End-to-end smoke test against the real docker-compose stack: publishes an
   # EntityCandidate and waits for the full pipeline (decision -> SPARQL ->
-  # validated) to complete. Requires a Docker runner.
+  # validated) to complete. Requires a Docker runner; skipped on machines
+  # without Docker.
   e2e:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
+      - name: Use system Python
+        run: python --version
       - name: Install dependencies
         run: |
           pip install --upgrade pip
