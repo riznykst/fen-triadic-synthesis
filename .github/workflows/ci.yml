@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements-common.txt
+          pip install --no-cache-dir -r requirements-common.txt
       - name: Run tests
         run: pytest -q
       - name: Verify imports
@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements-common.txt
+          pip install --no-cache-dir -r requirements-common.txt
       - name: Check Docker availability
         id: docker
         shell: bash
