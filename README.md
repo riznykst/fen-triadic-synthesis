@@ -104,6 +104,7 @@ pytest -q
 ```
 fen-triadic-synthesis/
 ├── README.md                       ← you are here
+├── CHANGELOG.md                     dated record of notable changes
 ├── AGENT_PLAN.md                    step-by-step build plan for an AI coding agent
 ├── LICENSE                          Apache 2.0
 ├── docker-compose.yml                full local dev stack (Kafka, Fuseki, all services)
@@ -273,6 +274,9 @@ whitepaper §7 "Request to the Consortium"):
 | Deployment | docker-compose (dev) | OKD (OpenShift)/Kubernetes manifests for the DAP stack |
 
 ## Status
+
+🟢 **CI: green on the self-hosted runner** (61 tests; the e2e job runs the full Docker stack once Docker Desktop is installed). Runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md) and [CHANGELOG.md](CHANGELOG.md).
+
 
 🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka
 message contracts, the `gfen:` ontology extension, the FEN Bridge (outbound +

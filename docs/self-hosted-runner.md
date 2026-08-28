@@ -108,3 +108,41 @@ Notes:
 2. Restore the `pull_request:` trigger.
 3. Remove the runner: **Settings → Actions → Runners → ⚙ → Remove**.
 4. Re-run the failed workflows: `gh run rerun` or a fresh push.
+
+## Operational state (2026-08-28)
+
+| Item | Value |
+|---|---|
+| Runner | `fen-laptop` — registered, **online**, "Listening for Jobs" |
+| Service | `GitHubActionsRunner` (NSSM) — Running, Automatic, auto-restart. `svc.cmd` was removed in runner v2.3xx; NSSM is the official replacement |
+| Runner dir | `D:\FEN-GRAPHIA\actions-runner` (outside the repo) |
+| Work dir | `C:\fen-runner-work` — D: is full and does not support symlinks |
+| Git fix | `.env` → `GIT_CONFIG_GLOBAL` pointing to a config with `safe.directory = *` (D: is FAT; git sees every directory as "dubious ownership") |
+| Python | system `C:\Python310` (actions/setup-python toolchains get wiped by this environment; matrix reduced to 3.10 — TEMPORARY) |
+| Shell for docker check | `powershell` (System32): `bash` resolves to WSL bash (breaks Windows paths), `pwsh` is not in the runner PATH |
+
+Service management:
+
+```powershell
+D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe stop GitHubActionsRunner
+D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe start GitHubActionsRunner
+D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe remove GitHubActionsRunner confirm
+```
+
+## Run history (2026-08-28)
+
+| Run | Result | Note |
+|---|---|---|
+| 33187635656 | failure | GitHub billing block (hosted runners) |
+| 33188502792 | cancelled | queued — no runner registered yet |
+| 33190210343 | failure | checkout: git "dubious ownership" (D: FAT) |
+| 33192311682 | failure | disk full on D: + setup-python toolchain wiped |
+| 33194594709 | failure | e2e: WSL bash cannot read Windows-path scripts |
+| 33194863876 | failure | e2e: `pwsh` not resolvable in runner PATH |
+| **33195156069** | **success** | **test (3.10) + e2e green** (Docker steps skipped — no Docker) |
+
+The green run proves the whole loop on this machine: checkout, dependency
+install, 61 unit tests, import/RDF checks, e2e job logic. Docker Desktop
+installer is downloaded to `C:\Users\Dell latitude 5480\Downloads\DockerDesktopInstaller.exe`;
+once Docker runs, the e2e job automatically switches to the full stack
+(Kafka + Fuseki + pipeline via `scripts/smoke_test.py`) — no CI change needed.
