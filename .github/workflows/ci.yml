@@ -47,10 +47,22 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements-common.txt
+      - name: Check Docker availability
+        id: docker
+        shell: bash
+        run: |
+          if docker version >/dev/null 2>&1; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
       - name: Start the stack
+        if: steps.docker.outputs.available == 'true'
         run: docker compose up --build -d
       - name: Run end-to-end smoke test
+        if: steps.docker.outputs.available == 'true'
         run: python scripts/smoke_test.py
       - name: Tear down the stack
-        if: always()
+        if: always() && steps.docker.outputs.available == 'true'
         run: docker compose down
