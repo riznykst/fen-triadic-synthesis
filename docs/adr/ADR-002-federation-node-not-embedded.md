@@ -27,3 +27,6 @@ DAP and the additive `gfen:` namespace (`docs/ontology/fen-ontology.ttl`).
   `gfen:` namespace and GRAPHIA behaves exactly as before.
 - The FEN Bridge is the *only* DAP-side component that talks to the external
   FEN system; the rest of the governance stack lives outside GRAPHIA.
+- The additive `gfen:` namespace declares `owl:imports` to the GRAPHIA/TRIPLE
+  Ontology (stub IRI — to be confirmed with the consortium, whitepaper §7).
+  Declarative only: nothing in the imported ontology is modified.

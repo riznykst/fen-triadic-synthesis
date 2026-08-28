@@ -42,3 +42,10 @@ METHOD_MAP = {
     "quadratic_voting": QUADRATIC_VOTING,
     "peer_review": PEER_REVIEW,
 }
+
+# owl:imports stub — mirror of docs/ontology/fen-ontology.ttl. The additive
+# gfen: namespace builds on GRAPHIA's TRIPLE Ontology (D2.2 section 3).
+# TODO: replace with the official GRAPHIA Ontology IRI once confirmed
+# (whitepaper section 7). Keep in sync with the .ttl file.
+GRAPHIA_ONTOLOGY_IRI = "https://w3id.org/gotriple/ontology"
+OWL_IMPORTS = GRAPHIA_ONTOLOGY_IRI

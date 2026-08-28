@@ -166,6 +166,12 @@ gfen:ledgerAnchor          a rdf:Property .  # on-chain tx hash, anchor only
 gfen:contributorProfile    a rdf:Property .  # -> triple:Profile (reused, not duplicated)
 ```
 
+The namespace declares `owl:imports` to the GRAPHIA/TRIPLE Ontology — currently
+a **stub IRI** (`https://w3id.org/gotriple/ontology`), to be replaced with the
+official GRAPHIA Ontology IRI once confirmed with the consortium (whitepaper §7).
+The import is declarative only: nothing in the imported ontology is modified
+(ADR-002).
+
 Full definitions: [`docs/ontology/fen-ontology.ttl`](docs/ontology/fen-ontology.ttl).
 
 ## PID scheme (ADR-003)

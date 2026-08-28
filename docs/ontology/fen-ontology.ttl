@@ -1,6 +1,7 @@
 ﻿# fen-ontology.ttl — the additive gfen: namespace
 # Keep in sync with services/common/gfen_ontology.py (AGENT_PLAN.md, Phase 0).
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix gfen: <https://w3id.org/got/fen/ontology#> .
 
@@ -32,3 +33,11 @@ gfen:quorumReached         a rdf:Property .
 gfen:outcome               a rdf:Property ; rdfs:range gfen:ValidationStatus .
 gfen:decidedAt             a rdf:Property .
 gfen:scaffoldingSession    a rdf:Property .
+
+# ---- Imports -----------------------------------------------------------
+# owl:imports stub — the additive gfen: namespace builds on GRAPHIA's TRIPLE
+# Ontology provenance model (D2.2 section 3). The IRI is a STUB: replace with
+# the official GRAPHIA Ontology IRI once confirmed (whitepaper section 7,
+# "Request to the Consortium"). Nothing is modified in the imported ontology
+# (ADR-002); the import only declares the dependency for tooling/alignment.
+gfen: owl:imports <https://w3id.org/gotriple/ontology> .
