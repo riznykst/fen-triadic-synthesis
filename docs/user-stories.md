@@ -38,6 +38,8 @@ dap.entities.pending_validation.v1
   → dap.entities.validated.v1 → Publisher (unchanged) → Virtuoso
 ```
 
+![Story 1 — community validation flow](images/story1-validation-flow.svg)
+
 ---
 
 ## Story 2 — Any-domain dataset owner (validation overlay)
@@ -66,3 +68,5 @@ Same pipeline as Story 1; the only difference is the shape of the candidate
 payload. This is the "validation overlay" positioning: FEN is not a
 linguistics tool — it is a community-governance layer for any data that needs
 human/community arbitration on top of automated extraction.
+
+![Story 2 — validation overlay for any dataset](images/story2-validation-overlay.svg)
