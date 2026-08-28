@@ -24,7 +24,7 @@ FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 
 > Current industrial paradigms largely treat language as a raw resource, harvested at scale with limited regard for cultural context or community agency.
 
-This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), which is submitted separately for journal publication and is not included in this repository. The consortium-facing [`docs/whitepaper.docx`](docs/whitepaper.docx) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
+This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), which is submitted separately for journal publication and is not included in this repository. The consortium-facing [`docs/whitepaper.docx`](docs/whitepaper.docx) (also as [`docs/whitepaper.pdf`](docs/whitepaper.pdf)) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
 
 ## User stories
 
@@ -299,7 +299,7 @@ to start that.
 
 - **Companion paper:** *Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis* (Riznyk, 2026)
 - **Integrates with:** [GRAPHIA](https://graphia-project.eu) — D2.2 Technical Architecture (SSH Knowledge Graph, Data Acquisition Platform)
-- **Research source:** [`docs/research/graphia-tech-stack-2026-08.pdf`](docs/research/graphia-tech-stack-2026-08.pdf) — GRAPHIA technology-stack research (RDF/LPG, Ontology, DAP, OKD/HPC, LLM services), the basis for the integration audit
+- **Research source:** [`docs/research/graphia-tech-stack-2026-08.pdf`](docs/research/graphia-tech-stack-2026-08.pdf) — GRAPHIA technology-stack research (English edition; RDF/LPG, Ontology, DAP, OKD/HPC, LLM services), the basis for the integration audit
 
 ## License
 
