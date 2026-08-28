@@ -6,7 +6,7 @@ JSON Schemas in ``schemas/kafka-events/`` are GENERATED from these models
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -39,7 +39,7 @@ class EntityCandidate(BaseModel):
     entity_label: Optional[str] = Field(default=None, description="Human-readable label of the extracted entity")
     entity_type: Optional[str] = Field(default=None, description="Extracted type, e.g. schema:Person")
     extracted_by: str = Field(default="wp4_entity_extractor", description="Service that produced the candidate")
-    extracted_at: datetime = Field(default_factory=datetime.utcnow)
+    extracted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class GovernanceDecision(BaseModel):
@@ -67,4 +67,4 @@ class EntityValidated(BaseModel):
     document_id: Optional[str] = None
     decision_id: str
     outcome: ValidationStatus
-    validated_at: datetime = Field(default_factory=datetime.utcnow)
+    validated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
