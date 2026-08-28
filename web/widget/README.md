@@ -24,6 +24,8 @@ snapshot and the on-chain ledger anchor (hash only, ADR-001).
 
 ## How it works
 
+![Flow 2 — validation-status widget: how it works](../../docs/images/widget-overview.svg)
+
 - Widget → `GET {api-base}/api/v1/status/{annotation-id}` (contract in
   [`web/api.md`](../api.md)).
 - The Status API executes a SPARQL SELECT over the named graphs (Fuseki

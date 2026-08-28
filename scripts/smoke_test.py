@@ -1,4 +1,4 @@
-"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
+﻿"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
 
 Publishes one EntityCandidate onto dap.entities.pending_validation.v1 and
 waits for the full pipeline to complete:
@@ -47,6 +47,8 @@ FUSEKI_PING = "http://localhost:3030/$/ping"
 FUSEKI_QUERY = "http://localhost:3030/fen/query"
 WEBHOOK_HEALTH = "http://localhost:8101/healthz"
 MOCK_FEN_HEALTH = "http://localhost:8100/healthz"
+STATUS_API_BASE = "http://localhost:8082"
+STATUS_API_HEALTH = STATUS_API_BASE + "/healthz"
 
 TOPIC_PENDING_VALIDATION = "dap.entities.pending_validation.v1"
 TOPIC_GOVERNANCE_DECISIONS = "fen.governance.decisions.v1"
@@ -184,6 +186,18 @@ def wait_for_message(consumer: KafkaConsumer, topic: str, annotation_id: str, ti
     raise RuntimeError(f"no {topic} message for {annotation_id} within {timeout_s:.0f}s")
 
 
+def check_status_api(annotation_id: str) -> dict:
+    """The web-interface layer's read API must expose the same record the
+    SPARQL check just saw (Flow 2 widget data source).
+    """
+    resp = requests.get(f"{STATUS_API_BASE}/api/v1/status/{annotation_id}", timeout=10.0)
+    resp.raise_for_status()
+    body = resp.json()
+    if not body.get("found") or not body.get("validation_status"):
+        raise RuntimeError(f"status-api: governance record not found for {annotation_id}")
+    return body
+
+
 def check_named_graph_status(annotation_id: str, document_id: str) -> str:
     """Query Fuseki for the annotation's gfen:validationStatus inside the
     document's named graph; return the status string. Raises when the triple
@@ -219,6 +233,7 @@ def run() -> None:
     wait_for(lambda: http_ready(FUSEKI_PING), READY_TIMEOUT_S, "Fuseki (http://localhost:3030/$/ping)")
     wait_for(lambda: http_ready(WEBHOOK_HEALTH), READY_TIMEOUT_S, "fen-bridge-webhook (http://localhost:8101/healthz)")
     wait_for(lambda: http_ready(MOCK_FEN_HEALTH), READY_TIMEOUT_S, "mock-fen-api (http://localhost:8100/healthz)")
+    wait_for(lambda: http_ready(STATUS_API_HEALTH), READY_TIMEOUT_S, "status-api (http://localhost:8082/healthz)")
     wait_for_outbound_group()
 
     run_id = uuid.uuid4().hex[:8]
@@ -246,6 +261,13 @@ def run() -> None:
             "gfen:validationStatus in named graph",
         )
         logger.info("named graph carries gfen:validationStatus=%s", status)
+
+        status_api = wait_for(
+            lambda: check_status_api(annotation_id),
+            DECISION_TIMEOUT_S,
+            "status-api /api/v1/status",
+        )
+        logger.info("status-api reports validation_status=%s", status_api["validation_status"])
 
         validated = wait_for_message(
             make_watch_consumer(TOPIC_VALIDATED, f"smoke-{run_id}-validated"),

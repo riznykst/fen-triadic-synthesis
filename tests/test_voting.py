@@ -46,6 +46,8 @@ def test_candidates_list_in_auto_mode():
     assert len(listed) == 1
     assert listed[0]["status"] == "pending"
     assert listed[0]["quorum"]["required"] == mock_main.QUORUM_REQUIRED
+    # decision-support recommendation is computed once and exposed (ADR-004)
+    assert listed[0]["llm_recommendation"] == "validated"
 
 
 def test_vote_rejected_in_auto_mode():

@@ -75,12 +75,20 @@
   </div>
 
   <div class="card" style="margin-top:16px">
-    <h2 style="margin-top:0;color:var(--accent);font-size:16px">Candidates &amp; community voting</h2>
+    <h2 style="margin-top:0;color:var(--accent);font-size:16px">Candidates &amp; community voting <span class="note" id="summary" style="margin-left:8px"></span></h2>
+<div style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap" id="filters">
+      <button data-filter="all" class="primary">All</button>
+      <button data-filter="pending">pending</button>
+      <button data-filter="deciding">deciding</button>
+      <button data-filter="validated">validated</button>
+      <button data-filter="disputed">disputed</button>
+      <button data-filter="rejected">rejected</button>
+    </div>
     <table id="table">
       <thead>
-        <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>votes</th><th>quorum</th><th>vote (community mode)</th></tr>
+        <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>LLM rec.</th><th>votes</th><th>quorum</th><th>vote (community mode)</th></tr>
       </thead>
-      <tbody id="rows"><tr><td colspan="6" class="note">no candidates yet — submit one above</td></tr></tbody>
+      <tbody id="rows"><tr><td colspan="7" class="note">no candidates yet — submit one above</td></tr></tbody>
     </table>
   </div>
 </div>

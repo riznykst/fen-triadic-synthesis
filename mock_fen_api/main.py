@@ -145,12 +145,18 @@ def _record_candidate(candidate: dict) -> None:
     annotation_id = candidate["annotation_id"]
     with _state_lock:
         if annotation_id not in _candidates:
+            # LLM/rule recommendation computed ONCE at submission, display-only
+            # (ADR-004: the LLM recommends, the community decides; it never
+            # votes and its suggestion is not part of the quorum).
+            recommendation = _reviewer_recommendation(candidate)
             _candidates[annotation_id] = {
                 "annotation_id": annotation_id,
                 "document_id": candidate.get("document_id"),
                 "entity_label": candidate.get("entity_label"),
                 "status": "pending",
                 "votes": {"validated": 0, "disputed": 0, "rejected": 0},
+                "llm_recommendation": recommendation,
+                "candidate": dict(candidate),
                 "decision": None,
             }
 
@@ -173,6 +179,7 @@ def _public_state() -> list:
                 "entity_label": record["entity_label"],
                 "status": record["status"],
                 "votes": dict(record["votes"]),
+                "llm_recommendation": record.get("llm_recommendation"),
                 "quorum": {
                     "votes": quorum_total(record["votes"]),
                     "required": QUORUM_REQUIRED,
@@ -217,14 +224,18 @@ def _reviewer_recommendation(candidate: dict) -> str:
     return "validated" if candidate.get("entity_label") else "rejected"
 
 
-def _fake_decide(candidate: dict, outcome: Optional[str] = None) -> dict:
+def _fake_decide(
+    candidate: dict, outcome: Optional[str] = None, recommendation: Optional[str] = None
+) -> dict:
     """Build a GovernanceDecision-shaped payload. When ``outcome`` is None
-    the simulated DAO quorum adopts the reviewer recommendation (auto mode).
+    the simulated DAO quorum adopts the reviewer recommendation (auto mode);
+    ``recommendation`` may carry the one computed at submission time to avoid
+    a second LLM call (ADR-004: recommendation is display-only anyway).
     """
     decision_seq = next(_decision_counter)
     reputation_seq = next(_reputation_counter)
     if outcome is None:
-        outcome = _reviewer_recommendation(candidate)
+        outcome = recommendation or _reviewer_recommendation(candidate)
         logger.info(
             "simulated DAO quorum adopted %r for %s",
             outcome,
@@ -243,12 +254,14 @@ def _fake_decide(candidate: dict, outcome: Optional[str] = None) -> dict:
     }
 
 
-def _deliver_decision_after_delay(candidate: dict, forced_outcome: Optional[str] = None) -> None:
+def _deliver_decision_after_delay(
+    candidate: dict, forced_outcome: Optional[str] = None, recommendation: Optional[str] = None
+) -> None:
     """Wait the configured delay, then deliver the decision to the webhook
     with a few retries. A lost demo decision is logged, not fatal.
     """
     time.sleep(DECISION_DELAY_S)
-    decision = _fake_decide(candidate, outcome=forced_outcome)
+    decision = _fake_decide(candidate, outcome=forced_outcome, recommendation=recommendation)
     start = time.perf_counter()
     for attempt in range(WEBHOOK_MAX_RETRIES):
         try:
@@ -285,7 +298,12 @@ def submit_candidates(payload: dict):
             # UI demo mode: wait for community votes (POST .../vote).
             logger.info("candidate %s queued for community voting", candidate["annotation_id"])
         else:
-            _get_executor().submit(_deliver_decision_after_delay, candidate)
+            with _state_lock:
+                rec = _candidates.get(candidate["annotation_id"])
+                recommendation = rec.get("llm_recommendation") if rec else None
+            _get_executor().submit(
+                _deliver_decision_after_delay, candidate, None, recommendation
+            )
     MOCK_CANDIDATES_ACCEPTED.inc(len(candidates))
     return {"accepted": len(candidates)}
 

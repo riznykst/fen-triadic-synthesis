@@ -8,6 +8,8 @@
 const $ = (id) => document.getElementById(id);
 
 let autoTimer = null;
+let currentFilter = "all";
+let cachedList = [];
 
 function statusBadge(status) {
   return '<span class="badge b-' + (status || "unknown") + '">' + (status || "unknown") + "</span>";
@@ -15,14 +17,30 @@ function statusBadge(status) {
 
 function renderCandidates(data) {
   const rows = $("rows");
-  const list = (data && data.candidates) || [];
+  cachedList = (data && data.candidates) || [];
+  const counts = { all: cachedList.length };
+  cachedList.forEach((c) => { counts[c.status] = (counts[c.status] || 0) + 1; });
+  $("summary").textContent =
+    "total " + counts.all +
+    " · pending " + (counts.pending || 0) +
+    " · deciding " + (counts.deciding || 0) +
+    " · validated " + (counts.validated || 0) +
+    " · disputed " + (counts.disputed || 0) +
+    " · rejected " + (counts.rejected || 0);
+
+  const list = currentFilter === "all" ? cachedList : cachedList.filter((c) => c.status === currentFilter);
   if (!list.length) {
-    rows.innerHTML = '<tr><td colspan="6" class="note">no candidates yet — submit one above</td></tr>';
+    rows.innerHTML = '<tr><td colspan="7" class="note">no candidates' +
+      (currentFilter !== "all" ? " with status " + currentFilter : "") +
+      " — submit one above</td></tr>";
     return;
   }
   rows.innerHTML = list.map((c) => {
     const q = c.quorum || { votes: 0, required: 0 };
     const pct = q.required ? Math.min(100, Math.round((q.votes / q.required) * 100)) : 0;
+    const rec = c.llm_recommendation
+      ? '<span class="note" style="color:var(--amber)">' + c.llm_recommendation + " (support)</span>"
+      : "—";
     const voteBtns =
       c.status === "pending"
         ? '<div class="vote">' +
@@ -36,6 +54,7 @@ function renderCandidates(data) {
       "<td><code>" + c.annotation_id + "</code><br><span class='note'>" + (c.document_id || "") + "</span></td>" +
       "<td>" + (c.entity_label || "—") + "</td>" +
       "<td>" + statusBadge(c.status) + "</td>" +
+      "<td>" + rec + "</td>" +
       "<td>v:" + (c.votes.validated || 0) + " d:" + (c.votes.disputed || 0) + " r:" + (c.votes.rejected || 0) + "</td>" +
       '<td><div class="bar"><div style="width:' + pct + '%"></div></div><span class="note">' + q.votes + "/" + q.required + "</span></td>" +
       "<td>" + voteBtns + "</td>" +
@@ -118,8 +137,16 @@ function bindEvents() {
     else { autoTimer = setInterval(loadCandidates, 3000); this.textContent = "Auto-refresh: ON"; }
   };
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-vote]");
-    if (btn) castVote(btn.dataset.vote, btn.dataset.outcome);
+    const vote = e.target.closest("[data-vote]");
+    if (vote) castVote(vote.dataset.vote, vote.dataset.outcome);
+    const filter = e.target.closest("[data-filter]");
+    if (filter) {
+      currentFilter = filter.dataset.filter;
+      document.querySelectorAll("#filters button").forEach((b) => {
+        b.classList.toggle("primary", b === filter);
+      });
+      renderCandidates({ candidates: cachedList });
+    }
   });
 }
 
