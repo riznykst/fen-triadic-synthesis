@@ -142,10 +142,15 @@ fen-triadic-synthesis/
 │   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO (at-least-once),
 │   │                                JSON logging (`logging_config.py`), Prometheus metrics (`metrics.py`)
 │   ├── fen_bridge/                   outbound consumer + inbound webhook (2 containers)
-│   └── validation_consumer/          SPARQL Update logic + Kafka consumer
+│   ├── validation_consumer/          SPARQL Update logic + Kafka consumer
+│   └── status_api/                   read-side web service (SPARQL → JSON) + static UI
 ├── mock_fen_api/                     demo DAO stand-in — NOT production governance
+├── web/                              zero-build web interface layer
+│   ├── widget/                       Flow 2: embeddable <fen-status> Web Component + demo
+│   ├── portal/                       Flow 1: community DAO portal (candidates + voting)
+│   └── api.md                        REST contract (shared with the real FEN backend)
 ├── k8s/                              Kubernetes/OKD manifests: 3 Deployments + ConfigMap + Secret
-├── tests/                            61 tests, all offline (mocked Kafka/HTTP/LLM, in-memory RDF)
+├── tests/                            73 tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
@@ -272,6 +277,36 @@ whitepaper §7 "Request to the Consortium"):
 | SPARQL endpoint | `SPARQL_UPDATE_ENDPOINT` (Fuseki locally) | Virtuoso dialect compatibility of `build_update_query` |
 | PID NAAN | `FEN_NAAN=99999` (dev) | registered NAAN + N2T/w3id redirects (ADR-003) |
 | Deployment | docker-compose (dev) | OKD (OpenShift)/Kubernetes manifests for the DAP stack |
+
+## Web interface (Flow 1 & Flow 2)
+
+A zero-build web layer (plain HTML/JS + FastAPI — no Node toolchain) exposes
+the two community flows:
+
+- **Flow 1 — Community DAO portal** (`web/portal/`): submit candidates,
+  watch `gfen:pending` cards, cast community votes (demo mode
+  `FEN_MOCK_VOTING=community`), track quorum progress. Talks to the mock FEN
+  API (`GET /candidates`, `POST /candidates/{id}/vote`).
+- **Flow 2 — Validation-status widget** (`web/widget/`): an embeddable
+  `<fen-status>` Web Component that renders the validation badge for any
+  annotation, resolved live from the RDF store via the **Status API**
+  (`services/status_api`, `GET /api/v1/status/{id}` — SPARQL SELECT, read-only
+  per ADR-001). Click a badge for decision details (method, dereferenceable
+  PID per ADR-003, ledger anchor).
+
+The full HTTP contract is [`web/api.md`](web/api.md) — the same contract the
+real FEN backend (external, ADR-002) is expected to implement, which keeps the
+UI backend-agnostic. CORS is enabled (`FEN_CORS_ORIGINS`) so the widget can be
+embedded in third-party pages.
+
+Run the demo:
+
+```bash
+docker compose up --build
+# portal:  http://localhost:8082/web/portal/          (mock in community mode:
+#          FEN_MOCK_VOTING=community FEN_MOCK_QUORUM=3)
+# widget:  http://localhost:8082/web/widget/demo.html
+```
 
 ## Status
 

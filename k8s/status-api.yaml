@@ -1,0 +1,51 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-api
+  labels:
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: status-api
+  template:
+    metadata:
+      labels:
+        app: status-api
+    spec:
+      containers:
+        - name: status-api
+          image: fen/status-api:latest   # tag replaced at build
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPARQL_QUERY_ENDPOINT
+              value: http://fuseki:3030/fen/query   # Virtuoso in production
+            - name: FEN_CORS_ORIGINS
+              value: "*"                            # restrict in production
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: status-api
+  labels:
+    app.kubernetes.io/part-of: fen-triadic-synthesis
+spec:
+  selector:
+    app: status-api
+  ports:
+    - port: 8082
+      targetPort: 8082

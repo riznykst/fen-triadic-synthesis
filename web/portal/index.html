@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FEN — Community DAO portal (Flow 1)</title>
+<style>
+  :root { --bg:#0f1420; --panel:#171e2e; --fg:#dde3f0; --muted:#8fa0bf; --accent:#4da3ff; --green:#3fce7c; --amber:#ffb020; --red:#ff5c5c; --border:#26314d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.55 "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width:980px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-size:22px; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:10px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:860px){ .grid { grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  label { display:block; color:var(--muted); font-size:12px; margin:8px 0 3px; }
+  input, select { width:100%; background:#0b101b; color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:7px 9px; font-size:13px; }
+  button { background:var(--panel); color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:7px 13px; cursor:pointer; font-size:13px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#0b101b; font-weight:600; }
+  button:hover { filter:brightness(1.15); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; border:1px solid var(--border); }
+  .b-validated { color:var(--green); border-color:var(--green); }
+  .b-disputed { color:var(--amber); border-color:var(--amber); }
+  .b-rejected { color:var(--red); border-color:var(--red); }
+  .b-pending { color:var(--accent); border-color:var(--accent); }
+  .b-deciding { color:var(--muted); }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .bar { background:#0b101b; border:1px solid var(--border); border-radius:6px; height:8px; width:90px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--accent); }
+  .vote { display:flex; gap:5px; }
+  .vote button { padding:4px 9px; font-size:12px; }
+  .note { color:var(--muted); font-size:12px; }
+  .err { color:var(--red); font-size:12px; margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FEN — Community DAO portal <span class="note">(Flow 1 · demo against mock_fen_api)</span></h1>
+
+  <div class="grid">
+    <div class="card">
+      <h2 style="margin-top:0;color:var(--accent);font-size:16px">Submit a candidate</h2>
+      <label>entity_label *</label>
+      <input id="entity_label" placeholder="e.g. Sokolowizna (regional dialect term)" value="Sokolowizna (regional dialect term)">
+      <label>entity_type</label>
+      <input id="entity_type" placeholder="e.g. schema:DefinedTerm" value="schema:DefinedTerm">
+      <label>document_id</label>
+      <input id="document_id" placeholder="e.g. d2026_014" value="d2026_014">
+      <label>annotation_id (auto-generated if empty)</label>
+      <input id="annotation_id" placeholder="annotation_...">
+      <div style="margin-top:12px">
+        <button class="primary" id="submit">Submit candidate → dap.entities.pending_validation.v1</button>
+      </div>
+      <div class="err" id="submit_err"></div>
+      <p class="note">POST {mock}/candidates — the same endpoint the FEN Bridge
+      uses for batches. In <b>community</b> mode candidates wait for votes
+      (FEN_MOCK_VOTING=community); in <b>auto</b> mode the simulated DAO
+      decides after a delay.</p>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;color:var(--accent);font-size:16px">Configuration</h2>
+      <label>Mock FEN API base</label>
+      <input id="mock_base" value="http://localhost:8100">
+      <label>Status API base (widget data)</label>
+      <input id="status_base" value="http://localhost:8082">
+      <div style="margin-top:12px">
+        <button id="refresh">Refresh</button>
+        <button id="auto_toggle">Auto-refresh: ON</button>
+      </div>
+      <p class="note" id="mode_note">—</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0;color:var(--accent);font-size:16px">Candidates &amp; community voting</h2>
+    <table id="table">
+      <thead>
+        <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>votes</th><th>quorum</th><th>vote (community mode)</th></tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="6" class="note">no candidates yet — submit one above</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

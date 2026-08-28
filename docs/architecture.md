@@ -34,6 +34,13 @@ fen.governance.decisions.v1
 dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (GoTriple KG)
 ```
 
+Web interface layer (zero-build, see `web/api.md`):
+
+```
+[ Flow 1 portal ]  --HTTP-->  mock_fen_api (/candidates, /vote)   [demo DAO]
+[ Flow 2 widget ]  --HTTP-->  status_api /api/v1/status/{id}  --SPARQL-->  Fuseki/Virtuoso
+```
+
 ## Component map
 
 | Component | File(s) | Runs as |
@@ -46,6 +53,8 @@ dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (GoTriple K
 | FEN Bridge (webhook) | `services/fen_bridge/webhook.py` | `fen-bridge-webhook` container |
 | Validation Result Consumer | `services/validation_consumer/main.py`, `sparql_updater.py` | `validation-consumer` container |
 | Mock DAO (demo only) | `mock_fen_api/main.py` | `mock-fen-api` container |
+| Status API (read-side web) | `services/status_api/main.py` | `status-api` container |
+| Web interface (zero-build) | `web/` (portal + widget) | static files served by `status-api` |
 | RDF store (local dev) | — | `fuseki` container, stand-in for Virtuoso (see ADR-001) |
 | Message bus | — | `kafka` + `zookeeper` containers |
 
