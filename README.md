@@ -1,6 +1,6 @@
 ﻿# FEN — Triadic Synthesis Framework
 
-**A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-project.eu) SSH Knowledge Graph as an autonomous federation node.**
+**A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-MVP%20implemented-green.svg)](#status)
@@ -86,6 +86,10 @@ docker compose up --build
 python scripts/smoke_test.py
 ```
 
+> **CI blocked by GitHub billing?** If Actions jobs fail with *"recent account
+> payments have failed or your spending limit needs to be increased"*, use a
+> self-hosted runner — see [`docs/self-hosted-runner.md`](docs/self-hosted-runner.md).
+
 To run the test suite without Docker (no live Kafka or SPARQL endpoint needed —
 everything is mocked or in-memory):
 
@@ -116,6 +120,7 @@ fen-triadic-synthesis/
 │   │   ├── ADR-003-fen-pid-scheme.md
 │   │   └── ADR-004-llm-judge-decision-support-only.md
 │   ├── user-stories.md               two typical use cases for the validation layer
+│   ├── self-hosted-runner.md        CI workaround while GitHub billing blocks Actions
 │   ├── images/
 │   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
 │   │   └── story2-validation-overlay.svg  user-story infographic (validation overlay)
@@ -298,7 +303,7 @@ to start that.
 ## Related work
 
 - **Companion paper:** *Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis* (Riznyk, 2026)
-- **Integrates with:** [GRAPHIA](https://graphia-project.eu) — D2.2 Technical Architecture (SSH Knowledge Graph, Data Acquisition Platform)
+- **Integrates with:** [GRAPHIA](https://graphia-ssh.eu/) — D2.2 Technical Architecture (SSH Knowledge Graph, Data Acquisition Platform)
 - **Research source:** [`docs/research/graphia-tech-stack-2026-08.pdf`](docs/research/graphia-tech-stack-2026-08.pdf) — GRAPHIA technology-stack research (English edition; RDF/LPG, Ontology, DAP, OKD/HPC, LLM services), the basis for the integration audit
 
 ## License
