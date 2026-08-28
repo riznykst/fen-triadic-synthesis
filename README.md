@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-MVP%20implemented-green.svg)](#status)
-[![GRAPHIA](https://img.shields.io/badge/integrates%20with-GRAPHIA%20D2.2-informational.svg)](docs/whitepaper.docx)
+[![GRAPHIA](https://img.shields.io/badge/integrates%20with-GRAPHIA%20D2.2-informational.svg)](docs/FEN-Whitepaper-Triadic-Synthesis.pdf)
 
 ---
 
@@ -24,7 +24,7 @@ FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 
 > Current industrial paradigms largely treat language as a raw resource, harvested at scale with limited regard for cultural context or community agency.
 
-This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), which is submitted separately for journal publication and is not included in this repository. The consortium-facing [`docs/whitepaper.docx`](docs/whitepaper.docx) (also as [`docs/FEN-Whitepaper-Triadic-Synthesis.pdf`](docs/FEN-Whitepaper-Triadic-Synthesis.pdf)) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
+This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), which is submitted separately for journal publication and is not included in this repository. The consortium-facing [`docs/FEN-Whitepaper-Triadic-Synthesis.pdf`](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
 
 ## User stories
 
@@ -62,7 +62,7 @@ fen.governance.decisions.v1
 dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (GoTriple KG)
 ```
 
-Candidates are published immediately with `gfen:pending` — the pipeline never blocks on a vote. See the [whitepaper](docs/whitepaper.docx), §4, for the full flow and the [architecture doc](docs/architecture.md) for details.
+Candidates are published immediately with `gfen:pending` — the pipeline never blocks on a vote. See the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf), §4, for the full flow and the [architecture doc](docs/architecture.md) for details.
 
 ## Running locally
 
@@ -108,7 +108,7 @@ fen-triadic-synthesis/
 ├── .github/
 │   └── workflows/ci.yml              CI: unit tests (Python 3.10–3.12) + docker-compose e2e smoke test
 ├── docs/
-│   ├── whitepaper.docx               consortium-facing integration proposal
+│   ├── FEN-Whitepaper-Triadic-Synthesis.pdf   consortium-facing integration proposal
 │   ├── architecture.md               quick-reference diagrams + component map
 │   ├── adr/
 │   │   ├── ADR-001-rdf-anchoring-not-full-onchain.md
@@ -281,7 +281,7 @@ against the docker-compose stack (CI `e2e` job).
 **Not yet done:** integration against a live GRAPHIA test instance (real Kafka
 topics, real Virtuoso), replacing the mock DAO with the real Quadratic Voting
 contract, and registering a real NAAN for FEN PIDs. See the "Request to the
-Consortium" section of the [whitepaper](docs/whitepaper.docx) for what's needed
+Consortium" section of the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) for what's needed
 to start that.
 
 ## Roadmap
