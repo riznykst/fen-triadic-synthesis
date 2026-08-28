@@ -1,4 +1,4 @@
-# AGENT_PLAN.md — FEN Bridge MVP: build order for an AI coding agent
+﻿# AGENT_PLAN.md — FEN Bridge MVP: build order for an AI coding agent
 
 This is a step-by-step build plan for an autonomous coding agent (Claude Code or
 similar). Follow phases in order — each has a Definition of Done (DoD) that must
@@ -6,7 +6,7 @@ pass before moving to the next. Do not skip ahead: later phases depend on files
 created in earlier ones.
 
 Scope of this MVP: implement the **FEN Bridge** and **Validation Result Consumer**
-microservices from the whitepaper (`docs/whitepaper.pdf`, §4.2), plus a **mock FEN
+microservices from the whitepaper (`docs/FEN-Whitepaper-Triadic-Synthesis.pdf`, §4.2), plus a **mock FEN
 API** that simulates DAO governance so the whole loop is demonstrable without real
 blockchain/DAO infrastructure. Real Virtuoso is *not* required for local dev — use
 Apache Jena Fuseki as a SPARQL 1.1-compatible stand-in (same protocol, swap the
