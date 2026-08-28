@@ -53,13 +53,13 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install --no-cache-dir -r requirements-common.txt
-      # NOTE: shell must be pwsh, NOT bash — on this self-hosted Windows
-      # machine `bash` resolves to WSL bash, which cannot read the runner's
-      # Windows-path script file. pwsh is preinstalled on ubuntu-latest too,
-      # so this stays portable when CI returns to hosted runners.
+      # NOTE: shell is `powershell` (Windows PowerShell 5.1, always in
+      # System32): `bash` resolves to WSL bash here (breaks Windows paths)
+      # and `pwsh` is not resolvable in the runner's PATH on this machine.
+      # Restore `shell: bash` when CI returns to ubuntu-latest.
       - name: Check Docker availability
         id: docker
-        shell: pwsh
+        shell: powershell
         run: |
           $docker = Get-Command docker -ErrorAction SilentlyContinue
           $available = $false
