@@ -1,13 +1,17 @@
-name: CI
+﻿name: CI
 
+# TEMPORARY self-hosted-runner mode (GitHub billing block): jobs run on the
+# local runner (label "self-hosted") and CI triggers on push only, so fork
+# PRs cannot execute code on the private machine. Revert to ubuntu-latest +
+# pull_request when the billing issue is resolved — see
+# docs/self-hosted-runner.md, step 7.
 on:
   push:
     branches: [main]
-  pull_request:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -33,7 +37,7 @@ jobs:
   # EntityCandidate and waits for the full pipeline (decision -> SPARQL ->
   # validated) to complete. Requires a Docker runner.
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
