@@ -53,15 +53,21 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install --no-cache-dir -r requirements-common.txt
+      # NOTE: shell must be pwsh, NOT bash — on this self-hosted Windows
+      # machine `bash` resolves to WSL bash, which cannot read the runner's
+      # Windows-path script file. pwsh is preinstalled on ubuntu-latest too,
+      # so this stays portable when CI returns to hosted runners.
       - name: Check Docker availability
         id: docker
-        shell: bash
+        shell: pwsh
         run: |
-          if docker version >/dev/null 2>&1; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-          fi
+          $docker = Get-Command docker -ErrorAction SilentlyContinue
+          $available = $false
+          if ($docker) {
+            docker version *> $null
+            if ($LASTEXITCODE -eq 0) { $available = $true }
+          }
+          if ($available) { "available=true" >> $env:GITHUB_OUTPUT } else { "available=false" >> $env:GITHUB_OUTPUT }
           exit 0
       - name: Start the stack
         if: steps.docker.outputs.available == 'true'
