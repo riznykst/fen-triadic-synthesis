@@ -173,3 +173,28 @@
       timeout: 5s
       retries: 10
       start_period: 15s
+
+  # ---- Virtuoso (OPTIONAL: SPARQL dialect verification) -------------------
+  # GoTriple KG's engine (OpenLink Virtuoso). NOT part of the default stack:
+  #   docker compose --profile virtuoso up -d virtuoso
+  # then run python scripts/virtuoso_dialect_check.py (see the script header).
+  virtuoso:
+    image: openlink/virtuoso-opensource-7
+    profiles: ["virtuoso"]
+    environment:
+      DBA_PASSWORD: dba
+      VIRT_Parameters_DirsAllowed: /database
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    volumes:
+      - virtuoso-data:/database
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:8890/sparql?query=SELECT+1+WHERE+%7B%7D' >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  virtuoso-data:
