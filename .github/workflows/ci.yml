@@ -71,10 +71,13 @@ jobs:
           exit 0
       - name: Start the stack
         if: steps.docker.outputs.available == 'true'
-        run: docker compose up --build -d
+        run: docker compose --profile virtuoso up --build -d
       - name: Run end-to-end smoke test
         if: steps.docker.outputs.available == 'true'
         run: python scripts/smoke_test.py
+      - name: Run Virtuoso dialect check
+        if: steps.docker.outputs.available == 'true'
+        run: python scripts/virtuoso_dialect_check.py
       - name: Tear down the stack
         if: always() && steps.docker.outputs.available == 'true'
-        run: docker compose down
+        run: docker compose --profile virtuoso down

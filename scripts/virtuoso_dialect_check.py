@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -88,6 +89,22 @@ def _count() -> int:
 def main() -> int:
     decision = _decision()
     query = build_update_query(decision, NAMED_GRAPH)
+
+    # compose returns before the container serves HTTP — wait for the SPARQL
+    # endpoint (up to 60s) before applying anything.
+    ready = False
+    for _attempt in range(12):
+        try:
+            resp = requests.get(QUERY_URL, params={"query": "SELECT 1 WHERE {}"}, timeout=5)
+            if resp.status_code == 200:
+                ready = True
+                break
+        except requests.RequestException:
+            pass
+        time.sleep(5)
+    if not ready:
+        print(f"FAIL: {QUERY_URL} not reachable after 60s")
+        return 1
 
     print(f"UPDATE endpoint: {UPDATE_URL} (auth={AUTH[0]})")
     print("Applying the update TWICE (idempotency check)...")
