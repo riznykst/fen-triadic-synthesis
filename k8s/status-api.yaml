@@ -1,4 +1,9 @@
-﻿apiVersion: apps/v1
+﻿# Status API — read-side web service (web-interface layer; data source for the
+# Flow 2 status widget). Read-only by design (ADR-001): writes to the graph
+# belong exclusively to the Validation Result Consumer. Kafka and the RDF
+# store (Virtuoso in production) are EXTERNAL to this deployment — see
+# docs/architecture.md, "Kubernetes / OKD deployment".
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: status-api
@@ -16,14 +21,19 @@ spec:
     spec:
       containers:
         - name: status-api
-          image: fen/status-api:latest   # tag replaced at build
+          image: fen/status-api:latest  # TODO: replace at build time
           ports:
             - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: fen-config
           env:
             - name: SPARQL_QUERY_ENDPOINT
-              value: http://fuseki:3030/fen/query   # Virtuoso in production
-            - name: FEN_CORS_ORIGINS
-              value: "*"                            # restrict in production
+              value: "http://virtuoso:8890/sparql"  # TODO: GRAPHIA query endpoint
+            - name: SPARQL_PING_ENDPOINT
+              value: "http://virtuoso:8890/sparql"  # TODO: store probe endpoint
+            - name: FEN_WEB_DIR
+              value: "web"
           readinessProbe:
             httpGet:
               path: /readyz
@@ -35,7 +45,7 @@ spec:
               path: /healthz
               port: 8082
             initialDelaySeconds: 5
-            periodSeconds: 15
+            periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service

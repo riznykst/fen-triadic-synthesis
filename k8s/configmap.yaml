@@ -1,4 +1,4 @@
-# Shared environment for the three FEN application deployments. Kafka and
+﻿# Shared environment for the four FEN application deployments. Kafka and
 # the RDF store (Virtuoso in production, Fuseki in local dev) are EXTERNAL
 # to this deployment — see docs/architecture.md, "Kubernetes / OKD
 # deployment". Values below are placeholders; replace before deploying.
@@ -20,3 +20,9 @@ data:
   SPARQL_UPDATE_ENDPOINT: "http://virtuoso:8890/sparql" # TODO: GRAPHIA Virtuoso update endpoint
   # --- PIDs (ADR-003) -----------------------------------------------------
   FEN_NAAN: "99999" # TODO: FEN's registered NAAN
+
+  # --- Status API (read side, web-interface layer) -------------------------
+  SPARQL_QUERY_ENDPOINT: "http://virtuoso:8890/sparql" # TODO: GRAPHIA query endpoint
+  SPARQL_PING_ENDPOINT: "http://virtuoso:8890/sparql" # TODO: store probe endpoint
+  FEN_CORS_ORIGINS: "*" # TODO: restrict to known embedding origins
+  FEN_WEB_DIR: "web"
