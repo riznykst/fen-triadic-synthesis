@@ -1,4 +1,4 @@
-# Applicability & Limits of the FEN Validation Layer
+﻿# Applicability & Limits of the FEN Validation Layer
 
 Where the FEN mechanism (DAO governance + federation-node pattern +
 hash-anchoring + AI-assisted human review) is genuinely valuable, where it is
@@ -66,4 +66,22 @@ intrinsic + attribution incentives (`triple:Profile` credit, portable
 (batch queues, one-click voting, delegation), and cultural-stewardship
 framing for heritage communities. **The formal incentive pilots and
 participation metrics (DAU, quorum velocity) are the whitepaper v2
-iteration, not this repository's scope.**
+iteration, not this repository's scope.
+
+## Motivation stack: capital, not gamification
+
+The framework's participation model is deliberately **three-layered**, and
+the boundary between them is a design rule:
+
+1. **Reputation as capital** (ADR-005 d.6, ADR-006): reputation is earned,
+   *lost* (challenge penalties) and *locked* (challenge window) — it is an
+   asset with risk, not a score. The QV cost curve (i²) is
+   capture-resistance, not engagement bait.
+2. **Intrinsic incentives**: citable attribution (`triple:Profile`),
+   cultural stewardship (CARE / Indigenous Data Sovereignty), portability
+   of reputation across federation nodes.
+3. **Gamification — optional UX only**: badges, streaks, quests and
+   leaderboards MAY be added as presentation/onboarding layers, but MUST
+   NOT influence quorum, vote weights or reputation rewards. Engagement
+   mechanics are never a governance input; the epistemic integrity of the
+   DAO is the line a consortium reviewer will check first.**
