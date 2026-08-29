@@ -293,3 +293,47 @@ def test_scaffold_disambiguator_with_llm(monkeypatch):
     assert body["agents"]["extractor"] == "llm"
     assert body["agents"]["disambiguator"][0]["type"] == "wikidata"
     assert body["agents"]["disambiguator"][0]["value"] == "Q123"
+
+
+# --------------------------------------------------- reputation dashboard
+def test_reputation_history_recorded_on_validated(monkeypatch):
+    monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
+    monkeypatch.setattr(mock_main, "QV_THRESHOLD", 5)
+    monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
+    monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    monkeypatch.setattr(mock_main.requests, "post", _ok_post)
+    client = TestClient(mock_main.app)
+    client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x", "submitter": "contrib_1"}]})
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v1"})
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 2, "voter": "v2"})
+    _wait_decided("a1")
+
+    data = client.get("/candidates").json()
+    actors = [(h["actor"], h["delta"], h["reason"]) for h in data["reputation_history"]]
+    assert ("contrib_1", 2, "contributor: validated") in actors
+    assert ("v1", 1, "voter: validated") in actors
+    assert ("v2", 1, "voter: validated") in actors
+
+
+def test_llm_accuracy_reported(monkeypatch):
+    monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
+    monkeypatch.setattr(mock_main, "QV_THRESHOLD", 5)
+    monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
+    monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    monkeypatch.setattr(mock_main.requests, "post", _ok_post)
+    client = TestClient(mock_main.app)
+    # entity_label "x" -> rule recommendation "validated" -> community decides validated
+    client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x"}]})
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v1"})
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 2, "voter": "v2"})
+    _wait_decided("a1")
+
+    data = client.get("/candidates").json()
+    assert data["llm_accuracy"]["total"] == 1
+    assert data["llm_accuracy"]["accuracy"] == 1.0
+
+
+def test_llm_accuracy_none_without_decisions():
+    data = TestClient(mock_main.app).get("/candidates").json()
+    assert data["llm_accuracy"]["total"] == 0
+    assert data["llm_accuracy"]["accuracy"] is None

@@ -106,6 +106,7 @@ _reputation_counter = itertools.count(1)
 
 # In-flight candidate state (UI demo): annotation_id -> record.
 _candidates: Dict[str, dict] = {}
+_reputation_history: list = []
 # Voter/contributor reputation (demo QV mode): name -> points.
 _reputation: Dict[str, int] = {}
 _state_lock = threading.Lock()
@@ -298,10 +299,24 @@ def _apply_reputation(annotation_id: str, outcome: str) -> None:
             return
         submitter = record.get("candidate", {}).get("submitter") or "contributor_1"
         _reputation[submitter] = _reputation.get(submitter, 0) + 2
+        _reputation_history.append({
+            "at": datetime.now(timezone.utc).isoformat(),
+            "annotation_id": annotation_id,
+            "actor": submitter,
+            "delta": 2,
+            "reason": "contributor: validated",
+        })
         for vote in record.get("qv_votes", []):
             if vote.get("outcome") == outcome and vote.get("voter"):
                 voter = vote["voter"]
                 _reputation[voter] = _reputation.get(voter, 0) + 1
+                _reputation_history.append({
+                    "at": datetime.now(timezone.utc).isoformat(),
+                    "annotation_id": annotation_id,
+                    "actor": voter,
+                    "delta": 1,
+                    "reason": f"voter: {outcome}",
+                })
 
 
 def _public_state() -> list:
@@ -533,14 +548,30 @@ def submit_candidates(payload: dict):
 
 @app.get("/candidates")
 def list_candidates():
-    """All in-flight candidates with vote/quorum/QV state + reputation."""
+    """All in-flight candidates with vote/quorum/QV state + reputation,
+    reputation history (ADR-005 incentives) and LLM-judge accuracy over the
+    decided ones (recommendation vs community outcome — ADR-004 display-only
+    quality signal)."""
+    candidates = _public_state()
     with _state_lock:
         reputation = dict(_reputation)
+        history = list(reversed(_reputation_history[-50:]))
+    decided = [c for c in candidates if c.get("decision")]
+    agreements = sum(
+        1 for c in decided
+        if c.get("llm_recommendation") and c["llm_recommendation"] == c["decision"].get("outcome")
+    )
     return {
-        "candidates": _public_state(),
+        "candidates": candidates,
         "mode": VOTING_MODE,
         "qv_threshold": QV_THRESHOLD,
         "reputation": reputation,
+        "reputation_history": history,
+        "llm_accuracy": {
+            "agreements": agreements,
+            "total": len(decided),
+            "accuracy": (agreements / len(decided)) if decided else None,
+        },
     }
 
 
