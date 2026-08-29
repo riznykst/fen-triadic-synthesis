@@ -1,4 +1,12 @@
-﻿## 2026-08-29 — REAL end-to-end run passed on Docker (first true e2e)
+﻿## 2026-08-29 — Fix smoke-test consumer-group probe on kafka-python 2.x
+
+The CI `e2e` job failed with a silent 120s timeout waiting for the outbound
+consumer group. Root cause: kafka-python API drift — 2.x `list_consumer_groups()`
+returns a list of `(name, protocol_type)` tuples (3.x: `[GroupOverview]`) and
+names the describe API `describe_consumer_groups()` (3.x: `describe_groups`).
+The probe now normalizes all three shapes (scripts/smoke_test.py) and was
+verified against stub admins for both versions.
+## 2026-08-29 — REAL end-to-end run passed on Docker (first true e2e)
 
 The first genuinely executed end-to-end pipeline on this machine (Docker
 Desktop installed, WSL2 backend): candidate -> Kafka -> FEN Bridge -> mock

@@ -109,21 +109,30 @@ def http_ready(url: str) -> bool:
 def outbound_group_active(admin: KafkaAdminClient) -> bool:
     """True once the outbound consumer group exists with at least one active
     member — i.e. fen-bridge-outbound is subscribed and will see our publish.
+
+    Handles the kafka-python API drift between 2.x and 3.x:
+    - 2.x: ``list_consumer_groups()`` -> list of ``(name, protocol_type)``
+      tuples; ``describe_consumer_groups()`` -> {group_id: GroupDescription}.
+    - 3.x: ``list_consumer_groups()`` -> [GroupOverview]; ``describe_groups()``
+      -> {group_id: GroupDescription}.
     """
-    # kafka-python 2.x: list_groups() -> (error, groups); 3.x renamed it to
-    # list_consumer_groups() -> [GroupOverview]. Handle both shapes.
     list_groups_fn = getattr(admin, "list_consumer_groups", None) or getattr(admin, "list_groups", None)
-    raw_groups = list_groups_fn()
-    if isinstance(raw_groups, tuple):  # 2.x: (error, groups)
+    raw_groups = list_groups_fn() if list_groups_fn is not None else []
+    if isinstance(raw_groups, tuple):  # defensive: (error, groups)
         raw_groups = raw_groups[1] or []
-    known_ids = {
-        g.get("group_id") if isinstance(g, dict) else getattr(g, "group_id", None)
-        for g in raw_groups
-    }
+    known_ids = set()
+    for g in raw_groups:
+        if isinstance(g, (list, tuple)):          # 2.x tuple (name, protocol_type)
+            known_ids.add(g[0])
+        elif isinstance(g, dict):                 # dict shape
+            known_ids.add(g.get("group_id") or g.get("group"))
+        else:                                     # 3.x GroupOverview
+            known_ids.add(getattr(g, "group_id", None) or getattr(g, "group", None))
     if OUTBOUND_GROUP_ID not in known_ids:
         return False
-    described = admin.describe_groups([OUTBOUND_GROUP_ID])
-    if isinstance(described, tuple):  # 2.x: (error, descriptions)
+    describe_fn = getattr(admin, "describe_consumer_groups", None) or getattr(admin, "describe_groups", None)
+    described = describe_fn([OUTBOUND_GROUP_ID]) if describe_fn is not None else {}
+    if isinstance(described, tuple):  # defensive: (error, descriptions)
         described = described[1] or {}
     info = described.get(OUTBOUND_GROUP_ID, {})
     members = info.get("members") if isinstance(info, dict) else getattr(info, "members", None)
