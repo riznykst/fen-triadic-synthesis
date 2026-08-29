@@ -43,6 +43,14 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29.
 
 ## Flow roadmap (Scaffold → Consensus → Registry) — Top-10 recommendations
 
+> **Implemented 2026-08-29:** #1 SSE real-time (backend + triadic view) ·
+> #2 SHACL at Scaffold (pyshacl, ScaffoldedTripleShape) · #3 QV delegation
+> (Liquid democracy, ADR-005 d.2) · #5 multi-agent scaffold (extractor/
+> matcher/disambiguator) · #6 registry graph (SVG, zero-build) · #9 RDF
+> export (ttl/jsonld/nt/crate) · #10 reputation dashboard (history +
+> LLM-vs-DAO accuracy). Skipped: #7 (staking conflicts ADR-005 — ADR-006
+> needed), #4/#8 (P3, external identity/ledger).
+
 Priorities: P1 = quick wins on current code · P2 = medium effort, no external deps ·
 P3 = needs external/production pieces (identity, ledger, consortium).
 
