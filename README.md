@@ -122,6 +122,7 @@ fen-triadic-synthesis/
 │   │   └── ADR-004-llm-judge-decision-support-only.md
 │   ├── user-stories.md               two typical use cases for the validation layer
 │   ├── self-hosted-runner.md        CI workaround while GitHub billing blocks Actions
+│   ├── applicability-and-limits.md  where the validation layer fits and where it does not
 │   ├── images/
 │   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
 │   │   └── story2-validation-overlay.svg  user-story infographic (validation overlay)
@@ -168,6 +169,7 @@ tested — see [`AGENT_PLAN.md`](AGENT_PLAN.md) for the phase-by-phase build log
 | [ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md) | FEN integrates as an autonomous federation node, not as a component embedded in GoTriple KG or the DAP core. No GRAPHIA partner needs to operate or govern DAO infrastructure. |
 | [ADR-003](docs/adr/ADR-003-fen-pid-scheme.md) | Governance records get ARK + w3id.org PIDs under FEN's own NAAN (`g` decision / `v` validation record / `r` reputation snapshot / `s` scaffolding session). A PID is never bound to a blockchain explorer; the tx hash is only the `gfen:ledgerAnchor` attribute. |
 | [ADR-004](docs/adr/ADR-004-llm-judge-decision-support-only.md) | The LLM judge is decision-support only — it recommends, the community DAO decides. The LLM never votes and never writes `gfen:validationStatus`; within this repo it is used only by the demo mock. |
+| [ADR-005](docs/adr/ADR-005-participation-model-and-dao-threshold.md) | No token economy in the MVP: intrinsic + attribution incentives, near-zero friction (batch voting, delegation), portable reputation. DAO mode from ~20 active validators; below that `gfen:PeerReview`. |
 
 ## The `gfen:` ontology extension
 
@@ -263,6 +265,17 @@ human-in-the-loop**). FEN does **not** duplicate them:
   (low-resource languages, minority dialects, community datasets) where
   expert-only review does not scale.
 
+## Applicability & limits
+
+The validation layer targets the long tail — community-validated content
+that expert-only curation cannot cover at scale. Where it fits
+(federated SSH infrastructures, Wikidata-adjacent projects, indigenous
+heritage archives under CARE principles, any crowdsourced annotation
+pipeline) and where it deliberately does not (curated high-resource
+domains, real-time decisions, communities below the DAO threshold) is
+spelled out in [`docs/applicability-and-limits.md`](docs/applicability-and-limits.md),
+together with the participation-economics model ([ADR-005](docs/adr/ADR-005-participation-model-and-dao-threshold.md)).
+
 ## Integration contract (to be verified with the consortium)
 
 The following assumptions come from D2.2/whitepaper and **must be confirmed
@@ -332,6 +345,7 @@ to start that.
 
 - [x] FEN Bridge, Validation Result Consumer, and mock DAO implemented and unit-tested (this repo)
 - [x] PID scheme for governance records (ADR-003): `services/common/pid.py`, redirect config artefact
+- [x] Participation model & DAO threshold (ADR-005) + applicability analysis (`docs/applicability-and-limits.md`)
 - [ ] FEN Bridge validated against a real GRAPHIA test Kafka topic + a single low-resource-language WP4 test corpus
 - [ ] End-to-end demo against a live Virtuoso test instance (currently only against Fuseki, locally)
 - [ ] Real NAAN registered with the consortium; N2T/w3id redirects published
