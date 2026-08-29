@@ -1,4 +1,4 @@
-﻿/**
+/**
  * <fen-status> — embeddable validation-status widget (Flow 2, zero-build).
  *
  * Usage:

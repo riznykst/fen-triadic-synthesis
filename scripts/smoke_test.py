@@ -1,4 +1,4 @@
-﻿"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
+"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
 
 Publishes one EntityCandidate onto dap.entities.pending_validation.v1 and
 waits for the full pipeline to complete:

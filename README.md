@@ -1,4 +1,4 @@
-﻿# FEN — Triadic Synthesis Framework
+# FEN — Triadic Synthesis Framework
 
 **A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.**
 

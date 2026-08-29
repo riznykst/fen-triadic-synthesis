@@ -1,4 +1,4 @@
-﻿# Architecture
+# Architecture
 
 Full rationale lives in [`FEN-Whitepaper-Triadic-Synthesis.pdf`](FEN-Whitepaper-Triadic-Synthesis.pdf) and the four ADRs in
 [`adr/`](adr/). This document is the quick-reference version: what talks to what,

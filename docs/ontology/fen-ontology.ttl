@@ -1,4 +1,4 @@
-﻿# fen-ontology.ttl — the additive gfen: namespace
+# fen-ontology.ttl — the additive gfen: namespace
 # Keep in sync with services/common/gfen_ontology.py (AGENT_PLAN.md, Phase 0).
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .

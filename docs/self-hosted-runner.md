@@ -1,4 +1,4 @@
-﻿# Self-hosted GitHub Actions runner (billing-block workaround)
+# Self-hosted GitHub Actions runner (billing-block workaround)
 
 **Purpose.** While the GitHub account's Actions jobs are blocked by the
 *"recent account payments have failed or your spending limit needs to be

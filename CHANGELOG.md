@@ -1,4 +1,4 @@
-﻿## 2026-08-29 — Security & concurrency hardening (widget/portal XSS, vote race)
+## 2026-08-29 — Security & concurrency hardening (widget/portal XSS, vote race)
 
 - web/widget/fen-status-widget.js + web/portal/app.js: every server-provided
   value is HTML-escaped before innerHTML interpolation; decision-PID links

@@ -1,4 +1,4 @@
-﻿"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
+"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
 Quadratic Voting system, for local development and consortium demos only.
 
 Accepts batches of EntityCandidate on POST /candidates and delivers a

@@ -1,4 +1,4 @@
-﻿"""Tests for the Validation Result Consumer's commit-after-processing logic.
+"""Tests for the Validation Result Consumer's commit-after-processing logic.
 Offline: mocked consumer/producer, SPARQL update patched out.
 """
 from __future__ import annotations

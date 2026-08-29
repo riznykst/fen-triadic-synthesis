@@ -1,4 +1,4 @@
-﻿"""Env-driven settings for both FEN Bridge processes. No hardcoded hosts
+"""Env-driven settings for both FEN Bridge processes. No hardcoded hosts
 (AGENT_PLAN.md, Phase 2, task 1).
 """
 from __future__ import annotations

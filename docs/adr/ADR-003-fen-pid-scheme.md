@@ -1,4 +1,4 @@
-﻿# ADR-003: ARK + w3id.org PID scheme for FEN governance records
+# ADR-003: ARK + w3id.org PID scheme for FEN governance records
 
 **Status:** accepted (session decision record, 2026)
 **Supersedes:** the earlier draft that showed `gfen:governanceDecisionId` as a

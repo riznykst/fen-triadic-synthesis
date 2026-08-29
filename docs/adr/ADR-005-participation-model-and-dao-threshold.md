@@ -1,4 +1,4 @@
-﻿# ADR-005: Participation model and DAO applicability threshold
+# ADR-005: Participation model and DAO applicability threshold
 
 **Status:** accepted
 **Date:** 2026 (post-MVP formalization, whitepaper iteration input)

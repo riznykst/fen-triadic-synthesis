@@ -1,4 +1,4 @@
-﻿"""Validation Result Consumer.
+"""Validation Result Consumer.
 
 Reads fen.governance.decisions.v1, applies the governance update into the
 named graph via SPARQL (sparql_updater.py), then publishes an EntityValidated

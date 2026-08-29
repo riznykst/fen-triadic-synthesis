@@ -1,4 +1,4 @@
-﻿# Combined dependencies for running the test suite locally (README, "Running locally").
+# Combined dependencies for running the test suite locally (README, "Running locally").
 # Docker images install their own per-service requirements.
 pydantic>=2,<3
 fastapi>=0.110

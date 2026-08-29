@@ -1,4 +1,4 @@
-﻿"""ARK / w3id.org PID helpers for FEN governance records (ADR-003).
+"""ARK / w3id.org PID helpers for FEN governance records (ADR-003).
 
 Scheme (same pattern as GRAPHIA D2.2 section 4.5, own NAAN for FEN):
 

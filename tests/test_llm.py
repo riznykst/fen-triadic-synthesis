@@ -1,4 +1,4 @@
-﻿"""Tests for the pluggable OpenAI-compatible LLM provider."""
+"""Tests for the pluggable OpenAI-compatible LLM provider."""
 from __future__ import annotations
 
 from unittest import mock

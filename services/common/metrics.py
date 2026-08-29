@@ -1,4 +1,4 @@
-﻿"""Prometheus metrics shared by the FEN services.
+"""Prometheus metrics shared by the FEN services.
 
 Every HTTP service exposes ``GET /metrics`` in the Prometheus text exposition
 format (``prometheus_client.generate_latest``). Consumers that run no HTTP

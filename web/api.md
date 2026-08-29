@@ -1,4 +1,4 @@
-﻿# FEN Web Interface — REST contract (v1)
+# FEN Web Interface — REST contract (v1)
 
 The web-interface layer (widget + portal) talks only to HTTP APIs. In local
 dev the **mock FEN API** (`mock_fen_api`, port 8100) and the **Status API**

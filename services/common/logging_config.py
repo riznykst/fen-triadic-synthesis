@@ -1,4 +1,4 @@
-﻿"""Structured JSON logging for all FEN services.
+"""Structured JSON logging for all FEN services.
 
 Every entry point replaces ``logging.basicConfig`` with a call to
 ``setup_logging("<service-name>", level=log_level_from_env())`` so that each

@@ -1,4 +1,4 @@
-﻿"""Tests for the Kafka IO wrappers' delivery guarantees: producer config,
+"""Tests for the Kafka IO wrappers' delivery guarantees: producer config,
 manual-commit consumer, offset-carrying polls, and delivery callbacks.
 All offline — kafka-python classes are mocked/stubbed.
 """

@@ -1,4 +1,4 @@
-﻿# ADR-001: RDF anchoring, not full on-chain storage
+# ADR-001: RDF anchoring, not full on-chain storage
 
 **Status:** accepted
 **Date:** 2026-08-27 (MVP design)

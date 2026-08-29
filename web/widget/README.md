@@ -1,4 +1,4 @@
-﻿# FEN status widget (Flow 2) — embeddable validation-status badge
+# FEN status widget (Flow 2) — embeddable validation-status badge
 
 A zero-build Web Component that shows the community-validation status of any
 entity in the SSH KG: `gfen:validationStatus` (validated / disputed /

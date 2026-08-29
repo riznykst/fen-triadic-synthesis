@@ -1,4 +1,4 @@
-﻿# ADR-002: FEN integrates as a federation node, not embedded in GoTriple KG
+# ADR-002: FEN integrates as a federation node, not embedded in GoTriple KG
 
 **Status:** accepted
 **Date:** 2026-08-27 (MVP design)

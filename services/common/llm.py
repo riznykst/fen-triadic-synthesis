@@ -1,4 +1,4 @@
-﻿"""Pluggable LLM provider — OpenAI-compatible chat API.
+"""Pluggable LLM provider — OpenAI-compatible chat API.
 
 Lets the demo/validation layer talk to ANY OpenAI-compatible endpoint for
 testing: OpenAI, DeepSeek, local vLLM/Ollama, or GRAPHIA's own services

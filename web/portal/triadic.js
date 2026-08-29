@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Validation Commons — Triadic view (zero-build).
  * Talks to the mock FEN API only (web/api.md): /scaffold, /candidates,
  * /candidates/{id}/vote. Generic framework framing — any dataset type.

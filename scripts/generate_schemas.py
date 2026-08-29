@@ -1,4 +1,4 @@
-﻿"""Regenerates schemas/kafka-events/*.schema.json from
+"""Regenerates schemas/kafka-events/*.schema.json from
 services/common/messages.py — the models are the single source of truth,
 never hand-edit the generated JSON (AGENT_PLAN.md, Phase 1).
 

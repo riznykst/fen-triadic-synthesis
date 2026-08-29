@@ -1,4 +1,4 @@
-﻿kafka-python>=2.0,<3  # 3.x changed the serializer API (SerializeWrapper)
+kafka-python>=2.0,<3  # 3.x changed the serializer API (SerializeWrapper)
 requests>=2.31
 pydantic>=2,<3
 rdflib>=7.0

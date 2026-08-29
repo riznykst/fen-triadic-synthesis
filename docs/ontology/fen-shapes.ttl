@@ -1,4 +1,4 @@
-﻿# fen-shapes.ttl — SHACL validation shapes for the gfen: namespace (ADR-001/003).
+# fen-shapes.ttl — SHACL validation shapes for the gfen: namespace (ADR-001/003).
 # Enforces that governance provenance is well-formed: status present and
 # singular, PIDs are IRIs (dereferenceable), ledgerAnchor is a literal.
 @prefix sh:    <http://www.w3.org/ns/shacl#> .

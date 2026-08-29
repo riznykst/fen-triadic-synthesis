@@ -1,4 +1,4 @@
-﻿# Applicability & Limits of the FEN Validation Layer
+# Applicability & Limits of the FEN Validation Layer
 
 Where the FEN mechanism (DAO governance + federation-node pattern +
 hash-anchoring + AI-assisted human review) is genuinely valuable, where it is

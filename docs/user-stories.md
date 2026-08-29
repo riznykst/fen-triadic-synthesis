@@ -1,4 +1,4 @@
-﻿# User Stories
+# User Stories
 
 Two typical use cases for the FEN validation layer. The layer is deliberately
 generic — it validates *any* candidate record (linguistic entities, historical

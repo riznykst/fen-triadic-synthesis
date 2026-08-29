@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FEN Community DAO portal (Flow 1) — zero-build demo UI against
  * mock_fen_api. Contract in web/api.md. The same contract is expected from
  * the real FEN backend in production (ADR-002: DAO lives outside this repo).

@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 # TEMPORARY self-hosted-runner mode (GitHub billing block): jobs run on the
 # local runner (label "self-hosted") and CI triggers on push only, so fork

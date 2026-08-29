@@ -1,4 +1,4 @@
-﻿"""Thin consumer/producer wrappers over kafka-python, shared by the FEN
+"""Thin consumer/producer wrappers over kafka-python, shared by the FEN
 Bridge and the Validation Result Consumer (AGENT_PLAN.md, Phase 2, task 2),
 with explicit at-least-once delivery guarantees.
 

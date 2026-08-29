@@ -1,4 +1,4 @@
-﻿"""Tests for the community-voting demo mode of the mock FEN API."""
+"""Tests for the community-voting demo mode of the mock FEN API."""
 from __future__ import annotations
 
 import time

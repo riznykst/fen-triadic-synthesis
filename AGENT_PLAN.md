@@ -1,4 +1,4 @@
-﻿# AGENT_PLAN.md — FEN Bridge MVP: build order for an AI coding agent
+# AGENT_PLAN.md — FEN Bridge MVP: build order for an AI coding agent
 
 This is a step-by-step build plan for an autonomous coding agent (Claude Code or
 similar). Follow phases in order — each has a Definition of Done (DoD) that must

@@ -1,4 +1,4 @@
-﻿"""Env-driven settings for the Validation Result Consumer."""
+"""Env-driven settings for the Validation Result Consumer."""
 from __future__ import annotations
 
 import os

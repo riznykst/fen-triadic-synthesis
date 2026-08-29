@@ -1,4 +1,4 @@
-﻿"""Builds the SPARQL DELETE/INSERT that writes gfen: governance provenance
+"""Builds the SPARQL DELETE/INSERT that writes gfen: governance provenance
 onto an existing oa:Annotation instance, and executes it against a SPARQL
 1.1 Update endpoint (Fuseki locally, Virtuoso in production — same
 protocol, per ADR-001: only the decision is anchored/written here, never

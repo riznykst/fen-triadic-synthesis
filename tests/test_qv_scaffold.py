@@ -1,4 +1,4 @@
-﻿"""Tests for the QV voting mode and the /scaffold endpoint of the mock."""
+"""Tests for the QV voting mode and the /scaffold endpoint of the mock."""
 from __future__ import annotations
 
 import time
