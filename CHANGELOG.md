@@ -1,3 +1,44 @@
+# Changelog
+
+All notable changes are recorded here in reverse chronological order.
+
+## 2026-08-29 — P1–P5 feature track: SHACL, RDF export, SSE, QV, reputation
+
+- Scaffold (mock): SHACL shape validation (`fen-shapes.ttl`, `ScaffoldedTripleShape`)
+  plus extractor/matcher/disambiguator agent branch (`POST /scaffold`).
+- Registry: RDF export from the Status API
+  (`/api/v1/export/{id}?format=ttl|jsonld|nt|crate`, RO-Crate included) and
+  SSE real-time events (`/events`) replacing the 3s poll in the portal.
+- Consensus: Quadratic Voting mode (`FEN_MOCK_VOTING=qv`, intensity² cost,
+  ADR-005 threshold), QV delegation (`POST /candidates/{id}/delegate`,
+  liquid democracy, delegation-weighted scores), reputation rewards for
+  validated outcomes only.
+- Reputation dashboard: `GET /candidates` returns `reputation_history`
+  (last 50) + `llm_accuracy` (agreements/total) — ADR-005 reputation capital.
+- Frontend (separate commits): triadic view (`web/portal/triadic.html` +
+  `triadic.js`) with QV/delegation UI, registry graph SVG, reputation panel;
+  XSS-hardened widget/portal.
+- Governance docs: ADR-006 (draft, tokenless challenge window), motivation
+  stack formalized (reputation + intrinsic; gamification UX-only),
+  `docs/BACKLOG.md` roadmap, `docs/integration-verification-plan.md`,
+  pre-consortium tooling (Kafka topic aliases `FEN_TOPIC_*`).
+- Tests: 104 (was 74).
+
+## 2026-08-29 — CI e2e hardening: Virtuoso dialect check, rdflib/os fixes, fen-ci isolation
+
+- `scripts/virtuoso_dialect_check.py` (new): SPARQL 1.1 dialect + idempotency
+  check against a live OpenLink Virtuoso (the GoTriple KG engine) — Digest
+  auth on /sparql-auth, explicit JSON results format. Wired into the CI `e2e`
+  job (`docker compose --profile virtuoso up` + check + down). PASSED.
+- Fixed the two bugs that made every CI run red: `status_api`/`mock_fen_api`
+  imported `rdflib` without listing it in their per-service requirements
+  (ModuleNotFoundError in Docker, invisible locally), and the consumers used
+  `os.getenv(METRICS_PORT)` without `import os` (NameError).
+- The `e2e` job now sets `COMPOSE_PROJECT_NAME=fen-ci` so the CI stack can
+  never collide with (or tear down) a locally running dev stack on the same
+  Docker daemon; docs/self-hosted-runner.md §6a documents the interaction.
+- Tests: 104 (was 82).
+
 ## 2026-08-29 — Security & concurrency hardening (widget/portal XSS, vote race)
 
 - web/widget/fen-status-widget.js + web/portal/app.js: every server-provided
@@ -7,9 +48,6 @@
   'deciding') inside the state lock, so concurrent votes reaching the quorum
   cannot schedule a second delivery (no duplicate webhook/decision_id).
 - tests/test_voting.py: exactly-once delivery test (74 tests).
-# Changelog
-
-All notable changes are recorded here in reverse chronological order.
 
 ## 2026-08-29 — Milestone: web interface layer (Flow 1 & Flow 2)
 

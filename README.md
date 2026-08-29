@@ -1,4 +1,4 @@
-﻿# FEN — Triadic Synthesis Framework
+# FEN — Triadic Synthesis Framework
 
 **A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.**
 
@@ -18,7 +18,7 @@ FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 2. **Decentralised Validation** — a DAO, using Quadratic Voting and reputation-weighted review, decides whether a candidate entity is accepted, disputed, or rejected. The community remains the final arbiter of meaning.
 3. **Immutable Integration** — the governance decision is anchored (hash only) on-chain and exposed as a dereferenceable PID ([ADR-003](docs/adr/ADR-003-fen-pid-scheme.md)), while the underlying content stays in GRAPHIA's authoritative RDF store.
 
-**FEN does not replace or modify any part of GRAPHIA's core infrastructure.** It connects as an external federation node — the same architectural pattern GRAPHIA already uses for OpenCitations, EHRI, GESIS, and ORKG (D2.2, §2.1) — and touches the DAP only through two new, non-blocking microservices (the FEN Bridge and the Validation Result Consumer) on the existing Kafka event bus ([ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md)).
+**FEN does not replace or modify any part of GRAPHIA's core infrastructure.** It connects as an external federation node — the same architectural pattern GRAPHIA already uses for OpenCitations, EHRI, GESIS, and ORKG (D2.2, §2.1) — and touches the DAP only through two new, non-blocking microservices (the FEN Bridge and the Validation Result Consumer) on the existing Kafka event bus, plus a read-only Status API for the web layer ([ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md)).
 
 ## Why it matters
 
@@ -85,10 +85,18 @@ confirmation:
 docker compose up --build
 # in a second terminal:
 python scripts/smoke_test.py
+```
 
 Observability: Prometheus on http://localhost:9090 and Grafana on
 http://localhost:3000 (dashboard "FEN — Validation Pipeline Overview",
 anonymous access) — `docker compose up` starts both.
+
+Optional: verify SPARQL dialect compatibility against a real Virtuoso
+(GoTriple KG's engine) before touching GRAPHIA's instance:
+
+```bash
+docker compose --profile virtuoso up -d virtuoso
+python scripts/virtuoso_dialect_check.py   # PASSED == dialect + idempotency OK
 ```
 
 > **CI blocked by GitHub billing?** If Actions jobs fail with *"recent account
@@ -112,7 +120,7 @@ fen-triadic-synthesis/
 ├── CHANGELOG.md                     dated record of notable changes
 ├── AGENT_PLAN.md                    step-by-step build plan for an AI coding agent
 ├── LICENSE                          Apache 2.0
-├── docker-compose.yml                full local dev stack (Kafka, Fuseki, all services)
+├── docker-compose.yml                full local dev stack (Kafka, Fuseki, all services; optional Virtuoso profile)
 ├── .env.example                      every configurable env var, with local-dev defaults
 ├── requirements-common.txt           combined deps for running tests locally
 ├── .github/
@@ -131,6 +139,7 @@ fen-triadic-synthesis/
 │   ├── self-hosted-runner.md        CI workaround while GitHub billing blocks Actions
 │   ├── applicability-and-limits.md  where the validation layer fits and where it does not
 │   ├── integration-verification-plan.md  how to prove real GRAPHIA + NAAN integration
+│   ├── BACKLOG.md                    feature roadmap (Top-10 recommendations + status)
 │   ├── images/
 │   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
 │   │   ├── story2-validation-overlay.svg  user-story infographic (validation overlay)
@@ -147,21 +156,22 @@ fen-triadic-synthesis/
 │       └── entity-validated.schema.json
 ├── scripts/
 │   ├── generate_schemas.py           regenerates the schemas above — never hand-edit them
-│   └── smoke_test.py                 e2e smoke test against the docker-compose stack (CI `e2e` job)
+│   ├── smoke_test.py                 e2e smoke test against the docker-compose stack (CI `e2e` job)
+│   └── virtuoso_dialect_check.py     SPARQL dialect/idempotency check against a real Virtuoso (CI `e2e` job)
 ├── services/
 │   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO (at-least-once),
 │   │                                JSON logging (`logging_config.py`), Prometheus metrics (`metrics.py`)
 │   ├── fen_bridge/                   outbound consumer + inbound webhook (2 containers)
 │   ├── validation_consumer/          SPARQL Update logic + Kafka consumer
-│   └── status_api/                   read-side web service (SPARQL → JSON) + static UI
+│   └── status_api/                   read-side web service (SPARQL → JSON + RDF/RO-Crate export) + static UI
 ├── mock_fen_api/                     demo DAO stand-in — NOT production governance
 ├── web/                              zero-build web interface layer
 │   ├── widget/                       Flow 2: embeddable <fen-status> Web Component + demo
-│   ├── portal/                       Flow 1: community DAO portal (candidates + voting + triadic view)
+│   ├── portal/                       Flow 1: community DAO portal (candidates, voting, triadic view, delegation, SSE live updates)
 │   └── api.md                        REST contract (shared with the real FEN backend)
 ├── k8s/                              Kubernetes/OKD manifests: 4 Deployments + ConfigMap + Secret
 monitoring/                        Prometheus scrape config + Grafana provisioning (fen-overview dashboard)
-├── tests/                            82 tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF)
+├── tests/                            104 tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
@@ -252,13 +262,22 @@ Implementation: [`services/common/llm.py`](services/common/llm.py).
 ## Observability
 
 All services log JSON-structured lines to stdout (`LOG_LEVEL` env var, see
-[`.env.example`](.env.example)), and the two HTTP services (`fen-bridge-webhook`,
-`mock-fen-api`) expose Prometheus metrics on `GET /metrics` and a dependency-aware
-`GET /readyz` next to their existing `/healthz`. Consumers (outbound,
-validation-consumer) log-count the same Kafka counters and shut down gracefully
-on SIGTERM/SIGINT (producer flush, consumer close, delivery-pool drain). Scrape
-`/metrics` with Prometheus/Grafana and ship the JSON logs to Loki in production —
-full details in the [architecture doc](docs/architecture.md#observability).
+[`.env.example`](.env.example)). Every service in the stack is scrapable by
+Prometheus:
+
+- HTTP services (`fen-bridge-webhook`, `mock-fen-api`, `status-api`) expose
+  `GET /metrics` and a dependency-aware `GET /readyz` next to their existing
+  `/healthz`;
+- the consumer processes (`fen-bridge-outbound`, `validation-consumer`)
+  serve the same Prometheus format on a dedicated `METRICS_PORT` (9101 /
+  9102) via `prometheus_client.start_http_server` — see
+  `services/common/metrics.py`.
+
+All processes share the `fen_*` Kafka counters (processed/failed), shut down
+gracefully on SIGTERM/SIGINT (producer flush, consumer close, delivery-pool
+drain), and their `/metrics` endpoints are scraped by the bundled Prometheus
+(`monitoring/prometheus/prometheus.yml`, five jobs). Ship the JSON logs to
+Loki in production — full details in the [architecture doc](docs/architecture.md#observability).
 
 ## Positioning vs GRAPHIA's own AI services
 
@@ -299,10 +318,10 @@ whitepaper §7 "Request to the Consortium"):
 
 | Contract | Current assumption | Verification needed |
 |---|---|---|
-| Kafka topics | `dap.entities.pending_validation.v1`, `fen.governance.decisions.v1`, `dap.entities.validated.v1` | real DAP topic names + event bus availability |
+| Kafka topics | `dap.entities.pending_validation.v1`, `fen.governance.decisions.v1`, `dap.entities.validated.v1`; env aliases `FEN_TOPIC_CANDIDATES` / `FEN_TOPIC_VALIDATED` ready | real DAP topic names + event bus availability |
 | WP4 message schema | `EntityCandidate` (`schemas/kafka-events/`) | align with actual extracted-entity schema (no transformation) |
 | Named graphs | `urn:graphia:document:{id}:graph` | DAP's real named-graph URI scheme (D2.2 §3.5) |
-| SPARQL endpoint | `SPARQL_UPDATE_ENDPOINT` (Fuseki locally) | Virtuoso dialect compatibility of `build_update_query` |
+| SPARQL endpoint | `SPARQL_UPDATE_ENDPOINT` (Fuseki locally) | Virtuoso dialect compatibility of `build_update_query` — verified locally against OpenLink Virtuoso (`virtuoso_dialect_check.py`); production store pending |
 | PID NAAN | `FEN_NAAN=99999` (dev) | registered NAAN + N2T/w3id redirects (ADR-003) |
 | Deployment | docker-compose (dev) | OKD (OpenShift)/Kubernetes manifests for the DAP stack |
 
@@ -311,22 +330,25 @@ whitepaper §7 "Request to the Consortium"):
 A zero-build web layer (plain HTML/JS + FastAPI — no Node toolchain) exposes
 the two community flows:
 
-- **Flow 1 — Community DAO portal** (`web/portal/`): two alternative views —
-  the classic candidates/voting table (`index.html`) and the **Triadic view**
-  (`triadic.html`): Scaffold → Consensus → Registry, with QV intensity
-  voting (cost = intensity², threshold per ADR-005), peer-review comments and
-  reputation. Generic framework framing — works for any dataset type, not
-  only linguistic data.
 - **Flow 1 — Community DAO portal** (`web/portal/`): submit candidates,
   watch `gfen:pending` cards, cast community votes (demo mode
   `FEN_MOCK_VOTING=community`), track quorum progress. Talks to the mock FEN
-  API (`GET /candidates`, `POST /candidates/{id}/vote`).
+  API (`GET /candidates`, `POST /candidates/{id}/vote`). Two views:
+  - the classic candidates/voting table (`index.html`);
+  - the **Triadic view** (`triadic.html`): Scaffold → Consensus → Registry,
+    with QV intensity voting (cost = intensity², threshold per ADR-005),
+    delegation (liquid democracy, `POST /candidates/{id}/delegate`),
+    reputation history + LLM-judge accuracy panel, live updates over SSE
+    (`/events`), and Registry export links (TTL/JSON-LD/N-Triples/RO-Crate).
+    Generic framework framing — works for any dataset type, not only
+    linguistic data.
 - **Flow 2 — Validation-status widget** (`web/widget/`): an embeddable
   `<fen-status>` Web Component that renders the validation badge for any
   annotation, resolved live from the RDF store via the **Status API**
   (`services/status_api`, `GET /api/v1/status/{id}` — SPARQL SELECT, read-only
-  per ADR-001). Click a badge for decision details (method, dereferenceable
-  PID per ADR-003, ledger anchor).
+  per ADR-001; `GET /api/v1/export/{id}?format=ttl|jsonld|nt|crate` for RDF /
+  RO-Crate export). Click a badge for decision details (method,
+  dereferenceable PID per ADR-003, ledger anchor).
 
 The full HTTP contract is [`web/api.md`](web/api.md) — the same contract the
 real FEN backend (external, ADR-002) is expected to implement, which keeps the
@@ -345,7 +367,7 @@ docker compose up --build
 
 ## Status
 
-🟢 **CI: green on the self-hosted runner** (82 tests + a REAL end-to-end run in CI — the e2e job executes the full Docker stack and passes, run 33270403191, see [CHANGELOG.md](CHANGELOG.md)). Runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md).
+🟢 **CI: green on the self-hosted runner** (104 tests + a REAL end-to-end run in CI — the e2e job executes the full Docker stack incl. the Virtuoso dialect check and passes; runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
 
 
 🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka
@@ -368,8 +390,9 @@ to start that.
 - [x] FEN Bridge, Validation Result Consumer, and mock DAO implemented and unit-tested (this repo)
 - [x] PID scheme for governance records (ADR-003): `services/common/pid.py`, redirect config artefact
 - [x] Participation model & DAO threshold (ADR-005) + applicability analysis (`docs/applicability-and-limits.md`)
+- [x] SPARQL dialect + idempotency check against a real Virtuoso (OpenLink, the GoTriple KG engine) — `scripts/virtuoso_dialect_check.py`, wired into CI
 - [ ] FEN Bridge validated against a real GRAPHIA test Kafka topic + a single low-resource-language WP4 test corpus
-- [ ] End-to-end demo against a live Virtuoso test instance (currently only against Fuseki, locally)
+- [ ] End-to-end demo against GRAPHIA's live Virtuoso test instance (local Virtuoso dialect check done; production store still pending)
 - [ ] Real NAAN registered with the consortium; N2T/w3id redirects published
 - [ ] Precision/recall evaluation, before vs. after community validation
 - [ ] Formal registration as an external node in the SSH KG federation
