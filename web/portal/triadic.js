@@ -268,11 +268,75 @@ function renderRegistry() {
   }).join("");
 }
 
+// --------------------------------------------------- reputation + graph
+function renderReputation() {
+  const el = $("repPanel");
+  const acc = state.llm_accuracy || {};
+  const accTxt = acc.total
+    ? "LLM judge vs community decisions: " + acc.agreements + "/" + acc.total +
+      " (" + Math.round((acc.accuracy || 0) * 100) + "%)"
+    : "LLM judge vs community decisions: no decisions yet";
+  const rows = (state.reputation_history || []).slice(0, 20).map((h) =>
+    '<div style="display:flex;gap:8px;justify-content:space-between">' +
+      "<span>" + esc(h.actor) + ' <span style="color:#6b6560">· ' + esc(h.reason) +
+        " · " + esc(String(h.annotation_id || "").slice(-6)) + "</span></span>" +
+      '<b style="color:' + (h.delta > 0 ? C.gr : C.rd) + '">' + (h.delta > 0 ? "+" : "") + h.delta + "</b>" +
+    "</div>"
+  ).join("") || '<div class="note">no reputation events yet</div>';
+  el.innerHTML = '<div style="margin-bottom:4px">' + accTxt + "</div>" + rows;
+}
+
+function renderGraph() {
+  const decided = state.candidates.filter((c) => c.decision);
+  const box = $("graphBox");
+  if (!decided.length) {
+    box.innerHTML = '<div class="note">no decided records yet</div>';
+    return;
+  }
+  const nodes = [];
+  const edges = [];
+  decided.forEach((c) => {
+    const tr = c.triple || {};
+    const subj = tr.subject || c.entity_label || c.annotation_id;
+    const obj = tr.object || c.annotation_id;
+    const pred = tr.predicate || "mentions";
+    nodes.push(subj, obj);
+    edges.push({ s: subj, o: obj, p: pred });
+  });
+  const unique = [...new Set(nodes)];
+  const W = 640, H = 210, pad = 40;
+  const x = (i) => pad + (i * (W - 2 * pad)) / Math.max(1, unique.length - 1);
+  const y = H / 2;
+  let svg = '<svg width="100%" viewBox="0 0 ' + W + " " + H + '" style="background:#fff;border-radius:8px">' +
+    '<defs><marker id="fenArr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">' +
+    '<path d="M0,0 L6,3 L0,6 Z" fill="#2d5a8e"/></marker></defs>';
+  edges.forEach((e) => {
+    const ix = unique.indexOf(e.s), iy = unique.indexOf(e.o);
+    svg += '<line x1="' + x(ix) + '" y1="' + y + '" x2="' + x(iy) + '" y2="' + y +
+      '" stroke="#2d5a8e" stroke-width="1.2" marker-end="url(#fenArr)"/>' +
+      '<text x="' + ((x(ix) + x(iy)) / 2) + '" y="' + (y - 8) + '" text-anchor="middle" font-size="9" fill="#6b6560">' + esc(e.p) + "</text>";
+  });
+  unique.forEach((name, i) => {
+    svg += '<circle cx="' + x(i) + '" cy="' + y + '" r="15" fill="#e6f4ee" stroke="#2e7d5b" stroke-width="1.2"/>' +
+      '<text x="' + x(i) + '" y="' + (y + 3) + '" text-anchor="middle" font-size="8.5" fill="#1c1b1f" font-weight="600">' +
+      esc(String(name).slice(0, 14)) + "</text>";
+  });
+  svg += "</svg>";
+  box.innerHTML = svg;
+}
+
 // ------------------------------------------------------------------- load
 async function load() {
   try {
     const data = await api("/candidates");
-    state = { candidates: data.candidates || [], reputation: data.reputation || {}, mode: data.mode, qv_threshold: data.qv_threshold };
+    state = {
+      candidates: data.candidates || [],
+      reputation: data.reputation || {},
+      reputation_history: data.reputation_history || [],
+      llm_accuracy: data.llm_accuracy || {},
+      mode: data.mode,
+      qv_threshold: data.qv_threshold,
+    };
     const banner = $("modeBanner");
     if (state.mode !== "qv") {
       banner.textContent = "Mock is in '" + state.mode + "' mode — intensity/QV works with FEN_MOCK_VOTING=qv (threshold " + (state.qv_threshold || THRESHOLD_DEFAULT) + ")";
@@ -287,10 +351,17 @@ async function load() {
   }
   renderConsensus();
   renderRegistry();
+  renderReputation();
 }
 
 function init() {
   $("run").onclick = runScaffold;
+  $("graphToggle").onclick = function () {
+    const visible = $("graphBox").style.display !== "none";
+    $("graphBox").style.display = visible ? "none" : "block";
+    this.textContent = visible ? "show" : "hide";
+    if (!visible) renderGraph();
+  };
   const ex = $("examples");
   EXAMPLES.forEach((e) => {
     const b = document.createElement("button");
