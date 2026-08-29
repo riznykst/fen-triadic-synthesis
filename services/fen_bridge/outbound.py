@@ -1,4 +1,4 @@
-﻿"""FEN Bridge — outbound process.
+"""FEN Bridge — outbound process.
 
 Consumes dap.entities.pending_validation.v1 (produced by the existing WP4
 Entity & Relation Extraction service, unchanged) and forwards batches to the
@@ -16,6 +16,7 @@ that never reaches FEN simply stays ``gfen:pending`` and will be retried.
 from __future__ import annotations
 
 import logging
+import os
 import signal
 import threading
 import time
