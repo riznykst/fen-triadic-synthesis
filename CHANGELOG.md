@@ -26,6 +26,11 @@ fixed four production bugs the unit suite could not see:
   SPARQL basic auth via `SPARQL_UPDATE_USER/PASSWORD` (dev defaults admin/admin).
 - `scripts/smoke_test.py`: `wait_for` returned `None` (callers crashed on
   the result) -> returns the probe value.
+- kafka-python 2.3.2 compatibility: `commit_offsets` now passes
+  `leader_epoch=0` explicitly (2.3.2 requires the third field); the smoke
+  test's consumer-group admin check is best-effort (falls back to a settle
+  delay when the admin API is flaky, e.g. kafka-python 2.3.2 on Windows
+  against Kafka 3.6).
 
 Local run: `python scripts/smoke_test.py` -> **E2E SMOKE TEST PASSED**.
 With Docker now installed, the CI `e2e` job on the self-hosted runner runs
