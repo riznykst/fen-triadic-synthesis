@@ -7,6 +7,7 @@
 
 const $ = (id) => document.getElementById(id);
 const MOCK = (localStorage.getItem("fen_mock_base") || "http://localhost:8100").replace(/\/+$/, "");
+const STATUS = (localStorage.getItem("fen_status_base") || "http://localhost:8082").replace(/\/+$/, "");
 
 const THRESHOLD_DEFAULT = 10;
 const EXAMPLES = [
@@ -230,6 +231,10 @@ function renderRegistry() {
       '<span style="color:' + C.mu + ';font-weight:600">Scores</span><span>' + Object.keys(OUTCOME_STYLE).map((o) => '<span style="color:' + OUTCOME_STYLE[o] + ';font-weight:700">' + o + " " + (scores[o] || 0) + "</span>").join(" · ") + "</span>" +
       '<span style="color:' + C.mu + ';font-weight:600">Validators</span><span>' + esc(validators.join(", ") || "—") + "</span>" +
       '<span style="color:' + C.mu + ';font-weight:600">Anchor</span><span class="mono">' + esc(d.ledger_anchor) + "</span>" +
+      '<span style="color:' + C.mu + ';font-weight:600">Export</span><span>' +
+        ["ttl", "jsonld", "nt", "crate"].map((f) =>
+          '<a href="' + STATUS + '/api/v1/export/' + encodeURIComponent(c.annotation_id) + '?format=' + f + '" target="_blank" rel="noopener" style="color:' + C.hs + '">' + f + "</a>"
+        ).join(" · ") + "</span>" +
       "</div></div></div>";
   }).join("");
 }
@@ -270,7 +275,13 @@ function init() {
     $("repBadge").textContent = "Rep " + (state.reputation[$("voter").value.trim()] || 0);
     renderConsensus();
   });
-  setInterval(load, 3000);
+  // Real-time updates (SSE): instant Consensus/Registry refresh on
+  // candidates/vote/decision events; EventSource auto-reconnects, so the
+  // 3s polling is gone (recommendation #1).
+  const events = new EventSource(MOCK + "/events");
+  events.addEventListener("vote", load);
+  events.addEventListener("decision", load);
+  events.addEventListener("candidates", load);
   load();
 }
 
