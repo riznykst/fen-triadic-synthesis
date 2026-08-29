@@ -38,6 +38,9 @@ gfen:scaffoldingSession    a rdf:Property .
 # owl:imports stub — the additive gfen: namespace builds on GRAPHIA's TRIPLE
 # Ontology provenance model (D2.2 section 3). The IRI is a STUB: replace with
 # the official GRAPHIA Ontology IRI once confirmed (whitepaper section 7,
-# "Request to the Consortium"). Nothing is modified in the imported ontology
+# "Request to the Consortium"). NOTE: the stub IRI deliberately does NOT
+# resolve yet (HTTP 403) — ontology tools with import-closure resolution
+# (e.g. Protege) will flag it until the official IRI is confirmed; that is
+# expected, not a defect. Nothing is modified in the imported ontology
 # (ADR-002); the import only declares the dependency for tooling/alignment.
 gfen: owl:imports <https://w3id.org/gotriple/ontology> .
