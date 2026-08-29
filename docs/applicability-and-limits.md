@@ -38,7 +38,7 @@ an independent researcher can offer the consortium a solution that requires
 4. **Any crowdsourced annotation pipeline for scholarly knowledge graphs**
    — the mechanism is not tied to languages; it is tied to the problem "AI
    extracted a fact, nobody verified it" (the judge is generic, see
-   `services/common/llm.py`).
+   `../services/common/llm.py`).
 
 ## Where it does NOT apply (and why)
 

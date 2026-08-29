@@ -49,7 +49,7 @@ questions were not answered explicitly:
 
 - Honest positioning: DAO machinery is a tool for mid-to-large
   long-tail communities, not a universal answer (see
-  `docs/applicability-and-limits.md`).
+  `../applicability-and-limits.md`).
 - No speculative elements (no token, no staking) — GDPR/EOSC-aligned and
   consortium-friendly.
 - Whitepaper v2 should state the threshold and the incentive model
