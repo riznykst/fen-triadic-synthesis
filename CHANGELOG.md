@@ -1,20 +1,57 @@
-﻿## 2026-08-29 — CI fully green WITH the real end-to-end run (run 33270403191)
+﻿# Changelog
+
+All notable changes are recorded here in reverse chronological order.
+
+## 2026-08-29 — Milestone: web interface layer (Flow 1 & Flow 2)
+
+Zero-build web UI (plain HTML/JS + FastAPI, no Node toolchain) exposing the
+two community flows end to end:
+
+- **Status API** (`services/status_api/`): read-side
+  `GET /api/v1/status/{annotation_id}` resolving `gfen:` provenance live from
+  the RDF store via SPARQL; CORS enabled; serves the static UI at `/web`.
+  Strictly read-only (ADR-001).
+- **Flow 1 — Community DAO portal** (`web/portal/`): submit candidates, live
+  status badges, LLM recommendation column (decision-support only, ADR-004),
+  community voting with quorum progress (`FEN_MOCK_VOTING=community`,
+  `POST /candidates/{id}/vote`, deterministic majority).
+- **Flow 2 — status widget** (`web/widget/`): embeddable `<fen-status>` Web
+  Component (Shadow DOM, dark/light themes) + demo page; clicking a badge
+  shows decision details (method, dereferenceable PID per ADR-003, ledger
+  anchor).
+- **REST contract** (`web/api.md`): v1 — the same contract the real FEN
+  backend (ADR-002) is expected to implement, keeping the UI backend-agnostic.
+- Mock FEN API extended: candidate tracking, community-voting mode, CORS.
+- Infographic `docs/images/widget-overview.svg`; docker-compose and k8s gain
+  the `status-api` service.
+- Tests: **73** offline (was 61) — status-api mapping/errors/CORS, voting
+  logic, quorum delivery, widget static mount; the e2e smoke test now also
+  verifies the status-api read path.
+- Local tooling (outside the repo): `start-dev.bat` (build + open the UI),
+  `status-dev.bat` (stack + health check).
+
+## 2026-08-29 — Milestone: CI fully green — three consecutive real e2e runs
 
 GitHub Actions on the self-hosted runner (`fen-laptop`): `test (3.10)` and
-`e2e` both pass. The `e2e` job now executes the FULL stack for real — the
-job log shows `docker compose up --build -d`, `published EntityCandidate`,
+`e2e` both pass — **three runs in a row: 33270403191, 33270549408,
+33270654051**. The `e2e` job now executes the FULL stack for real: the job
+log shows `docker compose up --build -d`, `published EntityCandidate`,
 `E2E SMOKE TEST PASSED: smoke_f998e70531af`, `docker compose down`. This is
 the end-to-end proof the consortium asks for: candidate -> Kafka -> FEN
 Bridge -> mock DAO -> webhook -> decision topic -> Validation Result
-Consumer -> SPARQL UPDATE in Fuseki -> EntityValidated topic -> status API.
+Consumer -> SPARQL UPDATE in Fuseki -> EntityValidated topic -> status API
+(widget data path included).
+
 ## 2026-08-29 — Fix smoke-test consumer-group probe on kafka-python 2.x
 
 The CI `e2e` job failed with a silent 120s timeout waiting for the outbound
-consumer group. Root cause: kafka-python API drift — 2.x `list_consumer_groups()`
-returns a list of `(name, protocol_type)` tuples (3.x: `[GroupOverview]`) and
-names the describe API `describe_consumer_groups()` (3.x: `describe_groups`).
-The probe now normalizes all three shapes (scripts/smoke_test.py) and was
-verified against stub admins for both versions.
+consumer group. Root cause: kafka-python API drift — 2.x
+`list_consumer_groups()` returns a list of `(name, protocol_type)` tuples
+(3.x: `[GroupOverview]`) and names the describe API
+`describe_consumer_groups()` (3.x: `describe_groups`). The probe now
+normalizes all three shapes (scripts/smoke_test.py) and was verified against
+stub admins for both versions.
+
 ## 2026-08-29 — REAL end-to-end run passed on Docker (first true e2e)
 
 The first genuinely executed end-to-end pipeline on this machine (Docker
@@ -44,21 +81,6 @@ fixed four production bugs the unit suite could not see:
 Local run: `python scripts/smoke_test.py` -> **E2E SMOKE TEST PASSED**.
 With Docker now installed, the CI `e2e` job on the self-hosted runner runs
 the full stack instead of skipping it.
-# Changelog
-
-All notable changes are recorded here in reverse chronological order.
-
-## 2026-08-29 — Fix kafka-python version incompatibilities found by CI
-
-- `kafka_io.commit_offsets`: `OffsetAndMetadata` now passes all three
-  positional args (offset, leader_epoch, metadata) — kafka-python 2.x
-  requires `leader_epoch` without defaults (CI: TypeError).
-- `smoke_test.py`: group listing handles both kafka-python 2.x
-  (`list_groups() -> (error, groups)`) and 3.x (`list_consumer_groups()`);
-  `describe_groups` tuple shape handled too (CI: AttributeError
-  `list_groups`).
-- Requirements pinned to `kafka-python>=3.0,<4` so runner and local
-  environments resolve the same API.
 
 ## 2026-08-28 — CI green on the self-hosted runner
 
