@@ -1,4 +1,4 @@
-"""Tests for the Validation Result Consumer's commit-after-processing logic.
+﻿"""Tests for the Validation Result Consumer's commit-after-processing logic.
 Offline: mocked consumer/producer, SPARQL update patched out.
 """
 from __future__ import annotations
@@ -82,10 +82,10 @@ def test_process_cycle_commits_each_message_after_processing():
     assert len(producer.sent) == 2
     assert len(consumer.committed) == 2
     assert consumer.committed[0] == {
-        TopicPartition("fen.governance.decisions.v1", 0): OffsetAndMetadata(11, "")
+        TopicPartition("fen.governance.decisions.v1", 0): OffsetAndMetadata(offset=11, leader_epoch=0, metadata="")
     }
     assert consumer.committed[1] == {
-        TopicPartition("fen.governance.decisions.v1", 0): OffsetAndMetadata(12, "")
+        TopicPartition("fen.governance.decisions.v1", 0): OffsetAndMetadata(offset=12, leader_epoch=0, metadata="")
     }
 
 

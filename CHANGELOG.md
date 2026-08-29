@@ -26,6 +26,18 @@ the full stack instead of skipping it.
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-29 — Fix kafka-python version incompatibilities found by CI
+
+- `kafka_io.commit_offsets`: `OffsetAndMetadata` now passes all three
+  positional args (offset, leader_epoch, metadata) — kafka-python 2.x
+  requires `leader_epoch` without defaults (CI: TypeError).
+- `smoke_test.py`: group listing handles both kafka-python 2.x
+  (`list_groups() -> (error, groups)`) and 3.x (`list_consumer_groups()`);
+  `describe_groups` tuple shape handled too (CI: AttributeError
+  `list_groups`).
+- Requirements pinned to `kafka-python>=3.0,<4` so runner and local
+  environments resolve the same API.
+
 ## 2026-08-28 — CI green on the self-hosted runner
 
 - Registered the self-hosted runner `fen-laptop` as a Windows service

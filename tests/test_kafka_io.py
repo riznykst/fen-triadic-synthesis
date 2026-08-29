@@ -1,4 +1,4 @@
-"""Tests for the Kafka IO wrappers' delivery guarantees: producer config,
+﻿"""Tests for the Kafka IO wrappers' delivery guarantees: producer config,
 manual-commit consumer, offset-carrying polls, and delivery callbacks.
 All offline — kafka-python classes are mocked/stubbed.
 """
@@ -126,7 +126,7 @@ def test_commit_offsets_commits_offset_after_each_record():
 
     commit_offsets(consumer, records)
 
-    assert consumer.committed == {TopicPartition("t1", 3): OffsetAndMetadata(42, "")}
+    assert consumer.committed == {TopicPartition("t1", 3): OffsetAndMetadata(offset=42, leader_epoch=0, metadata="")}
 
 
 # ---- send() delivery callbacks -------------------------------------------

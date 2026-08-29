@@ -117,7 +117,9 @@ def commit_offsets(consumer: KafkaConsumer, records: List[MessageRecord]) -> Non
     (at-least-once). ``records`` must come from ``poll_batch_with_offsets``.
     """
     offsets = {
-        TopicPartition(record.topic, record.partition): OffsetAndMetadata(record.offset + 1, "")
+        TopicPartition(record.topic, record.partition): OffsetAndMetadata(
+            offset=record.offset + 1, metadata="", leader_epoch=0
+        )
         for record in records
     }
     consumer.commit(offsets=offsets)
