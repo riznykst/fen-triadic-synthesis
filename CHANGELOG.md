@@ -1,4 +1,13 @@
-﻿## 2026-08-29 — Fix smoke-test consumer-group probe on kafka-python 2.x
+﻿## 2026-08-29 — CI fully green WITH the real end-to-end run (run 33270403191)
+
+GitHub Actions on the self-hosted runner (`fen-laptop`): `test (3.10)` and
+`e2e` both pass. The `e2e` job now executes the FULL stack for real — the
+job log shows `docker compose up --build -d`, `published EntityCandidate`,
+`E2E SMOKE TEST PASSED: smoke_f998e70531af`, `docker compose down`. This is
+the end-to-end proof the consortium asks for: candidate -> Kafka -> FEN
+Bridge -> mock DAO -> webhook -> decision topic -> Validation Result
+Consumer -> SPARQL UPDATE in Fuseki -> EntityValidated topic -> status API.
+## 2026-08-29 — Fix smoke-test consumer-group probe on kafka-python 2.x
 
 The CI `e2e` job failed with a silent 120s timeout waiting for the outbound
 consumer group. Root cause: kafka-python API drift — 2.x `list_consumer_groups()`
