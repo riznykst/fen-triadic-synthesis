@@ -4,15 +4,18 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29.
 
 ## Delivered
 - [x] MVP core: FEN Bridge (outbound + webhook), Validation Result Consumer, mock DAO, shared Pydantic contracts, Kafka topics, docker-compose stack
-- [x] ADR-001..005: hash-only anchoring · federation node · PID scheme (ARK/w3id, g/v/r/s) · LLM decision-support · web layer
+- [x] ADR-001..006: hash-only anchoring · federation node · PID scheme (ARK/w3id, g/v/r/s) · LLM decision-support · participation/QV (ADR-005) · tokenless challenge window draft (ADR-006)
 - [x] gfen: ontology + SHACL shapes; owl:imports stub documented (IRI pending)
 - [x] PID helpers, JSON schemas generated from models, SHACL parse tests
 - [x] Kafka delivery guarantees: acks=all, idempotent producer, commit-after-processing (at-least-once)
 - [x] Security: webhook Bearer auth, no secrets tracked, k8s Secret placeholder
 - [x] Observability: Prometheus /metrics, JSON logs, /readyz, graceful shutdown
-- [x] CI: unit tests + REAL e2e on Docker — green for 5+ consecutive runs; self-hosted runner as a Windows service (NSSM)
+- [x] CI: 82 unit tests + REAL e2E on Docker — green for consecutive runs; self-hosted runner as a Windows service (NSSM); runner paused during local demos (runs queue, no stack teardown)
 - [x] e2e bug hunt: fuseki image tag, kafka-python 2.x/3.x compat (serializer, OffsetAndMetadata, admin API), datetime serializer, Fuseki basic auth, lazy fastapi import
 - [x] Web layer: DAO portal (Flow 1) + status widget (Flow 2), community voting in the mock
+- [x] Triadic view (Scaffold → Consensus → Registry): POST /scaffold (LLM + heuristic fallback, ADR-004), QV voting mode (FEN_MOCK_VOTING=qv, weighted scores, FEN_MOCK_QV_THRESHOLD=10), reputation (ADR-005: +2 author / +1 validators), registry graph (SVG), SSE real-time, RDF export, delegation (liquid democracy)
+- [x] QV hardening: one-vote-per-voter, reputation only for validated records, API error details (409), stored-XSS fix in the portal
+- [x] Motivation stack formalized: reputation capital + intrinsic motivation; gamification is UX-only, never core mechanics (f9356ec)
 - [x] Docs: README, architecture, user stories + infographics, whitepaper PDF, research (EN), CHANGELOG, self-hosted runner guide
 - [x] Repository published: riznykst/fen-triadic-synthesis (public), 30+ commits
 
@@ -26,7 +29,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29.
 - [ ] Real GRAPHIA test instance: verify Kafka topic names, WP4 message schema, named-graph URI scheme, Virtuoso SPARQL dialect
 - [ ] Register FEN NAAN + publish N2T/w3id redirects (ADR-003)
 - [ ] Replace the owl:imports stub with the official GRAPHIA Ontology IRI
-- [ ] Wire the real DAO/Quadratic Voting (replace the mock's rule); LLM judge stays decision-support only (ADR-004)
+- [~] Real DAO/Quadratic Voting contract: mock QV mode (weighted scores, threshold) done; production contract + on-chain anchoring pending (ADR-001/ADR-004)
 - [ ] Use LLM4SSH/Quagga as Agentic Scaffolding backends (provider already pluggable via FEN_LLM_*)
 - [ ] SHACL validation step in CI
 - [~] Monitoring: Prometheus + Grafana (dashboard fen-overview) DONE 2026-08-29; log aggregation (Loki) still open
