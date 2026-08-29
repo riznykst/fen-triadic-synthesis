@@ -18,6 +18,24 @@
 (function () {
   "use strict";
 
+  // Escape server-provided values before any innerHTML interpolation (the
+  // widget is meant to be embedded on third-party pages; the data source is
+  // the SPARQL-backed Status API, so values must never become markup).
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+  // Only http(s) URLs are allowed in hrefs; anything else renders as text.
+  function safeHref(u) {
+    try {
+      const parsed = new URL(String(u), window.location.href);
+      return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   const COLORS = {
     validated: "#3fce7c",
     disputed: "#ffb020",
@@ -110,24 +128,28 @@
       const color = COLORS[status] || COLORS.unknown;
       let body;
       if (this._error) {
-        body = `<div class="hint err">${this._error} <a href="#" id="retry">retry</a></div>`;
+        body = `<div class="hint err">${escapeHtml(this._error)} <a href="#" id="retry">retry</a></div>`;
       } else if (this._loading) {
         body = `<div class="hint">checking validation status…</div>`;
       } else if (!this._data || !this._data.found) {
         body = `<div class="hint">no governance record found — entity is not (yet) community-validated</div>`;
       } else {
         const d = this._data;
+        const pidHref = safeHref(d.governance_decision_id);
+        const pidCell = pidHref
+          ? `<a href="${pidHref}" target="_blank" rel="noopener">${escapeHtml(d.governance_decision_id)}</a>`
+          : escapeHtml(d.governance_decision_id || "");
         const details = this._expanded ? `
           <div class="details">
-            ${d.validation_method ? `<div><span class="k">method</span> ${d.validation_method}</div>` : ""}
-            ${d.governance_decision_id ? `<div><span class="k">decision PID</span> <a href="${d.governance_decision_id}" target="_blank" rel="noopener">${d.governance_decision_id}</a></div>` : ""}
-            ${d.reputation_snapshot ? `<div><span class="k">reputation snapshot</span> ${d.reputation_snapshot}</div>` : ""}
-            ${d.ledger_anchor ? `<div><span class="k">ledger anchor</span> ${d.ledger_anchor}</div>` : ""}
+            ${d.validation_method ? `<div><span class="k">method</span> ${escapeHtml(d.validation_method)}</div>` : ""}
+            ${d.governance_decision_id ? `<div><span class="k">decision PID</span> ${pidCell}</div>` : ""}
+            ${d.reputation_snapshot ? `<div><span class="k">reputation snapshot</span> ${escapeHtml(d.reputation_snapshot)}</div>` : ""}
+            ${d.ledger_anchor ? `<div><span class="k">ledger anchor</span> ${escapeHtml(d.ledger_anchor)}</div>` : ""}
           </div>` : "";
         body = `
           <div class="badge" id="toggle" title="click for decision details">
             <span class="dot" style="background:${color}"></span>
-            <span class="label">${status}</span>
+            <span class="label">${escapeHtml(status)}</span>
             <span class="hint">${this._expanded ? "▲" : "▼"}</span>
           </div>
           ${details}`;

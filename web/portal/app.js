@@ -5,6 +5,12 @@
  */
 "use strict";
 
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
 const $ = (id) => document.getElementById(id);
 
 let autoTimer = null;
@@ -31,7 +37,7 @@ function renderCandidates(data) {
   const list = currentFilter === "all" ? cachedList : cachedList.filter((c) => c.status === currentFilter);
   if (!list.length) {
     rows.innerHTML = '<tr><td colspan="7" class="note">no candidates' +
-      (currentFilter !== "all" ? " with status " + currentFilter : "") +
+      (currentFilter !== "all" ? " with status " + escapeHtml(currentFilter) : "") +
       " — submit one above</td></tr>";
     return;
   }
@@ -39,20 +45,20 @@ function renderCandidates(data) {
     const q = c.quorum || { votes: 0, required: 0 };
     const pct = q.required ? Math.min(100, Math.round((q.votes / q.required) * 100)) : 0;
     const rec = c.llm_recommendation
-      ? '<span class="note" style="color:var(--amber)">' + c.llm_recommendation + " (support)</span>"
+      ? '<span class="note" style="color:var(--amber)">' + escapeHtml(c.llm_recommendation) + " (support)</span>"
       : "—";
     const voteBtns =
       c.status === "pending"
         ? '<div class="vote">' +
           ["validated", "disputed", "rejected"].map(
-            (o) => '<button data-vote="' + c.annotation_id + '" data-outcome="' + o + '">' + o + "</button>"
+            (o) => '<button data-vote="' + escapeHtml(c.annotation_id) + '" data-outcome="' + o + '">' + o + "</button>"
           ).join("") +
           "</div>"
         : '<span class="note">—</span>';
     return (
       "<tr>" +
-      "<td><code>" + c.annotation_id + "</code><br><span class='note'>" + (c.document_id || "") + "</span></td>" +
-      "<td>" + (c.entity_label || "—") + "</td>" +
+      "<td><code>" + escapeHtml(c.annotation_id) + "</code><br><span class='note'>" + escapeHtml(c.document_id || "") + "</span></td>" +
+      "<td>" + escapeHtml(c.entity_label || "—") + "</td>" +
       "<td>" + statusBadge(c.status) + "</td>" +
       "<td>" + rec + "</td>" +
       "<td>v:" + (c.votes.validated || 0) + " d:" + (c.votes.disputed || 0) + " r:" + (c.votes.rejected || 0) + "</td>" +

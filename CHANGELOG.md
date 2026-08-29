@@ -1,4 +1,13 @@
-﻿# Changelog
+﻿## 2026-08-29 — Security & concurrency hardening (widget/portal XSS, vote race)
+
+- web/widget/fen-status-widget.js + web/portal/app.js: every server-provided
+  value is HTML-escaped before innerHTML interpolation; decision-PID links
+  render only for http(s) URLs (the widget is embedded on third-party pages).
+- mock_fen_api `cast_vote`: the quorum now claims the candidate (status
+  'deciding') inside the state lock, so concurrent votes reaching the quorum
+  cannot schedule a second delivery (no duplicate webhook/decision_id).
+- tests/test_voting.py: exactly-once delivery test (74 tests).
+# Changelog
 
 All notable changes are recorded here in reverse chronological order.
 

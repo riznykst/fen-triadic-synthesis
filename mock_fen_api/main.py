@@ -333,10 +333,18 @@ def cast_vote(annotation_id: str, payload: dict):
         record["votes"][outcome] += 1
         votes = dict(record["votes"])
         total = quorum_total(votes)
+        reached = total >= QUORUM_REQUIRED
+        if reached:
+            final = majority_outcome(votes)
+            # Claim the decision INSIDE the lock: a concurrent vote that would
+            # also reach the quorum now sees status != pending and is rejected
+            # (409), so the delivery is scheduled exactly once (no double
+            # webhook call, no duplicated decision_id).
+            record["status"] = "deciding"
+        else:
+            final = None
 
-    if total >= QUORUM_REQUIRED:
-        final = majority_outcome(votes)
-        _set_status(annotation_id, "deciding")
+    if reached:
         _get_executor().submit(_deliver_decision_after_delay, {"annotation_id": annotation_id}, final)
         return {
             "annotation_id": annotation_id,
