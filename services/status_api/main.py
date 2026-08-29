@@ -129,9 +129,7 @@ def healthz():
 @app.get("/readyz")
 def readyz():
     try:
-        resp = requests.get(
-            _config.sparql_query_endpoint.replace("/query", "/$/ping"), timeout=5.0
-        )
+        resp = requests.get(_config.sparql_ping_endpoint, timeout=5.0)
         resp.raise_for_status()
         return {"status": "ok", "sparql": "reachable"}
     except Exception:  # noqa: BLE001 - any probe failure -> degraded
