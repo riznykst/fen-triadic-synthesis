@@ -1,4 +1,4 @@
-"""Tests for the QV voting mode and the /scaffold endpoint of the mock."""
+﻿"""Tests for the QV voting mode and the /scaffold endpoint of the mock."""
 from __future__ import annotations
 
 import time
@@ -58,32 +58,42 @@ def test_qv_vote_flow_reaches_threshold_and_delivers(monkeypatch):
     monkeypatch.setattr(mock_main, "QV_THRESHOLD", 10)
     monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
     monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    # Patch requests.post for the WHOLE test: the async delivery runs in a
+    # real executor thread AFTER the vote calls, so a with-block patch would
+    # expire before the thread posts to the webhook (network race — see the
+    # same pattern fixed in tests/test_voting.py).
+    monkeypatch.setattr(mock_main.requests, "post", _ok_post)
     client = TestClient(mock_main.app)
     client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x", "submitter": "contrib_1"}]})
 
-    with mock.patch("mock_fen_api.main.requests.post", side_effect=_ok_post):
-        r1 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v1", "comment": "solid"})
-        assert r1.status_code == 200
-        assert r1.json()["qv"]["scores"]["validated"] == 3
-        assert r1.json()["cost"] == 9
+    r1 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v1", "comment": "solid"})
+    assert r1.status_code == 200
+    assert r1.json()["qv"]["scores"]["validated"] == 3
+    assert r1.json()["cost"] == 9
 
-        r2 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 4, "voter": "v2"})
-        assert r2.status_code == 200
-        assert "outcome" not in r2.json()  # 7 < 10 — still open
-        assert r2.json()["qv"]["scores"]["validated"] == 7
+    r2 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 4, "voter": "v2"})
+    assert r2.status_code == 200
+    assert "outcome" not in r2.json()  # 7 < 10 — still open
+    assert r2.json()["qv"]["scores"]["validated"] == 7
 
-        r3 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v3"})
-        assert r3.status_code == 200
-        assert r3.json()["outcome"] == "validated"  # 7+3 = 10 >= 10
+    r3 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v3"})
+    assert r3.status_code == 200
+    assert r3.json()["outcome"] == "validated"  # 7+3 = 10 >= 10
 
-        for _ in range(50):
-            with mock_main._state_lock:
-                rec = dict(mock_main._candidates.get("a1", {}))
-            if rec.get("status") != "deciding":
-                break
-            time.sleep(0.05)
-        assert rec.get("status") == "validated"
-        assert rec["decision"]["quorum_reached"] is True
+    rec = _wait_decided("a1")
+    assert rec.get("status") == "validated"
+    assert rec["decision"]["quorum_reached"] is True
+
+
+def _wait_decided(annotation_id: str) -> dict:
+    """Poll until the async delivery flips the status away from 'deciding'."""
+    for _ in range(50):
+        with mock_main._state_lock:
+            rec = dict(mock_main._candidates.get(annotation_id, {}))
+        if rec.get("status") != "deciding":
+            return rec
+        time.sleep(0.05)
+    return rec
 
 
 def test_qv_vote_intensity_validation(monkeypatch):
@@ -95,27 +105,59 @@ def test_qv_vote_intensity_validation(monkeypatch):
     assert client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": "x"}).status_code == 422
 
 
-def test_qv_reputation_awarded_on_decision(monkeypatch):
+def test_qv_duplicate_voter_is_rejected(monkeypatch):
+    """ADR-005 distinct-identity hint: one person, one vote per proposal."""
+    monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
+    client = TestClient(mock_main.app)
+    client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x"}]})
+
+    r1 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v1"})
+    assert r1.status_code == 200
+    assert r1.json()["qv"]["scores"]["validated"] == 3
+
+    r2 = client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 5, "voter": "v1"})
+    assert r2.status_code == 409
+    assert "already voted" in r2.json()["detail"]
+
+    # score must not include the rejected duplicate
+    listed = client.get("/candidates").json()["candidates"][0]
+    assert listed["qv"]["scores"]["validated"] == 3
+
+
+def test_qv_reputation_awarded_on_validated(monkeypatch):
     monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
     monkeypatch.setattr(mock_main, "QV_THRESHOLD", 5)
     monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
     monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    monkeypatch.setattr(mock_main.requests, "post", _ok_post)  # whole-test patch (no network race)
     client = TestClient(mock_main.app)
     client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x", "submitter": "contrib_1"}]})
-    with mock.patch("mock_fen_api.main.requests.post", side_effect=_ok_post):
-        client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v1"})
-        client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 2, "voter": "v2"})
-        for _ in range(50):
-            with mock_main._state_lock:
-                rec = dict(mock_main._candidates.get("a1", {}))
-            if rec.get("status") != "deciding":
-                break
-            time.sleep(0.05)
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "v1"})
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 2, "voter": "v2"})
+    _wait_decided("a1")
+
     data = client.get("/candidates").json()
     assert data["mode"] == "qv"
     assert data["reputation"]["contrib_1"] == 2
     assert data["reputation"]["v1"] == 1
     assert data["reputation"]["v2"] == 1
+
+
+def test_qv_reputation_not_awarded_on_rejected(monkeypatch):
+    """ADR-005 incentives: a failed outcome must not reward the contributor."""
+    monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
+    monkeypatch.setattr(mock_main, "QV_THRESHOLD", 4)
+    monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
+    monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    monkeypatch.setattr(mock_main.requests, "post", _ok_post)
+    client = TestClient(mock_main.app)
+    client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x", "submitter": "contrib_1"}]})
+    client.post("/candidates/a1/vote", json={"outcome": "rejected", "intensity": 3, "voter": "v1"})
+    client.post("/candidates/a1/vote", json={"outcome": "rejected", "intensity": 1, "voter": "v2"})
+    _wait_decided("a1")
+
+    data = client.get("/candidates").json()
+    assert data["reputation"] == {}, f"reputation must stay empty on rejected, got {data['reputation']}"
 
 
 # ----------------------------------------------------------------- scaffold

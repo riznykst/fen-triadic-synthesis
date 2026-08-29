@@ -1,4 +1,4 @@
-"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
+﻿"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
 Quadratic Voting system, for local development and consortium demos only.
 
 Accepts batches of EntityCandidate on POST /candidates and delivers a
@@ -187,8 +187,9 @@ def qv_cost(intensity: int) -> int:
 
 def qv_scores(qv_votes: list) -> Dict[str, int]:
     """Weighted scores per outcome from QV votes (each vote carries an
-    ``intensity`` weight). Distinct-identity counting is production policy
-    (ADR-005); the demo weighs by intensity only."""
+    ``intensity`` weight). One voter may vote at most once per proposal —
+    enforced in cast_vote (ADR-005 distinct-identity hint); scores weigh by
+    intensity."""
     scores = {o: 0 for o in OUTCOMES}
     for vote in qv_votes:
         scores[vote["outcome"]] += int(vote.get("intensity", 1))
@@ -217,6 +218,7 @@ def _record_candidate(candidate: dict) -> None:
                 "status": "pending",
                 "votes": {"validated": 0, "disputed": 0, "rejected": 0},
                 "qv_votes": [],
+                "qv_voters": set(),
                 "llm_recommendation": recommendation,
                 "candidate": dict(candidate),
                 "decision": None,
@@ -232,9 +234,13 @@ def _set_status(annotation_id: str, status: str, decision: Optional[dict] = None
 
 
 def _apply_reputation(annotation_id: str, outcome: str) -> None:
-    """Demo reputation (ADR-005 incentives): the contributor of an approved
-    entry gains +2, voters of the winning outcome +1. Classic-mode votes carry
-    no voter names, so only QV-mode votes contribute."""
+    """Demo reputation (ADR-005 incentives): ONLY an approved (validated)
+    entry rewards its contributor (+2) and the voters of the winning outcome
+    (+1). Rejected/disputed proposals award nothing — incentives must not
+    reward failed outcomes. Classic-mode votes carry no voter names, so only
+    QV-mode votes contribute."""
+    if outcome != "validated":
+        return
     with _state_lock:
         record = _candidates.get(annotation_id)
         if record is None:
@@ -441,10 +447,18 @@ def cast_vote(annotation_id: str, payload: dict):
             raise HTTPException(status_code=409, detail="voting is disabled (FEN_MOCK_VOTING=auto)")
 
         if VOTING_MODE == "qv":
+            voter = payload.get("voter") or f"validator_{len(record['qv_votes']) + 1}"
+            if voter in record["qv_voters"]:
+                # ADR-005 distinct-identity hint: one person, one vote.
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"voter {voter} has already voted on this proposal",
+                )
+            record["qv_voters"].add(voter)
             record["qv_votes"].append({
                 "outcome": outcome,
                 "intensity": intensity,
-                "voter": payload.get("voter") or f"validator_{len(record['qv_votes']) + 1}",
+                "voter": voter,
                 "comment": payload.get("comment") or "",
             })
             scores = qv_scores(record["qv_votes"])
