@@ -116,6 +116,23 @@ def test_qv_reputation_awarded_on_decision(monkeypatch):
     assert data["reputation"]["contrib_1"] == 2
     assert data["reputation"]["v1"] == 1
     assert data["reputation"]["v2"] == 1
+    c1 = data["candidates"][0]
+    assert c1["submitter"] == "contrib_1"
+
+
+def test_candidates_list_preserves_submitter_and_triple():
+    client = TestClient(mock_main.app)
+    triple = {"subject": "Koshary", "predicate": "marks", "object": "trade route"}
+    client.post("/candidates", json={"candidates": [{
+        "annotation_id": "a2",
+        "entity_label": "Koshary",
+        "submitter": "alice",
+        "triple": triple,
+    }]})
+    data = client.get("/candidates").json()
+    cand = next(c for c in data["candidates"] if c["annotation_id"] == "a2")
+    assert cand["submitter"] == "alice"
+    assert cand["triple"] == triple
 
 
 # ----------------------------------------------------------------- scaffold

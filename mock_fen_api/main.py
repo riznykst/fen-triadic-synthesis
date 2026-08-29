@@ -251,10 +251,13 @@ def _public_state() -> list:
     with _state_lock:
         out = []
         for record in _candidates.values():
+            candidate_payload = record.get("candidate", {})
             out.append({
                 "annotation_id": record["annotation_id"],
                 "document_id": record["document_id"],
                 "entity_label": record["entity_label"],
+                "submitter": candidate_payload.get("submitter"),
+                "triple": candidate_payload.get("triple"),
                 "status": record["status"],
                 "votes": dict(record["votes"]),
                 "llm_recommendation": record.get("llm_recommendation"),
