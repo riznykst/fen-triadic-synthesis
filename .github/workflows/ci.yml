@@ -44,6 +44,15 @@ jobs:
   # without Docker.
   e2e:
     runs-on: self-hosted
+    env:
+      # Isolate the CI stack from any locally-running dev stack on the same
+      # Docker daemon: both would otherwise default to the project name
+      # "fen-triadic-synthesis", so CI "up/down" collides with (and can tear
+      # down) the developer's local containers. With this override the CI
+      # containers are fen-ci-*; if the local stack holds the published
+      # ports, the compose up step fails fast with "port is already
+      # allocated" instead of silently destroying local state.
+      COMPOSE_PROJECT_NAME: fen-ci
     steps:
       - uses: actions/checkout@v4
       # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.

@@ -102,6 +102,28 @@ Notes:
 - The Windows runner carries the labels `self-hosted`, `Windows`, `X64` —
   `runs-on: self-hosted` matches it.
 
+### 6a. CI vs. the local dev stack (same Docker daemon)
+
+The runner runs on the same machine where the developer's `docker compose
+up` stack lives. Both used to share the default compose project name
+`fen-triadic-synthesis`, so a CI `docker compose down` would tear down the
+developer's local containers (and vice versa — a running local stack would
+sabotage the CI e2e job). Since the Observability/P1 commits the `e2e` job
+sets `COMPOSE_PROJECT_NAME: fen-ci`, so:
+
+- CI containers/networks are `fen-ci-*` and never touch local ones;
+- if the local stack holds the published ports (3030/8082/8100/8101/8890/
+  9092/9090/3000), the CI "Start the stack" step fails fast with *"port is
+  already allocated"* — the local stack is left untouched;
+- to make CI pass, stop the local stack first (or run it on different ports):
+
+```powershell
+docker compose --profile virtuoso down   # from the repo directory
+```
+
+Forgetting to stop the local stack is safe (nothing gets deleted), just
+red — the error message names the conflicting port.
+
 ### 7. Revert when billing is fixed
 
 1. Restore `runs-on: ubuntu-latest` in both jobs.
