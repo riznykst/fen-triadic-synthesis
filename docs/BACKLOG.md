@@ -29,7 +29,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29.
 - [ ] Wire the real DAO/Quadratic Voting (replace the mock's rule); LLM judge stays decision-support only (ADR-004)
 - [ ] Use LLM4SSH/Quagga as Agentic Scaffolding backends (provider already pluggable via FEN_LLM_*)
 - [ ] SHACL validation step in CI
-- [ ] Monitoring dashboard (Prometheus/Grafana) + log aggregation (Loki)
+- [~] Monitoring: Prometheus + Grafana (dashboard fen-overview) DONE 2026-08-29; log aggregation (Loki) still open
 - [ ] Secrets management (vault) for non-local deployments
 - [ ] e2e for the community-voting mode (portal Flow 1: /candidates + /vote end-to-end)
 - [ ] Precision/recall evaluation before vs after community validation (consortium deliverable)
@@ -40,3 +40,21 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29.
 - WSL bash breaks Windows paths in Actions steps -> use the powershell shell
 - actions/setup-python toolchains get wiped -> system Python on self-hosted
 - Schannel blocked inside the harness sandbox -> the runner runs as a Windows service (outside the sandbox)
+
+## Flow roadmap (Scaffold → Consensus → Registry) — Top-10 recommendations
+
+Priorities: P1 = quick wins on current code · P2 = medium effort, no external deps ·
+P3 = needs external/production pieces (identity, ledger, consortium).
+
+| # | Recommendation | Priority | Notes / conflicts |
+|---|---|---|---|
+| 1 | Real-time updates: SSE/WebSockets in mock_fen_api + status_api (replace 3s polling) | P1 | FastAPI `StreamingResponse`; also fixes the textarea-lost-on-poll UX issue |
+| 2 | SHACL validation at Scaffold phase (fen-shapes.ttl) | P1 | Reuse `docs/ontology/fen-shapes.ttl`; backend check in `/scaffold` before voting; ties to "SHACL step in CI" item |
+| 3 | Vote delegation (Liquid Democracy) | P2 | Already hinted in ADR-005 decision 2; delegation map + weight propagation in `qv_scores` |
+| 4 | DID / Verifiable Credentials / Gitcoin Passport (sybil resistance) | P3 | Production-critical per ADR-005; MVP can stub an identity-provider interface (`voter` → verified identity) |
+| 5 | Multi-agent cross-check at Scaffold (Extractor → Ontology Matcher → Disambiguator) | P2 | Fits the pluggable LLM provider (`FEN_LLM_*`); Matcher = SPARQL lookup, Disambiguator = Wikidata/GeoNames links |
+| 6 | Graph visualization in Registry (Cytoscape.js / vis-network) | P2 | Zero-build constraint: vendor the lib; shows accepted triple linked into the KG |
+| 7 | Challenge / dispute timelock window | P2 | **Conflicts with ADR-005 "no token economy"** if staking-based; alternative: reputation-lock (non-token) challenge; `gfen:disputed` flow already exists — needs ADR-006 if staking |
+| 8 | Ledger verification modal in Registry | P3 | `ledgerAnchor` is `0xMOCK` until real anchoring (ADR-001) — verify modal ships with the real DAO/ledger work |
+| 9 | Export accepted records: JSON-LD, Turtle, N-Triples, RO-Crate | P1 | `rdflib` serializers + a `/export` endpoint; strengthens the interoperability thesis |
+| 10 | Reputation dashboard & community analytics | P2 | History tracking needed (current API exposes only live scores); LLM-vs-DAO precision/recall uses existing counters |
