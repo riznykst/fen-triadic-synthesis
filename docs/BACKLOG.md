@@ -49,7 +49,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29.
 > matcher/disambiguator) · #6 registry graph (SVG, zero-build) · #9 RDF
 > export (ttl/jsonld/nt/crate) · #10 reputation dashboard (history +
 > LLM-vs-DAO accuracy). Skipped: #7 (staking conflicts ADR-005 — ADR-006
-> needed), #4/#8 (P3, external identity/ledger).
+> needed), #4/#8 (P3, external identity/ledger). ADR-006 draft (tokenless challenge window) in docs/adr/.
 
 Priorities: P1 = quick wins on current code · P2 = medium effort, no external deps ·
 P3 = needs external/production pieces (identity, ledger, consortium).

@@ -125,7 +125,8 @@ fen-triadic-synthesis/
 │   │   ├── ADR-002-federation-node-not-embedded.md
 │   │   ├── ADR-003-fen-pid-scheme.md
 │   │   ├── ADR-004-llm-judge-decision-support-only.md
-│   │   └── ADR-005-participation-model-and-dao-threshold.md
+│   │   ├── ADR-005-participation-model-and-dao-threshold.md
+│   │   └── ADR-006-tokenless-challenge-window.md (draft)
 │   ├── user-stories.md               two typical use cases for the validation layer
 │   ├── self-hosted-runner.md        CI workaround while GitHub billing blocks Actions
 │   ├── applicability-and-limits.md  where the validation layer fits and where it does not
@@ -178,6 +179,7 @@ tested — see [`AGENT_PLAN.md`](AGENT_PLAN.md) for the phase-by-phase build log
 | [ADR-003](docs/adr/ADR-003-fen-pid-scheme.md) | Governance records get ARK + w3id.org PIDs under FEN's own NAAN (`g` decision / `v` validation record / `r` reputation snapshot / `s` scaffolding session). A PID is never bound to a blockchain explorer; the tx hash is only the `gfen:ledgerAnchor` attribute. |
 | [ADR-004](docs/adr/ADR-004-llm-judge-decision-support-only.md) | The LLM judge is decision-support only — it recommends, the community DAO decides. The LLM never votes and never writes `gfen:validationStatus`; within this repo it is used only by the demo mock. |
 | [ADR-005](docs/adr/ADR-005-participation-model-and-dao-threshold.md) | No token economy in the MVP: intrinsic + attribution incentives, near-zero friction (batch voting, delegation), portable reputation. DAO mode from ~20 active validators; below that `gfen:PeerReview`. |
+| [ADR-006](docs/adr/ADR-006-tokenless-challenge-window.md) *(draft)* | Optional tokenless challenge window: reputation-lock based disputes (no staking — ADR-005 stays intact); default off, bounded finality delay. |
 
 ## The `gfen:` ontology extension
 
