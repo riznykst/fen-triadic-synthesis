@@ -175,7 +175,13 @@ function renderConsensus() {
           Object.keys(OUTCOME_STYLE).map((o) =>
             '<button class="vote-btn" style="background:' + OUTCOME_STYLE[o] + '" onclick="vote(\'' + jsAttr(c.annotation_id) + '\',\'' + jsAttr(o) + '\')">' + o + "</button>").join("") +
           "</div>" +
-          '<div class="cost">Cost: ' + intens + "² = <b>" + (intens * intens) + "</b> credits · Your Rep: " + (state.reputation[$("voter").value.trim()] || 0) + "</div>") +
+          '<div class="cost">Cost: ' + intens + "² = <b>" + (intens * intens) + "</b> credits · Your Rep: " + (state.reputation[$("voter").value.trim()] || 0) + "</div>" +
+      (c.status === "pending"
+        ? '<div style="margin-top:6px;font-size:11px;display:flex;gap:6px;align-items:center">Delegate: <input id="del_' + jsAttr(c.annotation_id) + '" placeholder="voter" style="flex:1;min-width:60px;border:1px solid #e3ded2;border-radius:6px;padding:3px 6px;font-size:11px"/> <button class="step-btn" onclick="delegateVote('' + jsAttr(c.annotation_id) + '')">→</button></div>'
+        : "") +
+      (c.delegations && c.delegations[$("voter").value.trim()]
+        ? '<div style="font-size:10.5px;color:' + C.mu + '">delegated to ' + esc(c.delegations[$("voter").value.trim()]) + "</div>"
+        : "") +
       "</div>";
   }).join("");
 }
@@ -183,6 +189,29 @@ function renderConsensus() {
 function adjIntensity(id, d) {
   intensities[id] = Math.min(5, Math.max(1, (intensities[id] || 3) + d));
   renderConsensus();
+}
+
+async function delegateVote(annotationId) {
+  const voter = $("voter").value.trim() || "validator_1";
+  const delegate = $("del_" + annotationId).value.trim();
+  if (!delegate) {
+    $("modeBanner").textContent = "delegate name required";
+    $("modeBanner").style.display = "block";
+    return;
+  }
+  try {
+    const res = await api("/candidates/" + encodeURIComponent(annotationId) + "/delegate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ voter: voter, delegate: delegate }),
+    });
+    $("modeBanner").textContent = res.note || "delegation recorded";
+    $("modeBanner").style.display = "block";
+  } catch (e) {
+    $("modeBanner").textContent = "delegate failed: " + e.message;
+    $("modeBanner").style.display = "block";
+  }
+  load();
 }
 
 async function vote(annotationId, outcome) {
