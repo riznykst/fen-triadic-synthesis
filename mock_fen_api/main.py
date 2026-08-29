@@ -86,8 +86,10 @@ WEBHOOK_URL = os.getenv("FEN_BRIDGE_WEBHOOK_URL", "http://localhost:8101/webhook
 DECISION_DELAY_S = float(os.getenv("MOCK_FEN_DECISION_DELAY_S", "3"))
 MAX_WORKERS = int(os.getenv("MOCK_FEN_MAX_WORKERS", "8"))
 WEBHOOK_MAX_RETRIES = int(os.getenv("MOCK_FEN_WEBHOOK_RETRIES", "3"))
-VOTING_MODE = os.getenv("FEN_MOCK_VOTING", "auto")  # "auto" | "community"
-QUORUM_REQUIRED = int(os.getenv("FEN_MOCK_QUORUM", "3"))
+VOTING_MODE = os.getenv("FEN_MOCK_VOTING", "auto")  # "auto" | "community" | "qv"
+QUORUM_REQUIRED = int(os.getenv("FEN_MOCK_QUORUM", "3"))     # classic count quorum
+QV_THRESHOLD = int(os.getenv("FEN_MOCK_QV_THRESHOLD", "10"))  # QV weighted-score threshold
+MAX_INTENSITY = 5                                             # QV intensity cap (cost = i^2)
 
 OUTCOMES = ("validated", "disputed", "rejected")
 
@@ -96,6 +98,8 @@ _reputation_counter = itertools.count(1)
 
 # In-flight candidate state (UI demo): annotation_id -> record.
 _candidates: Dict[str, dict] = {}
+# Voter/contributor reputation (demo QV mode): name -> points.
+_reputation: Dict[str, int] = {}
 _state_lock = threading.Lock()
 
 # Bounded pool instead of an unbounded daemon thread per candidate
@@ -130,6 +134,38 @@ _LLM_SYSTEM = (
     "Reply with exactly one word: validated, disputed, or rejected."
 )
 
+_SCAFFOLD_SYSTEM = (
+    "You are an Agentic Scaffolding layer for a community data-governance "
+    "framework (validation overlay for ANY dataset type). Analyse the statement "
+    "and return ONLY this JSON (no markdown, no code fences): "
+    '{"schema_hints": ["2-3 brief schema guidance notes for structuring this knowledge"], '
+    '"relationships": ["1-3 semantic relationships identified in the text"], '
+    '"ambiguities": ["any ambiguity or missing context - empty array [] if none"], '
+    '"triple": {"subject": "...", "predicate": "...", "object": "...", "context": "...", '
+    '"language_or_domain": "...", "evidence_type": "personal_expertise | community_consensus | archival"}}'
+)
+
+
+def _parse_scaffold_json(answer: Optional[str]) -> Optional[dict]:
+    """Parse the scaffold agent's JSON answer; tolerate code fences."""
+    if not answer:
+        return None
+    try:
+        cleaned = answer.replace("```json", "").replace("```", "").strip()
+        data = json.loads(cleaned)
+        triple = data.get("triple")
+        if not isinstance(triple, dict) or not triple.get("subject"):
+            return None
+        return {
+            "schema_hints": data.get("schema_hints", []),
+            "relationships": data.get("relationships", []),
+            "ambiguities": data.get("ambiguities", []),
+            "triple": triple,
+            "source": "llm",
+        }
+    except (json.JSONDecodeError, TypeError):
+        return None
+
 
 # ------------------------------------------------------------------ voting
 def majority_outcome(votes: Dict[str, int]) -> str:
@@ -139,6 +175,31 @@ def majority_outcome(votes: Dict[str, int]) -> str:
 
 def quorum_total(votes: Dict[str, int]) -> int:
     return sum(votes.values())
+
+
+# ----------------------------------------------------------------------- QV
+def qv_cost(intensity: int) -> int:
+    """Quadratic cost: a vote with weight ``intensity`` spends intensity^2
+    credits (capture-resistance; the cost curve is not the participation
+    driver — ADR-005)."""
+    return intensity * intensity
+
+
+def qv_scores(qv_votes: list) -> Dict[str, int]:
+    """Weighted scores per outcome from QV votes (each vote carries an
+    ``intensity`` weight). Distinct-identity counting is production policy
+    (ADR-005); the demo weighs by intensity only."""
+    scores = {o: 0 for o in OUTCOMES}
+    for vote in qv_votes:
+        scores[vote["outcome"]] += int(vote.get("intensity", 1))
+    return scores
+
+
+def qv_decide(scores: Dict[str, int], threshold: int) -> Optional[str]:
+    """Outcome whose weighted score reached the threshold; ties broken by
+    OUTCOMES order. Returns None while the proposal is still open."""
+    best = max(OUTCOMES, key=lambda o: (scores[o], -OUTCOMES.index(o)))
+    return best if scores[best] >= threshold else None
 
 
 def _record_candidate(candidate: dict) -> None:
@@ -155,6 +216,7 @@ def _record_candidate(candidate: dict) -> None:
                 "entity_label": candidate.get("entity_label"),
                 "status": "pending",
                 "votes": {"validated": 0, "disputed": 0, "rejected": 0},
+                "qv_votes": [],
                 "llm_recommendation": recommendation,
                 "candidate": dict(candidate),
                 "decision": None,
@@ -167,6 +229,22 @@ def _set_status(annotation_id: str, status: str, decision: Optional[dict] = None
             _candidates[annotation_id]["status"] = status
             if decision is not None:
                 _candidates[annotation_id]["decision"] = decision
+
+
+def _apply_reputation(annotation_id: str, outcome: str) -> None:
+    """Demo reputation (ADR-005 incentives): the contributor of an approved
+    entry gains +2, voters of the winning outcome +1. Classic-mode votes carry
+    no voter names, so only QV-mode votes contribute."""
+    with _state_lock:
+        record = _candidates.get(annotation_id)
+        if record is None:
+            return
+        submitter = record.get("candidate", {}).get("submitter") or "contributor_1"
+        _reputation[submitter] = _reputation.get(submitter, 0) + 2
+        for vote in record.get("qv_votes", []):
+            if vote.get("outcome") == outcome and vote.get("voter"):
+                voter = vote["voter"]
+                _reputation[voter] = _reputation.get(voter, 0) + 1
 
 
 def _public_state() -> list:
@@ -184,6 +262,12 @@ def _public_state() -> list:
                     "votes": quorum_total(record["votes"]),
                     "required": QUORUM_REQUIRED,
                     "reached": quorum_total(record["votes"]) >= QUORUM_REQUIRED,
+                },
+                "qv": {
+                    "votes": list(record["qv_votes"]),
+                    "scores": qv_scores(record["qv_votes"]),
+                    "threshold": QV_THRESHOLD,
+                    "reached": qv_decide(qv_scores(record["qv_votes"]), QV_THRESHOLD) is not None,
                 },
                 "decision": record["decision"],
             })
@@ -275,6 +359,7 @@ def _deliver_decision_after_delay(
                 decision["outcome"],
             )
             _set_status(candidate["annotation_id"], decision["outcome"], decision)
+            _apply_reputation(candidate["annotation_id"], decision["outcome"])
             return
         except requests.RequestException:
             logger.exception(
@@ -294,9 +379,9 @@ def submit_candidates(payload: dict):
     candidates = payload.get("candidates", [])
     for candidate in candidates:
         _record_candidate(candidate)
-        if VOTING_MODE == "community":
-            # UI demo mode: wait for community votes (POST .../vote).
-            logger.info("candidate %s queued for community voting", candidate["annotation_id"])
+        if VOTING_MODE in ("community", "qv"):
+            # UI demo modes: wait for votes (POST .../vote).
+            logger.info("candidate %s queued for %s voting", candidate["annotation_id"], VOTING_MODE)
         else:
             with _state_lock:
                 rec = _candidates.get(candidate["annotation_id"])
@@ -310,53 +395,135 @@ def submit_candidates(payload: dict):
 
 @app.get("/candidates")
 def list_candidates():
-    """All in-flight candidates with vote/quorum state (Flow 1 portal)."""
-    return {"candidates": _public_state()}
+    """All in-flight candidates with vote/quorum/QV state + reputation."""
+    with _state_lock:
+        reputation = dict(_reputation)
+    return {
+        "candidates": _public_state(),
+        "mode": VOTING_MODE,
+        "qv_threshold": QV_THRESHOLD,
+        "reputation": reputation,
+    }
 
 
 @app.post("/candidates/{annotation_id}/vote")
 def cast_vote(annotation_id: str, payload: dict):
-    """Cast one community vote (Flow 1 portal). When the quorum is reached
-    the majority outcome is delivered as the governance decision.
+    """Cast one vote. Two demo modes (web/api.md):
+
+    - ``community`` (classic): one vote per call; quorum = vote count
+      (``FEN_MOCK_QUORUM``), outcome = majority.
+    - ``qv`` (Quadratic Voting): vote carries an optional ``intensity``
+      (1..5, default 1, cost = intensity^2) and optional ``voter``/
+      ``comment``; the proposal is decided when an outcome weighted score
+      reaches ``FEN_MOCK_QV_THRESHOLD`` (default 10).
+
+    When decided, the outcome is delivered once (claim inside the lock, so a
+    concurrent vote sees status != pending and gets 409).
     """
     outcome = payload.get("outcome")
     if outcome not in OUTCOMES:
         raise HTTPException(status_code=422, detail=f"outcome must be one of {OUTCOMES}")
+
+    try:
+        intensity = int(payload.get("intensity", 1))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail=f"intensity must be an integer 1..{MAX_INTENSITY}")
+    if not 1 <= intensity <= MAX_INTENSITY:
+        raise HTTPException(status_code=422, detail=f"intensity must be 1..{MAX_INTENSITY}")
+
     with _state_lock:
         record = _candidates.get(annotation_id)
         if record is None:
             raise HTTPException(status_code=404, detail="unknown annotation_id")
         if record["status"] != "pending":
             raise HTTPException(status_code=409, detail=f"candidate already decided: {record['status']}")
-        if VOTING_MODE != "community":
-            raise HTTPException(status_code=409, detail="community voting is disabled (FEN_MOCK_VOTING=auto)")
-        record["votes"][outcome] += 1
-        votes = dict(record["votes"])
-        total = quorum_total(votes)
-        reached = total >= QUORUM_REQUIRED
-        if reached:
-            final = majority_outcome(votes)
-            # Claim the decision INSIDE the lock: a concurrent vote that would
-            # also reach the quorum now sees status != pending and is rejected
-            # (409), so the delivery is scheduled exactly once (no double
-            # webhook call, no duplicated decision_id).
-            record["status"] = "deciding"
+        if VOTING_MODE not in ("community", "qv"):
+            raise HTTPException(status_code=409, detail="voting is disabled (FEN_MOCK_VOTING=auto)")
+
+        if VOTING_MODE == "qv":
+            record["qv_votes"].append({
+                "outcome": outcome,
+                "intensity": intensity,
+                "voter": payload.get("voter") or f"validator_{len(record['qv_votes']) + 1}",
+                "comment": payload.get("comment") or "",
+            })
+            scores = qv_scores(record["qv_votes"])
+            reached = qv_decide(scores, QV_THRESHOLD) is not None
+            final = qv_decide(scores, QV_THRESHOLD) if reached else None
         else:
-            final = None
+            record["votes"][outcome] += 1
+            scores = None
+            total = quorum_total(record["votes"])
+            reached = total >= QUORUM_REQUIRED
+            final = majority_outcome(record["votes"]) if reached else None
+
+        votes = dict(record["votes"])
+        if reached:
+            record["status"] = "deciding"
 
     if reached:
         _get_executor().submit(_deliver_decision_after_delay, {"annotation_id": annotation_id}, final)
         return {
             "annotation_id": annotation_id,
             "votes": votes,
-            "quorum": {"votes": total, "required": QUORUM_REQUIRED, "reached": True},
+            "qv": {
+                "votes": list(record["qv_votes"]),
+                "scores": scores,
+                "threshold": QV_THRESHOLD,
+            },
+            "quorum": {"votes": quorum_total(votes), "required": QUORUM_REQUIRED, "reached": True},
+            "cost": qv_cost(intensity) if VOTING_MODE == "qv" else 1,
             "outcome": final,
-            "note": "quorum reached — decision being delivered",
+            "note": "decision threshold reached — decision being delivered",
         }
     return {
         "annotation_id": annotation_id,
         "votes": votes,
-        "quorum": {"votes": total, "required": QUORUM_REQUIRED, "reached": False},
+        "qv": {
+            "votes": list(record["qv_votes"]),
+            "scores": scores,
+            "threshold": QV_THRESHOLD,
+        },
+        "quorum": {"votes": quorum_total(votes), "required": QUORUM_REQUIRED, "reached": False},
+        "cost": qv_cost(intensity) if VOTING_MODE == "qv" else 1,
+    }
+
+
+@app.post("/scaffold")
+def scaffold(payload: dict):
+    """Agentic Scaffolding (Phase 1) — decision-support only (ADR-004).
+
+    Uses the configured OpenAI-compatible LLM (FEN_LLM_*) to structure a
+    natural-language statement into a semantic triple with schema hints,
+    relationships and ambiguity flags. Generic — works for ANY dataset type
+    (framework, not language-specific). Falls back to a deterministic rule
+    when no LLM is configured, so the demo works offline.
+    """
+    text = (payload.get("text") or "").strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="text is required")
+
+    if _llm_config.enabled:
+        answer = chat_completion(_llm_config, _SCAFFOLD_SYSTEM, text)
+        parsed = _parse_scaffold_json(answer)
+        if parsed:
+            return parsed
+        logger.warning("scaffold agent unavailable/indecisive; using rule fallback")
+
+    snippet = text[:48]
+    return {
+        "schema_hints": ["rule-based fallback (no LLM configured) — the triple is a rough split"],
+        "relationships": [],
+        "ambiguities": [],
+        "triple": {
+            "subject": snippet,
+            "predicate": "mentions",
+            "object": text[-48:] if len(text) > 96 else snippet,
+            "context": "",
+            "language_or_domain": "und",
+            "evidence_type": "community_consensus",
+        },
+        "source": "rule_fallback",
     }
 
 

@@ -1,0 +1,127 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validation Commons — Triadic view</title>
+<style>
+  body { margin:0; min-height:100vh; background:radial-gradient(circle at 15% 20%,rgba(255,255,255,.6),transparent 40%),radial-gradient(circle at 85% 75%,rgba(255,255,255,.5),transparent 45%),linear-gradient(135deg,#efece6,#e7e4dc); font-family:system-ui,sans-serif; color:#1c1b1f; padding:36px 16px; box-sizing:border-box; }
+  .wrap { max-width:1180px; margin:0 auto; }
+  header { text-align:center; margin-bottom:26px; }
+  header h1 { font-family:Georgia,serif; font-size:21px; margin:0 0 4px; color:#1c1b1f; font-weight:400; }
+  header .sub { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#6b6560; }
+  header .switch { display:inline-block; margin-top:10px; font-size:11px; color:#2d5a8e; border:1px solid #2d5a8e55; border-radius:999px; padding:4px 12px; text-decoration:none; background:#fff; }
+  .banner { max-width:760px; margin:0 auto 18px; background:#faf3e0; border:1px dashed #c9a35f; border-radius:8px; padding:8px 12px; font-size:12px; color:#5c4a10; text-align:center; }
+  .cols { display:flex; gap:28px; flex-wrap:wrap; justify-content:center; align-items:flex-start; }
+  .card { position:relative; width:340px; flex-shrink:0; }
+  .card .under { position:absolute; top:8px; left:8px; right:-8px; bottom:-8px; background:#ddd8cd; border-radius:18px; }
+  .card .front { position:relative; background:#fdfcfa; border:1.5px solid #2d5a8e; border-radius:18px; padding:22px 18px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .card h2 { font-family:Georgia,serif; font-size:23px; font-weight:400; margin:0; color:#1c1b1f; }
+  .card .sub { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#6b6560; margin:2px 0 0; }
+  .rule { height:1px; background:#e3ded2; margin:10px 0 12px; }
+  .lbl { display:block; font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:#6b6560; font-weight:600; margin-bottom:3px; }
+  .hint { display:block; font-size:11px; color:#6b6560; font-style:italic; margin:3px 0 9px; line-height:1.4; }
+  input, textarea { width:100%; border:1px solid #e3ded2; border-radius:6px; padding:7px 10px; font-family:system-ui,sans-serif; font-size:13px; color:#1c1b1f; background:#fff; box-sizing:border-box; outline:none; }
+  textarea { border:1.3px solid #2d5a8e; border-radius:8px; resize:none; min-height:68px; }
+  .btn { width:100%; padding:9px 0; border-radius:8px; border:none; background:#2d5a8e; color:#fff; font-weight:700; font-size:12.5px; letter-spacing:.04em; cursor:pointer; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .btn.green { background:#2e7d5b; }
+  .chip { padding:4px 10px; border-radius:999px; border:1px solid #2d5a8e44; background:#fff; color:#2d5a8e; font-size:10.5px; cursor:pointer; margin:0 5px 5px 0; }
+  .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .b-gr { color:#2e7d5b; background:#e6f4ee; } .b-rd { color:#b23a3a; background:#fae8e8; } .b-gd { color:#8b6914; background:#faf3e0; } .b-hs { color:#5b4e8a; background:#eee9fa; } .b-bl { color:#2d5a8e; background:#e8eff7; }
+  .triple { background:#e8eff7; border:1px solid #2d5a8e; border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+  .triple .grid { display:grid; grid-template-columns:72px 1fr; gap:4px 8px; font-size:12px; }
+  .triple .k { color:#2d5a8e; font-weight:700; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; padding-top:1px; }
+  .step { border-radius:8px; padding:8px 10px; margin-bottom:7px; animation:fadeSlide .3s ease; }
+  .step .t { font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; margin-bottom:5px; }
+  .step .i { font-size:11.5px; line-height:1.4; padding-left:8px; border-left:2px solid; margin-bottom:4px; }
+  @keyframes fadeSlide { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+  .list { max-height:470px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:2px; }
+  .item { border:1px solid #e3ded2; border-radius:8px; padding:10px 11px; background:#fff; }
+  .item.reg { border-left:3px solid #5b4e8a; }
+  .bar { height:5px; background:#e3ded2; border-radius:3px; overflow:hidden; margin-bottom:3px; }
+  .bar > div { height:100%; background:#2d5a8e; border-radius:3px; transition:width .3s; }
+  .prow { display:flex; justify-content:space-between; font-size:10px; margin-bottom:8px; }
+  .prow .f { color:#2e7d5b; font-weight:700; } .prow .a { color:#b23a3a; font-weight:700; }
+  .vote-row { display:flex; align-items:center; gap:6px; margin-top:8px; }
+  .step-btn { width:18px; height:18px; border-radius:3px; border:1px solid #e3ded2; background:#fff; cursor:pointer; font-size:11px; padding:0; color:#1c1b1f; }
+  .vote-btn { padding:5px 0; border-radius:6px; border:none; color:#fff; font-size:11px; font-weight:700; cursor:pointer; flex:1; }
+  .cost { font-size:10px; color:#6b6560; margin-top:4px; }
+  .mono { font-family:monospace; font-size:9.5px; color:#5b4e8a; background:#eee9fa; padding:2px 6px; border-radius:3px; }
+  .meta { font-size:10px; color:#6b6560; margin-bottom:8px; }
+  .note { font-size:11px; color:#6b6560; text-align:center; padding:24px 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Validation Commons</h1>
+    <div class="sub">Triadic Synthesis Framework · Live Prototype · any dataset type</div>
+    <a class="switch" href="index.html">← Classic view (candidates &amp; table)</a>
+  </header>
+  <div class="banner" id="modeBanner" style="display:none"></div>
+
+  <div class="cols">
+    <!-- Phase 1: Scaffold -->
+    <div class="card">
+      <div class="under"></div>
+      <div class="front">
+        <h2>Scaffold</h2>
+        <p class="sub">Phase 1 · Agentic interaction layer</p>
+        <div class="rule"></div>
+        <label class="lbl">Contributor name</label>
+        <input id="name" value="contributor_1" style="margin-bottom:10px">
+        <span class="hint">Used for provenance attribution — not identity verification.</span>
+        <label class="lbl">Natural-language statement</label>
+        <textarea id="text" placeholder='e.g. "In the local tradition, the hill X marks the old trade route"'></textarea>
+        <div id="examples" style="margin:6px 0 5px"></div>
+        <span class="hint">Tap an example — the agent reveals schema guidance, relationships and ambiguity flags before producing the triple.</span>
+        <div style="background:#faf3e0;border:1px dashed #c9a35f;border-radius:6px;padding:8px 10px;font-size:11px;color:#5c4a10;line-height:1.45;margin-bottom:10px">
+          Agent (ElizaOS-role) guides structuring — does <b>not</b> approve or finalise entries. Authority stays with the DAO in Phase 2 (ADR-004).
+        </div>
+        <button class="btn" id="run">Run Scaffolding Agent →</button>
+        <div id="scaffoldErr" style="color:#b23a3a;font-size:11px;margin-top:6px"></div>
+        <div id="steps" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Consensus -->
+    <div class="card">
+      <div class="under"></div>
+      <div class="front">
+        <h2>Consensus</h2>
+        <p class="sub">Phase 2 · Decentralised validation</p>
+        <div class="rule"></div>
+        <label class="lbl">Validator name</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <input id="voter" value="validator_1" style="flex:1">
+          <span class="badge b-gr" id="repBadge">Rep 0</span>
+        </div>
+        <span class="hint">Reputation accrues from approved contributions and correct votes.</span>
+        <div style="font-size:11px;color:#6b6560;margin-bottom:10px;background:#f7f5f0;border-radius:6px;padding:7px 9px;line-height:1.5">
+          <b style="color:#1c1b1f">Three-layer validation:</b><br>
+          <span style="color:#2d5a8e">① Peer review</span> · <span style="color:#8b6914">② QV vote (cost = intensity²)</span> · <span style="color:#2e7d5b">③ Threshold pts</span>
+        </div>
+        <div class="list" id="consensus"></div>
+      </div>
+    </div>
+
+    <!-- Phase 3: Registry -->
+    <div class="card">
+      <div class="under"></div>
+      <div class="front">
+        <h2>Registry</h2>
+        <p class="sub">Phase 3 · Governance decisions</p>
+        <div class="rule"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span class="badge b-gr" id="regCount">0 records</span>
+          <span style="font-size:11px;color:#6b6560">decision PID per ADR-003 · anchor per ADR-001</span>
+        </div>
+        <div class="list" id="registry"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="triadic.js"></script>
+</body>
+</html>

@@ -51,6 +51,30 @@ votes, quorum: {votes, required, reached}, decision}]}`
 > implementation of the same interface. The LLM judge is decision-support
 > only and never counts as a vote (ADR-004).
 
+## 3b. Agentic Scaffolding (Phase 1) — `POST /scaffold`
+
+```json
+{ "text": "In the local oral tradition, the hill Koshary marks the old trade route" }
+```
+
+→ `200`: `{schema_hints, relationships, ambiguities, triple: {subject,
+predicate, object, context, language_or_domain, evidence_type}, source:
+"llm" | "rule_fallback"}` — decision-support only (ADR-004): the agent
+structures knowledge, it never votes. Generic for any dataset type. Uses the
+configured OpenAI-compatible LLM (`FEN_LLM_*`); rule fallback offline.
+
+## 3c. Voting modes — `POST /candidates/{annotation_id}/vote`
+
+| Mode (`FEN_MOCK_VOTING`) | Semantics |
+|---|---|
+| `auto` | simulated DAO decides after a delay (no votes) |
+| `community` | vote count quorum (`FEN_MOCK_QUORUM`), majority outcome |
+| `qv` | Quadratic Voting: vote = `{outcome, intensity (1..5, default 1, cost = intensity²), voter?, comment?}`; decided when an outcome weighted score reaches `FEN_MOCK_QV_THRESHOLD` (default 10) |
+
+The `200` response carries `qv: {votes, scores, threshold}` and `cost`.
+Contributor +2 and winning-outcome voters +1 reputation (ADR-005 incentives,
+demo) are returned via `GET /candidates` (`reputation` map).
+
 ## 4. Validation status (read, widget) — `GET /api/v1/status/{annotation_id}`
 
 Resolved live from the RDF store via SPARQL (named graphs):

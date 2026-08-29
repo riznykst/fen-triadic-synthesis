@@ -299,6 +299,12 @@ whitepaper §7 "Request to the Consortium"):
 A zero-build web layer (plain HTML/JS + FastAPI — no Node toolchain) exposes
 the two community flows:
 
+- **Flow 1 — Community DAO portal** (`web/portal/`): two alternative views —
+  the classic candidates/voting table (`index.html`) and the **Triadic view**
+  (`triadic.html`): Scaffold → Consensus → Registry, with QV intensity
+  voting (cost = intensity², threshold per ADR-005), peer-review comments and
+  reputation. Generic framework framing — works for any dataset type, not
+  only linguistic data.
 - **Flow 1 — Community DAO portal** (`web/portal/`): submit candidates,
   watch `gfen:pending` cards, cast community votes (demo mode
   `FEN_MOCK_VOTING=community`), track quorum progress. Talks to the mock FEN
@@ -319,8 +325,9 @@ Run the demo:
 
 ```bash
 docker compose up --build
-# portal:  http://localhost:8082/web/portal/          (mock in community mode:
-#          FEN_MOCK_VOTING=community FEN_MOCK_QUORUM=3)
+# portal:  http://localhost:8082/web/portal/          (classic view)
+# triadic: http://localhost:8082/web/portal/triadic.html  (Scaffold→Consensus→Registry)
+#          mock in QV mode: FEN_MOCK_VOTING=qv FEN_MOCK_QV_THRESHOLD=10
 # widget:  http://localhost:8082/web/widget/demo.html
 ```
 
