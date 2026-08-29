@@ -1,4 +1,4 @@
-"""Validation Result Consumer.
+﻿"""Validation Result Consumer.
 
 Reads fen.governance.decisions.v1, applies the governance update into the
 named graph via SPARQL (sparql_updater.py), then publishes an EntityValidated
@@ -45,7 +45,8 @@ def handle_decision(config: ValidationConsumerConfig, payload: dict) -> Governan
     """
     decision = GovernanceDecision.model_validate(payload)
     query = build_update_query(decision, named_graph_uri(decision))
-    apply_update(config.sparql_update_endpoint, query)
+    auth = (config.sparql_update_user, config.sparql_update_password) if config.sparql_update_user else None
+    apply_update(config.sparql_update_endpoint, query, auth=auth)
     return decision
 
 

@@ -323,7 +323,7 @@ docker compose up --build
 
 ## Status
 
-🟢 **CI: green on the self-hosted runner** (73 tests; the e2e job runs the full Docker stack once Docker Desktop is installed — its Docker steps are currently skipped on this machine, see [CHANGELOG.md](CHANGELOG.md)). Runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md).
+🟢 **CI: green on the self-hosted runner** (73 tests; the e2e job now runs the full Docker stack for real — Docker Desktop is installed, see [CHANGELOG.md](CHANGELOG.md)). Runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md).
 
 
 🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka

@@ -1,4 +1,4 @@
-"""Builds the SPARQL DELETE/INSERT that writes gfen: governance provenance
+﻿"""Builds the SPARQL DELETE/INSERT that writes gfen: governance provenance
 onto an existing oa:Annotation instance, and executes it against a SPARQL
 1.1 Update endpoint (Fuseki locally, Virtuoso in production — same
 protocol, per ADR-001: only the decision is anchored/written here, never
@@ -79,7 +79,7 @@ WHERE {{
 """.strip()
 
 
-def apply_update(sparql_update_endpoint: str, query: str, timeout_s: float = 10.0) -> None:
+def apply_update(sparql_update_endpoint: str, query: str, timeout_s: float = 10.0, auth=None) -> None:
     """Execute the update against a live SPARQL 1.1 Update endpoint. Raises
     on failure — an update that silently fails to land would leave the
     entity stuck at gfen:pending with no signal, which is worse than a
@@ -91,6 +91,7 @@ def apply_update(sparql_update_endpoint: str, query: str, timeout_s: float = 10.
         sparql_update_endpoint,
         data={"update": query},
         timeout=timeout_s,
+        auth=auth,
     )
     resp.raise_for_status()
     logger.info("applied governance update to %s", sparql_update_endpoint)

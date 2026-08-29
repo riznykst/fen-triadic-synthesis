@@ -1,4 +1,28 @@
-﻿# Changelog
+﻿## 2026-08-29 — REAL end-to-end run passed on Docker (first true e2e)
+
+The first genuinely executed end-to-end pipeline on this machine (Docker
+Desktop installed, WSL2 backend): candidate -> Kafka -> FEN Bridge -> mock
+DAO -> webhook -> decision topic -> Validation Result Consumer -> SPARQL
+UPDATE in Fuseki -> EntityValidated topic -> status API. The run exposed and
+fixed four production bugs the unit suite could not see:
+
+- `stain/jena-fuseki:4.9.0` did not exist in the registry -> 5.1.0
+  (docker-compose.yml).
+- kafka-python 3.x broke the callable serializer API
+  (`SerializeWrapper.serialize()`) -> pinned `<3` in all requirements.
+- The JSON value serializer crashed on `GovernanceDecision.decided_at`
+  (datetime) -> `_json_default` emits ISO-8601 (services/common/kafka_io.py).
+- `services/common/metrics.py` imported `fastapi` at module level, which
+  crashed the consumer images (no web framework installed) -> lazy import.
+- Jena Fuseki 5 requires authentication on `/update` (HTTP 401) -> optional
+  SPARQL basic auth via `SPARQL_UPDATE_USER/PASSWORD` (dev defaults admin/admin).
+- `scripts/smoke_test.py`: `wait_for` returned `None` (callers crashed on
+  the result) -> returns the probe value.
+
+Local run: `python scripts/smoke_test.py` -> **E2E SMOKE TEST PASSED**.
+With Docker now installed, the CI `e2e` job on the self-hosted runner runs
+the full stack instead of skipping it.
+# Changelog
 
 All notable changes are recorded here in reverse chronological order.
 

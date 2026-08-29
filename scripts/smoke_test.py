@@ -60,19 +60,21 @@ DECISION_TIMEOUT_S = 30.0
 POLL_INTERVAL_S = 1.0
 
 
-def wait_for(predicate: Callable[[], bool], timeout_s: float, description: str) -> None:
+def wait_for(predicate: Callable[[], bool], timeout_s: float, description: str):
     """Poll ``predicate`` every second until it is truthy or ``timeout_s``
     elapses. Probe errors are expected while the stack is starting and are
     retried; on timeout the last probe error (if any) is surfaced so the
-    failure is diagnosable.
+    failure is diagnosable. Returns the last truthy probe result (callers
+    use it as the checked value, e.g. the SPARQL status string).
     """
     deadline = time.monotonic() + timeout_s
     last_error: Optional[Exception] = None
     while time.monotonic() < deadline:
         try:
-            if predicate():
+            result = predicate()
+            if result:
                 logger.info("%s: ready", description)
-                return
+                return result
             last_error = None
         except Exception as exc:  # noqa: BLE001 - probe errors expected while starting
             last_error = exc

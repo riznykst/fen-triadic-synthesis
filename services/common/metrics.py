@@ -12,7 +12,6 @@ Metric naming follows the Prometheus convention: ``fen_<service>_<name>``.
 """
 from __future__ import annotations
 
-from fastapi import Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 # ---- FEN Bridge — inbound webhook -----------------------------------------
@@ -67,8 +66,14 @@ KAFKA_MESSAGES_FAILED = Counter(
 )
 
 
-def metrics_response() -> Response:
+def metrics_response():
     """Build a FastAPI ``Response`` with the current metric values in the
     Prometheus text exposition format — the body of every ``GET /metrics``.
+
+    ``fastapi`` is imported lazily so consumer processes (fen-bridge-outbound,
+    validation-consumer) can import this module without shipping a web
+    framework in their images.
     """
+    from fastapi import Response  # noqa: PLC0415 - HTTP-only dependency
+
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

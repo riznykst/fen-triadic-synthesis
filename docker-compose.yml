@@ -34,7 +34,7 @@
   # testing. Swap SPARQL_UPDATE_ENDPOINT to point at Virtuoso in any
   # non-local deployment; no application code needs to change.
   fuseki:
-    image: stain/jena-fuseki:4.9.0
+    image: stain/jena-fuseki:5.1.0  # was 4.9.0 — that tag does not exist in the registry
     environment:
       ADMIN_PASSWORD: admin
       FUSEKI_DATASET_1: fen
@@ -131,4 +131,6 @@
       TOPIC_GOVERNANCE_DECISIONS: fen.governance.decisions.v1
       TOPIC_VALIDATED: dap.entities.validated.v1
       SPARQL_UPDATE_ENDPOINT: http://fuseki:3030/fen/update
+      SPARQL_UPDATE_USER: admin
+      SPARQL_UPDATE_PASSWORD: admin
       FEN_NAAN: "99999"
