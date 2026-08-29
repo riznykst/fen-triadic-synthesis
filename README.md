@@ -14,7 +14,7 @@ WP4 of the GRAPHIA project extracts entities and relations from full-text SSH do
 
 FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 
-1. **Agentic Scaffolding** — an AI agent (built on ElizaOS) guides contributors in structuring linguistic knowledge, without ever deciding on their behalf.
+1. **Agentic Scaffolding** — an AI agent guides contributors in structuring linguistic knowledge, without ever deciding on their behalf (a separate FEN-side project, external to this repository — ADR-002).
 2. **Decentralised Validation** — a DAO, using Quadratic Voting and reputation-weighted review, decides whether a candidate entity is accepted, disputed, or rejected. The community remains the final arbiter of meaning.
 3. **Immutable Integration** — the governance decision is anchored (hash only) on-chain and exposed as a dereferenceable PID ([ADR-003](docs/adr/ADR-003-fen-pid-scheme.md)), while the underlying content stays in GRAPHIA's authoritative RDF store.
 
@@ -47,7 +47,7 @@ dap.entities.pending_validation.v1
 [ FEN Bridge — outbound ]            (new DAP microservice — this repo)
      │  forwards batches to the FEN API
      ▼
-   [ Agentic Scaffolding (ElizaOS) → DAO / Quadratic Voting ]
+   [ Agentic Scaffolding → DAO / Quadratic Voting ]
      │  governance decision, asynchronous callback
      ▼
 [ FEN Bridge — webhook ]             (validates + republishes to Kafka)
