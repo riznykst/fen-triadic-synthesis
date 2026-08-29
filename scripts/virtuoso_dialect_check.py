@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+from requests.auth import HTTPDigestAuth
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -56,7 +57,14 @@ def _decision() -> GovernanceDecision:
 
 
 def _apply(query: str) -> None:
-    resp = requests.post(UPDATE_URL, data={"update": query}, auth=AUTH, timeout=20)
+    # Virtuoso's /sparql-auth negotiates Digest auth by default; fall back
+    # to Basic if the instance allows it.
+    for auth in (HTTPDigestAuth(*AUTH), AUTH):
+        resp = requests.post(UPDATE_URL, data={"update": query}, auth=auth, timeout=20)
+        if resp.status_code != 401:
+            break
+    if resp.status_code >= 400:
+        raise RuntimeError(f"UPDATE failed ({resp.status_code}): {resp.text[:400]}")
     resp.raise_for_status()
 
 
@@ -64,8 +72,15 @@ def _count() -> int:
     sparql = (
         "SELECT (COUNT(*) AS ?c) WHERE { GRAPH <" + NAMED_GRAPH + "> { ?s ?p ?o } }"
     )
-    resp = requests.get(QUERY_URL, params={"query": sparql}, timeout=20)
+    # Virtuoso serves XML by default — ask for SPARQL JSON explicitly.
+    resp = requests.get(
+        QUERY_URL,
+        params={"query": sparql, "format": "application/sparql-results+json"},
+        timeout=20,
+    )
     resp.raise_for_status()
+    if not resp.text.strip():
+        raise RuntimeError("SELECT returned an empty body")
     bindings = resp.json().get("results", {}).get("bindings", [])
     return int(bindings[0]["c"]["value"]) if bindings else 0
 
