@@ -66,12 +66,8 @@ Candidates are published immediately with `gfen:pending` — the pipeline never 
 
 ## Running locally
 
-**Windows quick start:** run `start-dev.bat` from the repo root (or double-click
-it) — it builds the stack with the community-voting demo mode and opens the
-web interface (portal + widget demo) in your browser automatically. Stop the
-stack with `start-dev.bat stop`.
-
 ```bash
+
 cp .env.example .env          # optional — docker-compose.yml has working in-container defaults
 docker compose up --build
 ```
