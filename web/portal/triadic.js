@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Validation Commons — Triadic view (zero-build).
  * Talks to the mock FEN API only (web/api.md): /scaffold, /candidates,
  * /candidates/{id}/vote. Generic framework framing — any dataset type.
@@ -32,6 +32,14 @@ async function api(path, opts) {
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Escaping for values embedded in INLINE JS handlers inside double-quoted
+// attributes: JS-string escaping first (backslash, single quote), then HTML
+// entity escaping for the attribute. (HTML entity decoding happens before JS
+// parsing, so esc() alone would NOT stop quote breakout in that context.)
+function jsAttr(s) {
+  return esc(String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'"));
 }
 
 // ---------------------------------------------------------------- scaffold
@@ -150,14 +158,14 @@ function renderConsensus() {
       (voted
         ? '<div style="font-size:10.5px;color:' + C.mu + '">✓ Voted as ' + esc($("voter").value.trim()) + "</div>"
         : '<div class="lbl" style="margin-bottom:3px">① Peer review (optional)</div>' +
-          '<textarea style="width:100%;border:1px solid #e3ded2;border-radius:6px;padding:6px 8px;font-size:12px;resize:none;min-height:44px;box-sizing:border-box" placeholder="Share your assessment…" onchange="comments[\'' + c.annotation_id + '\']=this.value"></textarea>' +
+          '<textarea style="width:100%;border:1px solid #e3ded2;border-radius:6px;padding:6px 8px;font-size:12px;resize:none;min-height:44px;box-sizing:border-box" placeholder="Share your assessment…" onchange="comments[\'' + jsAttr(c.annotation_id) + '\']=this.value"></textarea>' +
           '<div class="lbl" style="margin-bottom:4px;margin-top:6px">② Cast QV vote</div>' +
           '<div class="vote-row">' +
-          '<button class="step-btn" onclick="adjIntensity(\'' + c.annotation_id + '\',-1)">−</button>' +
+          '<button class="step-btn" onclick="adjIntensity(\'' + jsAttr(c.annotation_id) + '\',-1)">−</button>' +
           '<span style="font-size:10px;color:' + C.mu + ';min-width:22px;text-align:center">×' + intens + "</span>" +
-          '<button class="step-btn" onclick="adjIntensity(\'' + c.annotation_id + '\',1)">+</button>' +
+          '<button class="step-btn" onclick="adjIntensity(\'' + jsAttr(c.annotation_id) + '\',1)">+</button>' +
           Object.keys(OUTCOME_STYLE).map((o) =>
-            '<button class="vote-btn" style="background:' + OUTCOME_STYLE[o] + '" onclick="vote(\'' + c.annotation_id + '\',\'' + o + '\')">' + o + "</button>").join("") +
+            '<button class="vote-btn" style="background:' + OUTCOME_STYLE[o] + '" onclick="vote(\'' + jsAttr(c.annotation_id) + '\',\'' + jsAttr(o) + '\')">' + o + "</button>").join("") +
           "</div>" +
           '<div class="cost">Cost: ' + intens + "² = <b>" + (intens * intens) + "</b> credits · Your Rep: " + (state.reputation[$("voter").value.trim()] || 0) + "</div>") +
       "</div>";
@@ -211,7 +219,7 @@ function renderRegistry() {
       '<div style="background:#f4f2ed;border-radius:6px;padding:8px 10px;font-size:11px">' +
       '<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px">' +
       '<span style="color:' + C.mu + ';font-weight:600">Contributor</span><span>' + esc(c.submitter || "?") + "</span>" +
-      '<span style="color:' + C.mu + ';font-weight:600">Decision ID</span><span><a href="' + pid + '" target="_blank" rel="noopener" style="color:' + C.hs + ';font-weight:700;font-family:monospace">' + esc(d.decision_id) + "</a></span>" +
+      '<span style="color:' + C.mu + ';font-weight:600">Decision ID</span><span><a href="' + esc(pid) + '" target="_blank" rel="noopener" style="color:' + C.hs + ';font-weight:700;font-family:monospace">' + esc(d.decision_id) + "</a></span>" +
       '<span style="color:' + C.mu + ';font-weight:600">Scores</span><span>' + Object.keys(OUTCOME_STYLE).map((o) => '<span style="color:' + OUTCOME_STYLE[o] + ';font-weight:700">' + o + " " + (scores[o] || 0) + "</span>").join(" · ") + "</span>" +
       '<span style="color:' + C.mu + ';font-weight:600">Validators</span><span>' + esc(validators.join(", ") || "—") + "</span>" +
       '<span style="color:' + C.mu + ';font-weight:600">Anchor</span><span class="mono">' + esc(d.ledger_anchor) + "</span>" +
