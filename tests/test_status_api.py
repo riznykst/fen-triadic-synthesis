@@ -8,6 +8,7 @@ from unittest import mock
 
 import requests
 from fastapi.testclient import TestClient
+from rdflib import Graph
 
 from services.status_api import main as status_main
 
@@ -82,3 +83,75 @@ def test_readyz_ok_and_degraded():
     )
     with mock.patch.object(status_main.requests, "get", broken):
         assert TestClient(status_main.app).get("/readyz").json()["status"] == "degraded"
+
+
+# ------------------------------------------------------------------- export
+def _export_bindings():
+    return [
+        _binding(GFEN + "validationStatus", GFEN + "validated"),
+        _binding(GFEN + "validationMethod", GFEN + "QuadraticVoting"),
+        _binding(GFEN + "ledgerAnchor", "0xA1B2", "literal"),
+    ]
+
+
+def test_export_ttl():
+    with mock.patch.object(status_main.requests, "post", _sparql_ok(_export_bindings())):
+        resp = TestClient(status_main.app).get("/api/v1/export/annotation_a1?format=ttl")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/turtle")
+    g = Graph()
+    g.parse(data=resp.text, format="turtle")
+    assert len(g) == 3  # validationStatus + validationMethod + ledgerAnchor
+
+
+def test_export_jsonld():
+    with mock.patch.object(status_main.requests, "post", _sparql_ok(_export_bindings())):
+        resp = TestClient(status_main.app).get("/api/v1/export/annotation_a1?format=jsonld")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/ld+json")
+    g = Graph()
+    g.parse(data=resp.text, format="json-ld")
+    assert len(g) == 3
+
+
+def test_export_ntriples():
+    with mock.patch.object(status_main.requests, "post", _sparql_ok(_export_bindings())):
+        resp = TestClient(status_main.app).get("/api/v1/export/annotation_a1?format=nt")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/n-triples")
+    g = Graph()
+    g.parse(data=resp.text, format="nt")
+    assert len(g) == 3
+
+
+def test_export_ro_crate():
+    with mock.patch.object(status_main.requests, "post", _sparql_ok(_export_bindings())):
+        resp = TestClient(status_main.app).get("/api/v1/export/annotation_a1?format=crate")
+    assert resp.status_code == 200
+    crate = resp.json()
+    assert crate["@context"].startswith("https://w3id.org/ro/crate")
+    graph = crate["@graph"]
+    assert len(graph) == 3  # metadata + dataset + annotation
+    annotation = graph[2]
+    assert annotation["validation_status"] == "validated"
+    assert annotation["ledger_anchor"] == "0xA1B2"
+
+
+def test_export_bad_format_422():
+    with mock.patch.object(status_main.requests, "post", _sparql_ok(_export_bindings())):
+        resp = TestClient(status_main.app).get("/api/v1/export/annotation_a1?format=xml")
+    assert resp.status_code == 422
+
+
+def test_export_unknown_annotation_404():
+    with mock.patch.object(status_main.requests, "post", _sparql_ok([])):
+        resp = TestClient(status_main.app).get("/api/v1/export/annotation_x?format=ttl")
+    assert resp.status_code == 404
+
+
+def test_export_503_when_store_unreachable():
+    with mock.patch.object(
+        status_main.requests, "post", side_effect=requests.RequestException("boom")
+    ):
+        resp = TestClient(status_main.app).get("/api/v1/export/annotation_a1?format=ttl")
+    assert resp.status_code == 503

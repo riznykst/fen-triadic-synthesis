@@ -40,10 +40,18 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
+import asyncio
+import queue
+from pathlib import Path
+
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from rdflib import Graph, Literal, URIRef
+from rdflib.namespace import RDF
 
+from services.common import gfen_ontology as ns
 from services.common.llm import LLMConfig, chat_completion, parse_outcome
 from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.metrics import (
@@ -101,6 +109,34 @@ _candidates: Dict[str, dict] = {}
 # Voter/contributor reputation (demo QV mode): name -> points.
 _reputation: Dict[str, int] = {}
 _state_lock = threading.Lock()
+
+# ---- SSE event bus (real-time UI updates — replaces 3s polling) ------------
+_event_subscribers: set = set()
+_event_lock = threading.Lock()
+
+
+def _broadcast(event: str, data: dict) -> None:
+    """Fan out an event to all /events subscribers (best-effort, never
+    raises — a slow consumer just misses events, the UI re-polls/refreshes)."""
+    payload = f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+    with _event_lock:
+        for subscriber in list(_event_subscribers):
+            try:
+                subscriber.put_nowait(payload)
+            except queue.Full:
+                pass
+
+
+def _subscribe():
+    subscriber = queue.Queue(maxsize=100)
+    with _event_lock:
+        _event_subscribers.add(subscriber)
+    return subscriber
+
+
+def _unsubscribe(subscriber) -> None:
+    with _event_lock:
+        _event_subscribers.discard(subscriber)
 
 # Bounded pool instead of an unbounded daemon thread per candidate
 # (audit finding: daemon threads + sleep can pile up without a limit).
@@ -366,6 +402,7 @@ def _deliver_decision_after_delay(
             )
             _set_status(candidate["annotation_id"], decision["outcome"], decision)
             _apply_reputation(candidate["annotation_id"], decision["outcome"])
+            _broadcast("decision", {"annotation_id": candidate["annotation_id"], "outcome": decision["outcome"]})
             return
         except requests.RequestException:
             logger.exception(
@@ -377,6 +414,40 @@ def _deliver_decision_after_delay(
             if attempt < WEBHOOK_MAX_RETRIES - 1:
                 time.sleep(0.5 * (attempt + 1))
     MOCK_DELIVERY_FAILURES.inc()
+
+
+def _shacl_validate_scaffold(triple: dict) -> dict:
+    """Validate a scaffolded triple against gfen:ScaffoldedTripleShape
+    (docs/ontology/fen-shapes.ttl) BEFORE it goes to voting. Returns
+    ``{valid, violations}``. Never raises — validation failures are data,
+    not errors (the UI shows them to the contributor). Falls back to
+    ``valid: None`` when pyshacl is unavailable."""
+    try:
+        from pyshacl import validate  # lazy: pyshacl is a demo-time dependency
+
+        graph = Graph()
+        node = URIRef("urn:fen:scaffold:triple")
+        graph.add((node, RDF.type, URIRef(ns.SCAFFOLDED_TRIPLE)))
+        for field, prop_uri in (
+            ("subject", ns.PROP_SUBJECT),
+            ("predicate", ns.PROP_PREDICATE),
+            ("object", ns.PROP_OBJECT),
+            ("language_or_domain", ns.PROP_LANGUAGE_OR_DOMAIN),
+        ):
+            value = triple.get(field)
+            if value:
+                graph.add((node, URIRef(prop_uri), Literal(str(value))))
+        shapes_path = Path(__file__).resolve().parents[1] / "docs" / "ontology" / "fen-shapes.ttl"
+        conforms, results_graph, _ = validate(graph, shacl_graph=str(shapes_path))
+        violations = []
+        if not conforms:
+            for _s, pred, obj in results_graph:
+                if str(pred).endswith("resultMessage"):
+                    violations.append(str(obj))
+        return {"valid": bool(conforms), "violations": violations[:5]}
+    except Exception as exc:  # noqa: BLE001 - validation is advisory in the demo
+        logger.warning("SHACL validation unavailable (%s)", exc)
+        return {"valid": None, "violations": [], "error": str(exc)}
 
 
 # ------------------------------------------------------------------- routes
@@ -396,6 +467,7 @@ def submit_candidates(payload: dict):
                 _deliver_decision_after_delay, candidate, None, recommendation
             )
     MOCK_CANDIDATES_ACCEPTED.inc(len(candidates))
+    _broadcast("candidates", {"accepted": len(candidates)})
     return {"accepted": len(candidates)}
 
 
@@ -475,6 +547,8 @@ def cast_vote(annotation_id: str, payload: dict):
         if reached:
             record["status"] = "deciding"
 
+    _broadcast("vote", {"annotation_id": annotation_id, "outcome": outcome, "reached": reached})
+
     if reached:
         _get_executor().submit(_deliver_decision_after_delay, {"annotation_id": annotation_id}, final)
         return {
@@ -521,6 +595,7 @@ def scaffold(payload: dict):
         answer = chat_completion(_llm_config, _SCAFFOLD_SYSTEM, text)
         parsed = _parse_scaffold_json(answer)
         if parsed:
+            parsed["shacl"] = _shacl_validate_scaffold(parsed.get("triple", {}))
             return parsed
         logger.warning("scaffold agent unavailable/indecisive; using rule fallback")
 
@@ -539,6 +614,28 @@ def scaffold(payload: dict):
         },
         "source": "rule_fallback",
     }
+    response["shacl"] = _shacl_validate_scaffold(response["triple"])
+    return response
+
+
+@app.get("/events")
+async def events():
+    """Server-Sent Events stream: candidates/vote/decision updates for the
+    portal and triadic views (replaces 3s polling)."""
+    subscriber = _subscribe()
+
+    async def stream():
+        try:
+            yield "event: ready\ndata: {}\n\n"
+            while True:
+                try:
+                    yield subscriber.get_nowait()
+                except queue.Empty:
+                    await asyncio.sleep(1)
+        finally:
+            _unsubscribe(subscriber)
+
+    return StreamingResponse(stream(), media_type="text/event-stream")
 
 
 @app.get("/healthz")

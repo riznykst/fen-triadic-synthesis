@@ -1,4 +1,4 @@
-# fen-ontology.ttl — the additive gfen: namespace
+﻿# fen-ontology.ttl — the additive gfen: namespace
 # Keep in sync with services/common/gfen_ontology.py (AGENT_PLAN.md, Phase 0).
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
@@ -44,3 +44,10 @@ gfen:scaffoldingSession    a rdf:Property .
 # expected, not a defect. Nothing is modified in the imported ontology
 # (ADR-002); the import only declares the dependency for tooling/alignment.
 gfen: owl:imports <https://w3id.org/gotriple/ontology> .
+
+# Agentic Scaffolding output (Phase 1) — validated before voting (SHACL)
+gfen:ScaffoldedTriple a rdfs:Class .
+gfen:subject           a rdf:Property .
+gfen:predicate         a rdf:Property .
+gfen:object            a rdf:Property .
+gfen:languageOrDomain  a rdf:Property .

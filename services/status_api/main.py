@@ -23,7 +23,9 @@ from pathlib import Path
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from rdflib import Graph, Literal, URIRef
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -62,6 +64,59 @@ def _annotation_uri(annotation_id: str) -> str:
 
 def _fragment(uri: str) -> str:
     return uri.rsplit("#", 1)[-1]
+
+
+EXPORT_FORMATS = {
+    "ttl": ("text/turtle", "turtle"),
+    "turtle": ("text/turtle", "turtle"),
+    "jsonld": ("application/ld+json", "json-ld"),
+    "nt": ("application/n-triples", "nt"),
+}
+
+
+def _sparql_to_graph(data: dict, annotation_id: str) -> Graph:
+    """Turn SPARQL SELECT bindings into an rdflib Graph (annotation subject,
+    predicate URIs, URI/literal objects as reported by the store)."""
+    graph = Graph()
+    subject = URIRef(_annotation_uri(annotation_id))
+    for binding in data.get("results", {}).get("bindings", []):
+        predicate = binding.get("p", {}).get("value", "")
+        value = binding.get("o", {}).get("value", "")
+        kind = binding.get("o", {}).get("type", "literal")
+        if not predicate:
+            continue
+        obj = URIRef(value) if kind == "uri" else Literal(value)
+        graph.add((subject, URIRef(predicate), obj))
+    return graph
+
+
+def _ro_crate(annotation_id: str, data: dict) -> dict:
+    """A simplified RO-Crate (v1.1) packaging of one governance record:
+    the annotation node plus the gfen: provenance properties. JSON-LD —
+    the same shape the widget reads, wrapped in the crate structure."""
+    bindings = data.get("results", {}).get("bindings", [])
+    props = {}
+    for binding in bindings:
+        key = _PREDICATE_KEYS.get(binding.get("p", {}).get("value", ""))
+        if key is None:
+            continue
+        value = binding.get("o", {}).get("value", "")
+        kind = binding.get("o", {}).get("type", "literal")
+        props[key] = _fragment(value) if kind == "uri" and key == "validation_status" else value
+    annotation = _annotation_uri(annotation_id)
+    return {
+        "@context": "https://w3id.org/ro/crate/1.1/context",
+        "@graph": [
+            {
+                "@id": "ro-crate-metadata.json",
+                "@type": "CreativeWork",
+                "about": {"@id": "./"},
+                "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"},
+            },
+            {"@id": "./", "@type": "Dataset", "name": f"FEN governance record: {annotation_id}"},
+            {"@id": annotation, "@type": "oa:Annotation", **props},
+        ],
+    }
 
 
 def _query_sparql(annotation_id: str) -> dict:
@@ -119,6 +174,36 @@ def get_status(annotation_id: str):
         result["provenance"].append({"predicate": predicate, "value": value, "type": kind})
     result.setdefault("validation_status", "unknown")
     return result
+
+
+@app.get("/api/v1/export/{annotation_id}")
+def export_annotation(annotation_id: str, format: str = "ttl"):
+    """Export one annotation's governance provenance as RDF (TTL, JSON-LD,
+    N-Triples) or as an RO-Crate (format=crate). Read-only (ADR-001);
+    503 when the store is unreachable, 404 when there is no record yet.
+    """
+    try:
+        data = _query_sparql(annotation_id)
+    except Exception:  # noqa: BLE001 - any store failure -> 503, never 500
+        logger.exception("SPARQL endpoint %s unreachable", _config.sparql_query_endpoint)
+        raise HTTPException(status_code=503, detail="RDF store unavailable")
+
+    if format == "crate":
+        crate = _ro_crate(annotation_id, data)
+        return JSONResponse(content=crate)
+
+    entry = EXPORT_FORMATS.get(format.lower())
+    if entry is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"format must be one of {sorted(EXPORT_FORMATS)} or 'crate'",
+        )
+    mime, rdflib_format = entry
+    graph = _sparql_to_graph(data, annotation_id)
+    if len(graph) == 0:
+        raise HTTPException(status_code=404, detail="no governance record for this annotation")
+    body = graph.serialize(format=rdflib_format)
+    return Response(content=body, media_type=mime)
 
 
 @app.get("/healthz")

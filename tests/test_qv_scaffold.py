@@ -196,3 +196,32 @@ def test_scaffold_rule_fallback_without_llm():
 def test_scaffold_requires_text():
     resp = TestClient(mock_main.app).post("/scaffold", json={"text": "   "})
     assert resp.status_code == 422
+
+
+# ------------------------------------------------------------ scaffold SHACL
+def test_scaffold_shacl_valid(monkeypatch):
+    monkeypatch.setattr(mock_main, "_llm_config", mock.Mock(enabled=True))
+    agent_json = (
+        '{"schema_hints": [], "relationships": [], "ambiguities": [], '
+        '"triple": {"subject": "Komi river", "predicate": "means", "object": "yu", '
+        '"language_or_domain": "Komi"}}'
+    )
+    with mock.patch.object(mock_main, "chat_completion", return_value=agent_json):
+        resp = TestClient(mock_main.app).post("/scaffold", json={"text": "In Komi, yu means river"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["shacl"]["valid"] is True, body["shacl"]
+    assert body["shacl"]["violations"] == []
+
+
+def test_scaffold_shacl_invalid_reports_violations(monkeypatch):
+    """A triple missing required predicates must fail the shape check and the
+    violations must be surfaced to the contributor before voting."""
+    monkeypatch.setattr(mock_main, "_llm_config", mock.Mock(enabled=True))
+    agent_json = '{"triple": {"subject": "Komi river", "language_or_domain": "Komi"}}'
+    with mock.patch.object(mock_main, "chat_completion", return_value=agent_json):
+        resp = TestClient(mock_main.app).post("/scaffold", json={"text": "x"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["shacl"]["valid"] is False
+    assert len(body["shacl"]["violations"]) >= 1

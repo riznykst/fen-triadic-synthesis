@@ -1,4 +1,5 @@
-fastapi>=0.110
+﻿fastapi>=0.110
 requests>=2.31
 uvicorn>=0.29
 prometheus-client>=0.19
+pyshacl>=0.25
