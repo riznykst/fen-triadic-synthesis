@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FEN Community DAO portal (Flow 1) — zero-build demo UI against
  * mock_fen_api. Contract in web/api.md. The same contract is expected from
  * the real FEN backend in production (ADR-002: DAO lives outside this repo).
@@ -120,7 +120,12 @@ async function castVote(annotationId, outcome) {
       body: JSON.stringify({ outcome: outcome }),
     });
     if (resp.status === 409) {
-      $("mode_note").textContent = "vote rejected: enable community mode (FEN_MOCK_VOTING=community) or the candidate is already decided";
+      let detail = "vote rejected";
+      try {
+        const body = await resp.json();
+        if (body && body.detail) detail = body.detail;
+      } catch (e) { /* non-JSON error body */ }
+      $("mode_note").textContent = detail;
     } else if (!resp.ok) {
       $("mode_note").textContent = "vote failed: HTTP " + resp.status;
     } else {

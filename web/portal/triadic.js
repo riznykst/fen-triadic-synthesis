@@ -25,7 +25,14 @@ let comments = {};
 
 async function api(path, opts) {
   const resp = await fetch(MOCK + path, opts);
-  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  if (!resp.ok) {
+    let detail = "HTTP " + resp.status;
+    try {
+      const body = await resp.json();
+      if (body && body.detail) detail = body.detail;
+    } catch (e) { /* non-JSON error body */ }
+    throw new Error(detail);
+  }
   return resp.json();
 }
 
