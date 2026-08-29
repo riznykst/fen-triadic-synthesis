@@ -1,4 +1,4 @@
-"""FEN Bridge — outbound process.
+﻿"""FEN Bridge — outbound process.
 
 Consumes dap.entities.pending_validation.v1 (produced by the existing WP4
 Entity & Relation Extraction service, unchanged) and forwards batches to the
@@ -24,6 +24,8 @@ from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.metrics import KAFKA_MESSAGES_FAILED, KAFKA_MESSAGES_PROCESSED
 from services.fen_bridge.config import FenBridgeConfig
 from services.fen_bridge.fen_client import FenClient
+from prometheus_client import start_http_server
+
 from services.fen_bridge.kafka_io import make_consumer, poll_batch_with_offsets
 
 setup_logging("fen-bridge-outbound", level=log_level_from_env())
@@ -70,6 +72,10 @@ def _install_signal_handlers(stop_event: threading.Event) -> None:
 
 def main() -> None:
     config = FenBridgeConfig.from_env()
+    # Expose Prometheus metrics on a dedicated port (scraped by the local
+    # prometheus service, see monitoring/prometheus.yml). Only inside main()
+    # — imports must never start a server (tests stay offline).
+    start_http_server(int(os.getenv("METRICS_PORT", "9101")))
     client = FenClient(config.fen_api_base_url)
     consumer = make_consumer(
         config.kafka_bootstrap_servers,

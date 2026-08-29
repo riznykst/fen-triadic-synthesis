@@ -1,0 +1,24 @@
+﻿# Prometheus scrape configuration for the FEN local stack (docker-compose).
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "fen-webhook"
+    metrics_path: /metrics
+    static_configs: [{ targets: ["fen-bridge-webhook:8101"] }]
+
+  - job_name: "fen-mock-dao"
+    metrics_path: /metrics
+    static_configs: [{ targets: ["mock-fen-api:8100"] }]
+
+  - job_name: "fen-status-api"
+    metrics_path: /metrics
+    static_configs: [{ targets: ["status-api:8082"] }]
+
+  - job_name: "fen-bridge-outbound"
+    metrics_path: /metrics
+    static_configs: [{ targets: ["fen-bridge-outbound:9101"] }]
+
+  - job_name: "validation-consumer"
+    metrics_path: /metrics
+    static_configs: [{ targets: ["validation-consumer:9102"] }]

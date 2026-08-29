@@ -1,4 +1,4 @@
-services:
+﻿services:
 
   # ---- Messaging backbone --------------------------------------------
   zookeeper:
@@ -76,6 +76,7 @@ services:
       TOPIC_PENDING_VALIDATION: dap.entities.pending_validation.v1
       FEN_API_BASE_URL: http://mock-fen-api:8100
       FEN_BRIDGE_GROUP_ID: fen-bridge-outbound
+      METRICS_PORT: "9101"
 
   fen-bridge-webhook:
     build:
@@ -134,3 +135,41 @@ services:
       SPARQL_UPDATE_USER: admin
       SPARQL_UPDATE_PASSWORD: admin
       FEN_NAAN: "99999"
+      METRICS_PORT: "9102"
+
+  # ---- Observability (local dev: Prometheus + Grafana) -------------------
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on: [kafka]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s

@@ -1,12 +1,11 @@
-"""Prometheus metrics shared by the FEN services.
+﻿"""Prometheus metrics shared by the FEN services.
 
 Every HTTP service exposes ``GET /metrics`` in the Prometheus text exposition
-format (``prometheus_client.generate_latest``). Consumers that run no HTTP
-server (fen-bridge-outbound, validation-consumer) still increment the Kafka
-counters below — they are visible in the process's logs and ready to be
-scraped as soon as such a process hosts an endpoint, and they document the
-per-service counters the deployment should aggregate in production
-(Prometheus/Grafana, see docs/architecture.md "Observability").
+format (``prometheus_client.generate_latest``). The consumer processes
+(fen-bridge-outbound, validation-consumer) expose the same format on a
+dedicated ``METRICS_PORT`` via ``prometheus_client.start_http_server`` (see
+their ``main()``), so every service in the stack is scrapable — the local
+stack ships Prometheus + Grafana (docker-compose.yml, monitoring/).
 
 Metric naming follows the Prometheus convention: ``fen_<service>_<name>``.
 """
@@ -52,10 +51,7 @@ MOCK_DELIVERY_SECONDS = Histogram(
     buckets=(0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0),
 )
 
-# ---- Kafka consumers (no HTTP endpoint) -----------------------------------
-# Log-counted in outbound.py / validation_consumer/main.py: readiness = the
-# process is alive (no endpoint to scrape); these counters document what a
-# production deployment should aggregate from the consumer processes.
+# ---- Kafka consumers (metrics served on METRICS_PORT) ---------------------
 KAFKA_MESSAGES_PROCESSED = Counter(
     "fen_kafka_messages_processed_total",
     "Kafka messages fully processed and committed by the consumer processes",

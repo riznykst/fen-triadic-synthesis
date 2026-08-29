@@ -1,4 +1,4 @@
-# FEN — Triadic Synthesis Framework
+﻿# FEN — Triadic Synthesis Framework
 
 **A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.**
 
@@ -85,6 +85,10 @@ confirmation:
 docker compose up --build
 # in a second terminal:
 python scripts/smoke_test.py
+
+Observability: Prometheus on http://localhost:9090 and Grafana on
+http://localhost:3000 (dashboard "FEN — Validation Pipeline Overview",
+anonymous access) — `docker compose up` starts both.
 ```
 
 > **CI blocked by GitHub billing?** If Actions jobs fail with *"recent account
@@ -112,7 +116,7 @@ fen-triadic-synthesis/
 ├── .env.example                      every configurable env var, with local-dev defaults
 ├── requirements-common.txt           combined deps for running tests locally
 ├── .github/
-│   └── workflows/ci.yml              CI: unit tests (Python 3.10–3.12) + docker-compose e2e smoke test
+│   └── workflows/ci.yml              CI: unit tests + docker-compose e2e on the self-hosted runner (matrix temporarily 3.10; full 3.10–3.12 after the GitHub billing issue is resolved)
 ├── docs/
 │   ├── FEN-Whitepaper-Triadic-Synthesis.pdf   consortium-facing integration proposal
 │   ├── architecture.md               quick-reference diagrams + component map
@@ -151,10 +155,11 @@ fen-triadic-synthesis/
 ├── mock_fen_api/                     demo DAO stand-in — NOT production governance
 ├── web/                              zero-build web interface layer
 │   ├── widget/                       Flow 2: embeddable <fen-status> Web Component + demo
-│   ├── portal/                       Flow 1: community DAO portal (candidates + voting)
+│   ├── portal/                       Flow 1: community DAO portal (candidates + voting + triadic view)
 │   └── api.md                        REST contract (shared with the real FEN backend)
-├── k8s/                              Kubernetes/OKD manifests: 3 Deployments + ConfigMap + Secret
-├── tests/                            73 tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF)
+├── k8s/                              Kubernetes/OKD manifests: 4 Deployments + ConfigMap + Secret
+monitoring/                        Prometheus scrape config + Grafana provisioning (fen-overview dashboard)
+├── tests/                            82 tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
@@ -333,21 +338,21 @@ docker compose up --build
 
 ## Status
 
-🟢 **CI: green on the self-hosted runner** (73 tests + a REAL end-to-end run in CI — the e2e job executes the full Docker stack and passes, run 33270403191, see [CHANGELOG.md](CHANGELOG.md)). Runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md).
+🟢 **CI: green on the self-hosted runner** (82 tests + a REAL end-to-end run in CI — the e2e job executes the full Docker stack and passes, run 33270403191, see [CHANGELOG.md](CHANGELOG.md)). Runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md).
 
 
 🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka
 message contracts, the `gfen:` ontology extension, the FEN Bridge (outbound +
 webhook), the Validation Result Consumer's SPARQL Update logic, and a mock DAO for
-local demos are in place — tests pass offline (mocked Kafka/HTTP/LLM, in-memory RDF
+local demos are in place (three demo voting modes: auto / community / quadratic-voting demo) — tests pass offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF
 via `rdflib`). Kafka delivery is **at-least-once** (`acks=all`, idempotent
 producer, commit-after-processing — see [`docs/architecture.md`](docs/architecture.md)),
 and an end-to-end smoke test (`scripts/smoke_test.py`) validates the full loop
 against the docker-compose stack (CI `e2e` job).
 
 **Not yet done:** integration against a live GRAPHIA test instance (real Kafka
-topics, real Virtuoso), replacing the mock DAO with the real Quadratic Voting
-contract, and registering a real NAAN for FEN PIDs. See the "Request to the
+topics, real Virtuoso), connecting the real DAO (production Quadratic Voting with sybil
+resistance, identity and on-chain anchoring), and registering a real NAAN for FEN PIDs. See the "Request to the
 Consortium" section of the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) for what's needed
 to start that.
 
