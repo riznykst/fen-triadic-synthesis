@@ -130,6 +130,7 @@ fen-triadic-synthesis/
 │   ├── user-stories.md               two typical use cases for the validation layer
 │   ├── self-hosted-runner.md        CI workaround while GitHub billing blocks Actions
 │   ├── applicability-and-limits.md  where the validation layer fits and where it does not
+│   ├── integration-verification-plan.md  how to prove real GRAPHIA + NAAN integration
 │   ├── images/
 │   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
 │   │   ├── story2-validation-overlay.svg  user-story infographic (validation overlay)
@@ -287,6 +288,10 @@ spelled out in [`docs/applicability-and-limits.md`](docs/applicability-and-limit
 together with the participation-economics model ([ADR-005](docs/adr/ADR-005-participation-model-and-dao-threshold.md)).
 
 ## Integration contract (to be verified with the consortium)
+
+The step-by-step verification plan — what to check, in what order, with
+entry/exit criteria — is in
+[`docs/integration-verification-plan.md`](docs/integration-verification-plan.md).
 
 The following assumptions come from D2.2/whitepaper and **must be confirmed
 against a live GRAPHIA test instance** before production integration (see
