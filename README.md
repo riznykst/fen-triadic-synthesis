@@ -120,13 +120,15 @@ fen-triadic-synthesis/
 │   │   ├── ADR-001-rdf-anchoring-not-full-onchain.md
 │   │   ├── ADR-002-federation-node-not-embedded.md
 │   │   ├── ADR-003-fen-pid-scheme.md
-│   │   └── ADR-004-llm-judge-decision-support-only.md
+│   │   ├── ADR-004-llm-judge-decision-support-only.md
+│   │   └── ADR-005-participation-model-and-dao-threshold.md
 │   ├── user-stories.md               two typical use cases for the validation layer
 │   ├── self-hosted-runner.md        CI workaround while GitHub billing blocks Actions
 │   ├── applicability-and-limits.md  where the validation layer fits and where it does not
 │   ├── images/
 │   │   ├── story1-validation-flow.svg     user-story infographic (community validation flow)
-│   │   └── story2-validation-overlay.svg  user-story infographic (validation overlay)
+│   │   ├── story2-validation-overlay.svg  user-story infographic (validation overlay)
+│   │   └── widget-overview.svg          Flow 2 widget data-flow infographic
 │   ├── ontology/
 │   │   ├── fen-ontology.ttl          the gfen: namespace
 │   │   └── fen-shapes.ttl            SHACL shapes for gfen: (ADR-001/003)
