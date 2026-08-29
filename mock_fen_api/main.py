@@ -221,14 +221,28 @@ def qv_cost(intensity: int) -> int:
     return intensity * intensity
 
 
-def qv_scores(qv_votes: list) -> Dict[str, int]:
+def qv_scores(qv_votes: list, delegations: Optional[Dict[str, str]] = None) -> Dict[str, int]:
     """Weighted scores per outcome from QV votes (each vote carries an
     ``intensity`` weight). One voter may vote at most once per proposal —
     enforced in cast_vote (ADR-005 distinct-identity hint); scores weigh by
-    intensity."""
+    intensity.
+
+    Liquid democracy (ADR-005 decision 2): a voter who has NOT voted on the
+    proposal but has delegated to a voter who did contributes one extra
+    weight to the delegate's chosen outcome."""
     scores = {o: 0 for o in OUTCOMES}
+    voted = set()
     for vote in qv_votes:
+        voted.add(vote.get("voter"))
         scores[vote["outcome"]] += int(vote.get("intensity", 1))
+    if delegations:
+        for voter, delegate in delegations.items():
+            if voter in voted or voter == delegate:
+                continue
+            for vote in qv_votes:
+                if vote.get("voter") == delegate:
+                    scores[vote["outcome"]] += 1
+                    break
     return scores
 
 
@@ -255,6 +269,7 @@ def _record_candidate(candidate: dict) -> None:
                 "votes": {"validated": 0, "disputed": 0, "rejected": 0},
                 "qv_votes": [],
                 "qv_voters": set(),
+                "delegations": {},
                 "llm_recommendation": recommendation,
                 "candidate": dict(candidate),
                 "decision": None,
@@ -307,9 +322,10 @@ def _public_state() -> list:
                 },
                 "qv": {
                     "votes": list(record["qv_votes"]),
-                    "scores": qv_scores(record["qv_votes"]),
+                    "scores": qv_scores(record["qv_votes"], record["delegations"]),
+                    "delegations": dict(record["delegations"]),
                     "threshold": QV_THRESHOLD,
-                    "reached": qv_decide(qv_scores(record["qv_votes"]), QV_THRESHOLD) is not None,
+                    "reached": qv_decide(qv_scores(record["qv_votes"], record["delegations"]), QV_THRESHOLD) is not None,
                 },
                 "decision": record["decision"],
             })
@@ -414,6 +430,50 @@ def _deliver_decision_after_delay(
             if attempt < WEBHOOK_MAX_RETRIES - 1:
                 time.sleep(0.5 * (attempt + 1))
     MOCK_DELIVERY_FAILURES.inc()
+
+
+def _ontology_match(triple: dict) -> list:
+    """Agent 2 — Ontology Matcher (demo): look the triple's subject/object up
+    in the mock's in-memory registry (stand-in for a SPARQL lookup against
+    the existing knowledge graph). Returns known candidates with matching
+    labels."""
+    labels = {str(triple.get("subject", "")).lower(), str(triple.get("object", "")).lower()}
+    matches = []
+    with _state_lock:
+        for rec in _candidates.values():
+            label = str(rec.get("entity_label") or "").lower()
+            if label and label in labels:
+                matches.append({
+                    "annotation_id": rec["annotation_id"],
+                    "entity_label": rec.get("entity_label"),
+                    "status": rec["status"],
+                })
+    return matches
+
+
+def _disambiguate(triple: dict) -> list:
+    """Agent 3 — Disambiguator: propose external identifiers. Uses the LLM
+    (decision-support, ADR-004) when configured; otherwise returns an empty
+    list (the demo keeps working offline)."""
+    if not _llm_config.enabled:
+        return []
+    answer = chat_completion(
+        _llm_config,
+        "You are a knowledge-graph disambiguator. For the given triple, reply "
+        "with a JSON array of external identifiers, each "
+        '{"type": "wikidata"|"geonames"|"getty", "value": "<id>", "label": "<short label>"}. '
+        "Reply with [] if nothing applies. JSON only.",
+        json.dumps(triple, ensure_ascii=False),
+    )
+    if not answer:
+        return []
+    try:
+        parsed = json.loads(answer)
+        if isinstance(parsed, list):
+            return [item for item in parsed if isinstance(item, dict)][:5]
+    except json.JSONDecodeError:
+        logger.warning("disambiguator returned non-JSON; ignoring")
+    return []
 
 
 def _shacl_validate_scaffold(triple: dict) -> dict:
@@ -533,7 +593,7 @@ def cast_vote(annotation_id: str, payload: dict):
                 "voter": voter,
                 "comment": payload.get("comment") or "",
             })
-            scores = qv_scores(record["qv_votes"])
+            scores = qv_scores(record["qv_votes"], record["delegations"])
             reached = qv_decide(scores, QV_THRESHOLD) is not None
             final = qv_decide(scores, QV_THRESHOLD) if reached else None
         else:
@@ -577,6 +637,37 @@ def cast_vote(annotation_id: str, payload: dict):
     }
 
 
+@app.post("/candidates/{annotation_id}/delegate")
+def delegate_vote(annotation_id: str, payload: dict):
+    """Liquid democracy (ADR-005 decision 2): a voter who has NOT voted yet
+    on this proposal can delegate their weight to another voter. Delegated
+    weight follows the delegate's outcome choice in qv_scores. One active
+    delegation per voter per proposal (re-delegation replaces it)."""
+    voter = (payload.get("voter") or "").strip()
+    delegate = (payload.get("delegate") or "").strip()
+    if not voter or not delegate:
+        raise HTTPException(status_code=422, detail="voter and delegate are required")
+    if voter == delegate:
+        raise HTTPException(status_code=422, detail="cannot delegate to yourself")
+    with _state_lock:
+        record = _candidates.get(annotation_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="unknown annotation_id")
+        if record["status"] != "pending":
+            raise HTTPException(status_code=409, detail=f"candidate already decided: {record['status']}")
+        if VOTING_MODE != "qv":
+            raise HTTPException(status_code=409, detail="delegation is a QV-mode feature (FEN_MOCK_VOTING=qv)")
+        if voter in {v.get("voter") for v in record["qv_votes"]}:
+            raise HTTPException(status_code=409, detail=f"voter {voter} has already voted — no delegation")
+        record["delegations"][voter] = delegate
+    _broadcast("vote", {"annotation_id": annotation_id, "delegation": True, "voter": voter})
+    return {
+        "annotation_id": annotation_id,
+        "delegations": dict(record["delegations"]),
+        "note": f"{voter} delegates to {delegate}",
+    }
+
+
 @app.post("/scaffold")
 def scaffold(payload: dict):
     """Agentic Scaffolding (Phase 1) — decision-support only (ADR-004).
@@ -596,11 +687,16 @@ def scaffold(payload: dict):
         parsed = _parse_scaffold_json(answer)
         if parsed:
             parsed["shacl"] = _shacl_validate_scaffold(parsed.get("triple", {}))
+            parsed["agents"] = {
+                "extractor": "llm",
+                "matcher": _ontology_match(parsed.get("triple", {})),
+                "disambiguator": _disambiguate(parsed.get("triple", {})),
+            }
             return parsed
         logger.warning("scaffold agent unavailable/indecisive; using rule fallback")
 
     snippet = text[:48]
-    return {
+    response = {
         "schema_hints": ["rule-based fallback (no LLM configured) — the triple is a rough split"],
         "relationships": [],
         "ambiguities": [],
@@ -615,6 +711,11 @@ def scaffold(payload: dict):
         "source": "rule_fallback",
     }
     response["shacl"] = _shacl_validate_scaffold(response["triple"])
+    response["agents"] = {
+        "extractor": "rule",
+        "matcher": _ontology_match(response["triple"]),
+        "disambiguator": [],
+    }
     return response
 
 

@@ -27,6 +27,14 @@ def _ok_post(*args, **kwargs):
     return resp
 
 
+class _NoopExecutor:
+    """Replaces the ThreadPoolExecutor so no background thread ever performs
+    a real network call during tests."""
+
+    def submit(self, fn, *args, **kwargs):
+        return None
+
+
 # ---------------------------------------------------------------- pure QV
 def test_qv_cost_is_quadratic():
     assert mock_main.qv_cost(1) == 1
@@ -225,3 +233,63 @@ def test_scaffold_shacl_invalid_reports_violations(monkeypatch):
     body = resp.json()
     assert body["shacl"]["valid"] is False
     assert len(body["shacl"]["violations"]) >= 1
+
+
+# ------------------------------------------------------------ delegation
+def test_qv_delegation_weight_follows_delegate(monkeypatch):
+    """Liquid democracy: the delegator's weight joins the delegate's outcome."""
+    monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
+    client = TestClient(mock_main.app)
+    client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x"}]})
+
+    r = client.post("/candidates/a1/delegate", json={"voter": "v1", "delegate": "d1"})
+    assert r.status_code == 200
+    assert r.json()["delegations"] == {"v1": "d1"}
+
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 3, "voter": "d1"})
+    listed = client.get("/candidates").json()["candidates"][0]
+    assert listed["qv"]["scores"]["validated"] == 4  # 3 (d1) + 1 (delegated v1)
+
+
+def test_qv_delegation_rejected_after_vote(monkeypatch):
+    monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
+    client = TestClient(mock_main.app)
+    client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x"}]})
+    client.post("/candidates/a1/vote", json={"outcome": "validated", "intensity": 2, "voter": "v1"})
+    resp = client.post("/candidates/a1/delegate", json={"voter": "v1", "delegate": "d1"})
+    assert resp.status_code == 409
+    assert "already voted" in resp.json()["detail"]
+
+
+def test_qv_delegate_to_self_rejected(monkeypatch):
+    monkeypatch.setattr(mock_main, "VOTING_MODE", "qv")
+    client = TestClient(mock_main.app)
+    client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "x"}]})
+    resp = client.post("/candidates/a1/delegate", json={"voter": "v1", "delegate": "v1"})
+    assert resp.status_code == 422
+
+
+# ------------------------------------------------------- multi-agent scaffold
+def test_scaffold_matcher_finds_known_candidates(monkeypatch):
+    monkeypatch.setattr(mock_main, "_llm_config", mock.Mock(enabled=False))
+    client = TestClient(mock_main.app)
+    with mock.patch.object(mock_main, "_get_executor", return_value=_NoopExecutor()):
+        client.post("/candidates", json={"candidates": [{"annotation_id": "a1", "entity_label": "Komi river"}]})
+
+    resp = client.post("/scaffold", json={"text": "Komi river"})
+    body = resp.json()
+    assert body["agents"]["extractor"] == "rule"
+    assert any(m["annotation_id"] == "a1" for m in body["agents"]["matcher"])
+    assert body["agents"]["disambiguator"] == []
+
+
+def test_scaffold_disambiguator_with_llm(monkeypatch):
+    monkeypatch.setattr(mock_main, "_llm_config", mock.Mock(enabled=True))
+    agent_json = '{"triple": {"subject": "Komi river", "predicate": "means", "object": "yu"}}'
+    links = '[{"type": "wikidata", "value": "Q123", "label": "Komi"}]'
+    with mock.patch.object(mock_main, "chat_completion", side_effect=[agent_json, links]):
+        resp = TestClient(mock_main.app).post("/scaffold", json={"text": "x"})
+    body = resp.json()
+    assert body["agents"]["extractor"] == "llm"
+    assert body["agents"]["disambiguator"][0]["type"] == "wikidata"
+    assert body["agents"]["disambiguator"][0]["value"] == "Q123"
