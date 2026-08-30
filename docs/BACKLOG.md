@@ -1,6 +1,6 @@
-# BACKLOG — full development history and remaining work
+﻿# BACKLOG — full development history and remaining work
 
-Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29 (updated).
+Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (prioritised).
 
 ## Delivered
 - [x] MVP core: FEN Bridge (outbound + webhook), Validation Result Consumer, mock DAO, shared Pydantic contracts, Kafka topics, docker-compose stack
