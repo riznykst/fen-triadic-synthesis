@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 # TEMPORARY self-hosted-runner mode (GitHub billing block): jobs run on the
 # local runner (label "self-hosted") and CI triggers on push only, so fork
@@ -70,13 +70,10 @@ jobs:
         id: docker
         shell: powershell
         run: |
-          $docker = Get-Command docker -ErrorAction SilentlyContinue
-          $available = $false
-          if ($docker) {
-            docker version *> $null
-            if ($LASTEXITCODE -eq 0) { $available = $true }
-          }
-          if ($available) { "available=true" >> $env:GITHUB_OUTPUT } else { "available=false" >> $env:GITHUB_OUTPUT }
+          # cmd-level redirection: never lets a daemon-down stderr turn into a
+          # PowerShell error record (which failed this step with exit 1 before).
+          cmd /c "docker version >nul 2>&1"
+          if ($LASTEXITCODE -eq 0) { "available=true" >> $env:GITHUB_OUTPUT } else { "available=false" >> $env:GITHUB_OUTPUT }
           exit 0
       - name: Start the stack
         if: steps.docker.outputs.available == 'true'
