@@ -493,7 +493,11 @@ def cast_vote(annotation_id: str, payload: dict):
     _broadcast("vote", {"annotation_id": annotation_id, "outcome": outcome, "reached": reached})
 
     if reached:
-        _get_executor().submit(_deliver_decision_after_delay, {"annotation_id": annotation_id}, final)
+        # Deliver with the FULL candidate record (not just the annotation id):
+        # the decision must carry document_id so the validation consumer scopes
+        # the SPARQL update to the document's named graph
+        # (urn:graphia:document:{document_id}:graph).
+        _get_executor().submit(_deliver_decision_after_delay, dict(record["candidate"]), final)
         return {
             "annotation_id": annotation_id,
             "votes": votes,

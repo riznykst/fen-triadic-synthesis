@@ -37,6 +37,8 @@ jobs:
       - name: Parse RDF artefacts
         run: |
           python -c "from rdflib import Graph, Dataset; g=Graph(); g.parse('docs/ontology/fen-ontology.ttl', format='turtle'); d=Dataset(); d.parse('examples/sample-validation-flow.trig', format='trig'); print('RDF OK', len(g), len(d))"
+      - name: SHACL validation
+        run: python scripts/shacl_check.py
 
   # End-to-end smoke test against the real docker-compose stack: publishes an
   # EntityCandidate and waits for the full pipeline (decision -> SPARQL ->
@@ -81,6 +83,18 @@ jobs:
       - name: Run end-to-end smoke test
         if: steps.docker.outputs.available == 'true'
         run: python scripts/smoke_test.py
+      - name: Run community/QV voting e2e
+        if: steps.docker.outputs.available == 'true'
+        shell: powershell
+        run: |
+          $env:FEN_MOCK_VOTING = 'community'
+          $env:FEN_MOCK_QUORUM = '2'
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d
+          python scripts/smoke_test.py --mode community
+          $env:FEN_MOCK_VOTING = 'qv'
+          $env:FEN_MOCK_QV_THRESHOLD = '10'
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d
+          python scripts/smoke_test.py --mode qv
       - name: Run Virtuoso dialect check
         if: steps.docker.outputs.available == 'true'
         run: python scripts/virtuoso_dialect_check.py

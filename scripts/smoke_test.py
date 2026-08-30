@@ -1,4 +1,4 @@
-"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
+﻿"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
 
 Publishes one EntityCandidate onto dap.entities.pending_validation.v1 and
 waits for the full pipeline to complete:
@@ -22,6 +22,7 @@ exactly this). Not part of the offline unit-test suite.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import socket
@@ -252,8 +253,99 @@ SELECT ?status WHERE {{
     return rows[0]["status"]["value"]
 
 
-def run() -> None:
-    """The whole smoke cycle. Raises RuntimeError on any failed step."""
+MOCK_FEN_BASE = "http://localhost:8100"
+SHAPES_PATH = str(Path(__file__).resolve().parents[1] / "docs" / "ontology" / "fen-shapes.ttl")
+ONTOLOGY_PATH = str(Path(__file__).resolve().parents[1] / "docs" / "ontology" / "fen-ontology.ttl")
+
+
+def mock_candidate_status(annotation_id: str) -> Optional[str]:
+    """The mock FEN API's recorded status for ``annotation_id``, or None."""
+    resp = requests.get(f"{MOCK_FEN_BASE}/candidates", timeout=5.0)
+    resp.raise_for_status()
+    for cand in resp.json().get("candidates", []):
+        if cand.get("annotation_id") == annotation_id:
+            return cand.get("status")
+    return None
+
+
+def cast_vote(annotation_id: str, outcome: str, intensity: int = 1, voter: Optional[str] = None) -> dict:
+    """Cast one vote on the mock DAO (community/QV modes)."""
+    payload: dict = {"outcome": outcome}
+    if intensity != 1:
+        payload["intensity"] = intensity
+    if voter:
+        payload["voter"] = voter
+    resp = requests.post(f"{MOCK_FEN_BASE}/candidates/{annotation_id}/vote", json=payload, timeout=5.0)
+    if resp.status_code >= 400:
+        raise RuntimeError(f"vote failed ({resp.status_code}): {resp.text[:200]}")
+    return resp.json()
+
+
+def decide_by_votes(annotation_id: str, mode: str) -> dict:
+    """Community/QV decision phase: wait for the candidate to be registered,
+    cast the votes needed to reach the configured quorum/threshold, then wait
+    for the mock to decide and deliver. Returns the mock's final record.
+    """
+    wait_for(
+        lambda: mock_candidate_status(annotation_id) == "pending",
+        DECISION_TIMEOUT_S,
+        f"candidate {annotation_id} registered as pending (mock)",
+    )
+    if mode == "community":
+        # quorum=2 in the CI override (docker-compose.voting.yml); cast two
+        # validated votes -> majority validated.
+        cast_vote(annotation_id, "validated")
+        cast_vote(annotation_id, "validated")
+    else:  # qv: two intensity-5 votes reach FEN_MOCK_QV_THRESHOLD=10
+        cast_vote(annotation_id, "validated", intensity=5, voter="smoke_qv_a")
+        cast_vote(annotation_id, "validated", intensity=5, voter="smoke_qv_b")
+
+    def decided() -> Optional[dict]:
+        record = mock_candidate_status(annotation_id)
+        if record in ("validated", "disputed", "rejected"):
+            return {"status": record}
+        return None
+
+    result = wait_for(decided, DECISION_TIMEOUT_S, f"{mode} decision by votes (mock)")
+    logger.info("mock %s decision: %s", mode, result)
+    return result
+
+
+def shacl_check_named_graph(document_id: str) -> dict:
+    """Fetch the document's named graph from Fuseki and validate it against
+    fen-shapes.ttl (SHACL). The e2e asserts the pipeline's output conforms —
+    this is the live SHACL gate for written governance provenance.
+    """
+    query = f"""
+CONSTRUCT {{ ?s ?p ?o }} WHERE {{
+  GRAPH <urn:graphia:document:{document_id}:graph> {{ ?s ?p ?o }}
+}}
+"""
+    resp = requests.post(
+        FUSEKI_QUERY, data={"query": query}, headers={"Accept": "text/turtle"}, timeout=10.0
+    )
+    resp.raise_for_status()
+    from pyshacl import validate  # lazy: only needed for the SHACL gate
+
+    # Merge the gfen: ontology into the data graph — sh:class checks need
+    # the class/individual declarations from the ontology.
+    ontology = open(ONTOLOGY_PATH, encoding="utf-8-sig").read()
+    conforms, _, results_text = validate(
+        ontology + "\n" + resp.text,
+        shacl_graph=SHAPES_PATH,
+        data_graph_format="turtle",
+    )
+    return {"conforms": conforms, "text": results_text}
+
+def run(mode: str = "auto") -> None:
+    """The whole smoke cycle. Raises RuntimeError on any failed step.
+
+    ``mode`` selects how the decision is reached:
+      - "auto" (default): the mock's simulated DAO decides after a delay;
+      - "community" / "qv": votes are cast via POST /candidates/{id}/vote
+        until the quorum/threshold is reached (mock must run with
+        FEN_MOCK_VOTING=community|qv, see docker-compose.voting.yml).
+    """
     wait_for(lambda: kafka_ready(), READY_TIMEOUT_S, "Kafka (localhost:9092)")
     wait_for(lambda: http_ready(FUSEKI_PING), READY_TIMEOUT_S, "Fuseki (http://localhost:3030/$/ping)")
     wait_for(lambda: http_ready(WEBHOOK_HEALTH), READY_TIMEOUT_S, "fen-bridge-webhook (http://localhost:8101/healthz)")
@@ -271,6 +363,9 @@ def run() -> None:
         candidate = publish_candidate(producer)
         annotation_id = candidate["annotation_id"]
         document_id = candidate["document_id"]
+
+        if mode in ("community", "qv"):
+            decide_by_votes(annotation_id, mode)
 
         decision = wait_for_message(
             make_watch_consumer(TOPIC_GOVERNANCE_DECISIONS, f"smoke-{run_id}-decisions"),
@@ -301,18 +396,38 @@ def run() -> None:
             DECISION_TIMEOUT_S,
         )
         logger.info("EntityValidated confirmation: %s -> %s", validated["decision_id"], validated["outcome"])
+
+        if mode in ("community", "qv"):
+            assert decision.get("quorum_reached") is True, "community/QV decision must report quorum_reached=True"
+            assert decision.get("outcome") == "validated", "majority of the cast votes must win"
+
+        shacl = shacl_check_named_graph(document_id)
+        if not shacl["conforms"]:
+            raise RuntimeError(f"SHACL validation of the named graph FAILED:\n{shacl['text']}")
+        logger.info("SHACL: named graph conforms to fen-shapes.ttl")
     finally:
         producer.close()
 
-    logger.info("E2E SMOKE TEST PASSED: %s", annotation_id)
+    logger.info("E2E SMOKE TEST PASSED (%s mode): %s", mode, annotation_id)
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="FEN end-to-end smoke test")
+    parser.add_argument(
+        "--mode",
+        choices=("auto", "community", "qv"),
+        default="auto",
+        help="decision mode to exercise (auto = mock decides after a delay; "
+        "community/qv = cast votes via POST /candidates/{id}/vote; the mock "
+        "must run with FEN_MOCK_VOTING set accordingly, see "
+        "docker-compose.voting.yml)",
+    )
+    args = parser.parse_args()
     try:
-        run()
+        run(mode=args.mode)
         return 0
     except Exception as exc:  # noqa: BLE001 - any failed step is a failed smoke test
-        logger.error("E2E SMOKE TEST FAILED: %s", exc)
+        logger.error("E2E SMOKE TEST FAILED (%s mode): %s", args.mode, exc)
         return 1
 
 

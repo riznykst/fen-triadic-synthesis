@@ -169,7 +169,16 @@ consumer lag) and ship the JSON stdout logs to **Loki** (or ELK/Splunk) with
 alerting on `fen_webhook_validation_failures_total`, `fen_mock_delivery_failures_total`
 and `fen_kafka_messages_failed_total` growth. Set `LOG_LEVEL` per service and
 keep `/readyz` as the orchestration gate so no service is load-balanced or
-restarted while its dependencies are unreachable.
+restarted while its dependencies are unreachable.restarted while its dependencies are unreachable.
+
+**Local stack.** `docker-compose.yml` ships the same observability locally:
+**Prometheus** (`:9090`, config in `monitoring/prometheus/`), **Grafana**
+(`:3000`, anonymous viewer, datasources/dashboards provisioned from
+`monitoring/grafana/`), and **Loki** (`:3100`) with **Promtail** scraping all
+container JSON logs through the Docker socket (`monitoring/promtail/
+promtail.yml`). Open Grafana → Explore → **Loki** to query logs by
+`service`/`container` labels, e.g. `{service="fen-bridge-webhook"} |=
+"401"`.
 
 ## Kubernetes / OKD deployment
 

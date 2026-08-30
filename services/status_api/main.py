@@ -1,4 +1,4 @@
-﻿"""FEN Status API — read-side web service (web-interface layer).
+"""FEN Status API — read-side web service (web-interface layer).
 
 Provides:
 - GET /api/v1/status/{annotation_id} — governance provenance for one
@@ -30,6 +30,7 @@ from rdflib import Graph, Literal, URIRef
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from services.status_api.config import StatusApiConfig  # noqa: E402
+from services.common.metrics import metrics_response  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -209,6 +210,13 @@ def export_annotation(annotation_id: str, format: str = "ttl"):
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus metrics (services/common/metrics.py) — scraped by the
+    local prometheus service (monitoring/prometheus/prometheus.yml)."""
+    return metrics_response()
 
 
 @app.get("/readyz")

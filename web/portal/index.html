@@ -1,7 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FEN — Community DAO portal (Flow 1)</title>
 <style>
   :root { --bg:#0f1420; --panel:#171e2e; --fg:#dde3f0; --muted:#8fa0bf; --accent:#4da3ff; --green:#3fce7c; --amber:#ffb020; --red:#ff5c5c; --border:#26314d; }
@@ -33,7 +34,30 @@
   .vote button { padding:4px 9px; font-size:12px; }
   .note { color:var(--muted); font-size:12px; }
   .err { color:var(--red); font-size:12px; margin-top:6px; }
-</style>
+  /* ---- Mobile-first (min-width = desktop enhancements) ---- */
+  .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  input, select, button { font-size:16px; }  /* prevents iOS auto-zoom */
+  button { min-height:40px; }
+  .vote button { min-height:32px; }
+  @media (min-width:641px) {
+    input, select, button { font-size:13px; }
+    button { min-height:auto; }
+    .vote button { min-height:auto; }
+  }
+  @media (max-width:640px) {
+    .wrap { padding:14px 10px 40px; }
+    h1 { font-size:18px; line-height:1.35; }
+    h1 .note, h1 a { display:block; margin-top:4px; }
+    .card { padding:12px; }
+    input, select { min-height:44px; }
+    button { width:100%; margin-bottom:6px; }
+    .vote { flex-wrap:wrap; }
+    .vote button { width:auto; min-height:34px; flex:1; }
+    #filters { gap:4px; }
+    #filters button { width:auto; min-height:34px; padding:5px 10px; }
+    table { white-space:nowrap; }
+    .bar { width:100%; }
+  }</style>
 </head>
 <body>
 <div class="wrap">
@@ -84,12 +108,12 @@
       <button data-filter="disputed">disputed</button>
       <button data-filter="rejected">rejected</button>
     </div>
-    <table id="table">
+    <div class="table-scroll"><table id="table">
       <thead>
         <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>LLM rec.</th><th>votes</th><th>quorum</th><th>vote (community mode)</th></tr>
       </thead>
       <tbody id="rows"><tr><td colspan="7" class="note">no candidates yet — submit one above</td></tr></tbody>
-    </table>
+    </table></div>
   </div>
 </div>
 

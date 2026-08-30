@@ -1,4 +1,4 @@
-﻿services:
+services:
 
   # ---- Messaging backbone --------------------------------------------
   zookeeper:
@@ -138,10 +138,15 @@
       METRICS_PORT: "9102"
 
   # ---- Observability (local dev: Prometheus + Grafana) -------------------
+  # Configs are baked into images (monitoring/docker/*.Dockerfile) instead of
+  # bind-mounting them: Docker Desktop cannot share files from removable
+  # drives (the repo lives on an SD card that WSL never registers in drvfs),
+  # and single-file bind mounts break under gRPC-FUSE. Rebuild the affected
+  # image after editing monitoring/*: docker compose build <service>.
   prometheus:
-    image: prom/prometheus:v2.53.0
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    build:
+      context: ./monitoring
+      dockerfile: docker/prometheus.Dockerfile
     ports:
       - "9090:9090"
     depends_on: [kafka]
@@ -153,10 +158,9 @@
       start_period: 10s
 
   grafana:
-    image: grafana/grafana:11.1.0
-    volumes:
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    build:
+      context: ./monitoring
+      dockerfile: docker/grafana.Dockerfile
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
@@ -174,6 +178,38 @@
       retries: 10
       start_period: 15s
 
+  # ---- Log aggregation (Loki + Promtail) ----------------------------------
+  # JSON structured logs from every container are scraped by Promtail via the
+  # Docker socket and stored in Loki; explore them in Grafana (Explore ->
+  # Loki datasource) at http://localhost:3000. Metrics stay in Prometheus.
+  loki:
+    image: grafana/loki:3.2.2
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:3100/ready' >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  promtail:
+    build:
+      context: ./monitoring
+      dockerfile: docker/promtail.Dockerfile
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:9080/ready' >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
   # ---- Virtuoso (OPTIONAL: SPARQL dialect verification) -------------------
   # GoTriple KG's engine (OpenLink Virtuoso). NOT part of the default stack:
   #   docker compose --profile virtuoso up -d virtuoso
