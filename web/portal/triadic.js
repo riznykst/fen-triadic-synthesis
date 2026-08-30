@@ -77,7 +77,7 @@ function renderSteps(res) {
   const amb = (res.ambiguities || []).filter((a) => a && a.trim());
   if (amb.length) s.push({ c: C.gd, bg: "#faf3e0", icon: "!", t: "Ambiguities flagged", items: amb });
 
-  stepsEl = { steps: s, triple: res.triple, vis: 0 };
+  stepsEl = { steps: s, triple: res.triple, shacl: res.shacl || null, vis: 0 };
   const paint = () => {
     let html = "";
     s.forEach((st, i) => {
@@ -88,8 +88,21 @@ function renderSteps(res) {
         "</div>";
     });
     if (stepsEl.triple && stepsEl.vis > s.length) {
-      html += '<div style="animation:fadeSlide .3s ease">' + tripleBox(stepsEl.triple) +
-        '<button class="btn green" onclick="submitTriple()">Submit for DAO Vote →</button></div>';
+      const sh = stepsEl.shacl || { valid: null, violations: [] };
+      let shaclHtml;
+      if (sh.valid === true) {
+        shaclHtml = '<div style="font-size:11px;color:#2e7d5b;background:#e6f4ee;border-radius:6px;padding:6px 9px;margin-bottom:8px">✓ SHACL valid (gfen:ScaffoldedTripleShape)</div>';
+      } else if (sh.valid === false) {
+        shaclHtml = '<div style="font-size:11px;color:#b23a3a;background:#fae8e8;border-radius:6px;padding:6px 9px;margin-bottom:8px">✗ SHACL invalid — blocked before Consensus' +
+          (sh.violations && sh.violations.length ? '<br>' + sh.violations.map((v) => '· ' + esc(v)).join('<br>') : '') + '</div>';
+      } else {
+        shaclHtml = '<div style="font-size:11px;color:#6b6560;background:#f7f5f0;border-radius:6px;padding:6px 9px;margin-bottom:8px">SHACL not checked (validator unavailable)</div>';
+      }
+      const blocked = sh.valid === false;
+      html += '<div style="animation:fadeSlide .3s ease">' + tripleBox(stepsEl.triple) + shaclHtml +
+        '<button class="btn green" onclick="submitTriple()" ' +
+        (blocked ? 'disabled title="SHACL invalid — improve the statement first"' : '') +
+        '>Submit for DAO Vote →</button></div>';
     }
     $("steps").innerHTML = html;
   };
@@ -108,6 +121,7 @@ function tripleBox(t) {
 }
 
 async function submitTriple() {
+  if (stepsEl.shacl && stepsEl.shacl.valid === false) return;  // SHACL gate
   const t = stepsEl.triple;
   const annotationId = "annotation_" + Date.now();
   await api("/candidates", {
@@ -438,11 +452,23 @@ function init() {
   });
   // Real-time updates (SSE): instant Consensus/Registry refresh on
   // candidates/vote/decision events; EventSource auto-reconnects, so the
-  // 3s polling is gone (recommendation #1).
+  // 3s polling is gone (recommendation #1). A slow fallback ticker covers
+  // the case where the event stream is unreachable.
   const events = new EventSource(MOCK + "/events");
-  events.addEventListener("vote", load);
-  events.addEventListener("decision", load);
-  events.addEventListener("candidates", load);
+  let sseOk = false;
+  let fallbackTimer = null;
+  const stopFallback = () => { if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; } };
+  const startFallback = () => { if (!fallbackTimer) fallbackTimer = setInterval(load, 15000); };
+  const banner = (msg) => { const b = $("modeBanner"); if (b) { b.textContent = msg; b.style.display = "block"; } };
+  events.addEventListener("vote", () => { sseOk = true; stopFallback(); load(); });
+  events.addEventListener("decision", () => {
+    sseOk = true; stopFallback();
+    banner("New decision received — Registry updated in real time");
+    load();
+  });
+  events.addEventListener("candidates", () => { sseOk = true; stopFallback(); load(); });
+  events.onopen = () => { sseOk = true; stopFallback(); };
+  events.onerror = () => { if (!sseOk) startFallback(); };
   load();
 }
 
