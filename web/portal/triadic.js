@@ -325,6 +325,52 @@ function renderGraph() {
   box.innerHTML = svg;
 }
 
+// -------------------------------------------------------------- registry graph
+let cy = null;
+
+function renderGraph() {
+  const el = $("regGraph");
+  const decided = state.candidates.filter((c) => c.decision);
+  if (!decided.length) {
+    if (cy) { cy.destroy(); cy = null; }
+    el.innerHTML = '<div class="note">No decisions yet — the graph appears here.</div>';
+    return;
+  }
+  if (typeof cytoscape === "undefined") {
+    el.innerHTML = '<div class="note">Cytoscape.js not loaded (vendor/cytoscape.min.js missing).</div>';
+    return;
+  }
+  const elements = [];
+  const nodeIds = new Set();
+  decided.forEach((c) => {
+    const t = c.triple || {};
+    const s = t.subject || c.entity_label || c.annotation_id;
+    const o = t.object || "(object)";
+    const p = t.predicate || "mentions";
+    const dId = "d:" + c.decision.decision_id;
+    const dColor = OUTCOME_STYLE[c.decision.outcome] || C.mu;
+    [[s, s, "entity", C.bl], [o, o, "entity", C.bl], [dId, c.decision.decision_id, "decision", dColor]].forEach(([id, label, cls, color]) => {
+      if (!nodeIds.has(id)) {
+        nodeIds.add(id);
+        elements.push({ data: { id, label, cls, color } });
+      }
+    });
+    elements.push({ data: { id: "e:" + c.annotation_id + ":t", source: s, target: o, label: p } });
+    elements.push({ data: { id: "e:" + c.annotation_id + ":d", source: s, target: dId, label: "decided" } });
+  });
+  if (cy) cy.destroy();
+  cy = cytoscape({
+    container: el,
+    elements,
+    style: [
+      { selector: "node.entity", style: { "background-color": "data(color)", width: 26, height: 26, label: "data(label)", color: C.ink, "font-size": 9, "text-valign": "bottom", "text-wrap": "ellipsis", "text-max-width": "90px" } },
+      { selector: "node.decision", style: { "background-color": "data(color)", shape: "round-rectangle", width: 54, height: 18, label: "data(label)", color: "#fff", "font-size": 8, "text-valign": "center", "font-weight": 700 } },
+      { selector: "edge", style: { width: 1.2, "line-color": "#c9a35f", "target-arrow-color": "#c9a35f", "target-arrow-shape": "triangle", "curve-style": "bezier", label: "data(label)", "font-size": 8, color: C.mu } },
+    ],
+    layout: { name: "cose", animate: false, padding: 8 },
+  });
+}
+
 // ------------------------------------------------------------------- load
 async function load() {
   try {
