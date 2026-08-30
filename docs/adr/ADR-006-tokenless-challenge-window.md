@@ -5,7 +5,7 @@
 
 ## Context
 
-Recommendation #7 (flow roadmap, docs/BACKLOG.md) proposes a challenge /
+Recommendation #7 (flow roadmap, ../BACKLOG.md) proposes a challenge /
 dispute timelock before a QV decision is final. A staking-based challenge
 conflicts with [ADR-005](ADR-005-participation-model-and-dao-threshold.md)
 ("no token economy in the MVP", no speculative elements). This draft

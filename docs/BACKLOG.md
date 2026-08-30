@@ -12,14 +12,14 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29 (updated
 - [x] Observability: Prometheus /metrics (all 5 processes), JSON logs, /readyz, graceful shutdown
 - [x] CI: 104 unit tests + REAL e2e on Docker — green for consecutive runs; self-hosted runner as a Windows service (NSSM); runner paused during local demos (runs queue, no stack teardown)
 - [x] CI e2e: Virtuoso dialect check (`scripts/virtuoso_dialect_check.py`, OpenLink Virtuoso, Digest auth, idempotency) wired into the `e2e` job
-- [x] CI isolation: `COMPOSE_PROJECT_NAME=fen-ci` — the CI stack can never collide with or tear down a local dev stack on the same Docker daemon (docs/self-hosted-runner.md §6a)
+- [x] CI isolation: `COMPOSE_PROJECT_NAME=fen-ci` — the CI stack can never collide with or tear down a local dev stack on the same Docker daemon (self-hosted-runner.md §6a)
 - [x] e2e bug hunt: fuseki image tag, kafka-python 2.x/3.x compat (serializer, OffsetAndMetadata, admin API), datetime serializer, Fuseki basic auth, lazy fastapi import; rdflib in per-service requirements; `import os` in consumers
 - [x] Web layer: DAO portal (Flow 1) + status widget (Flow 2), community voting in the mock
 - [x] Triadic view (Scaffold → Consensus → Registry): POST /scaffold (LLM + heuristic fallback, ADR-004), QV voting mode (FEN_MOCK_VOTING=qv, weighted scores, FEN_MOCK_QV_THRESHOLD=10), reputation (ADR-005: +2 author / +1 validators), registry graph (SVG), SSE real-time, RDF export, delegation (liquid democracy)
 - [x] QV hardening: one-vote-per-voter, reputation only for validated records, API error details (409), stored-XSS fix in the portal
 - [x] Motivation stack formalized: reputation capital + intrinsic motivation; gamification is UX-only, never core mechanics (f9356ec)
 - [x] Docs: README, architecture, user stories + infographics, whitepaper PDF, research (EN), CHANGELOG, self-hosted runner guide; README/CHANGELOG/.env.example audited against the repo state (2026-08-29)
-- [x] Repository published: riznykst/fen-triadic-synthesis (private at the owner's request; was public at launch), 70 commits
+- [x] Repository published: riznykst/fen-triadic-synthesis (private at the owner's request; public), 72 commits
 
 ## In progress / partial
 - [~] CI Python matrix on self-hosted: 3.10 only (setup-python toolchains get wiped); full 3.10/3.11/3.12 once back on hosted runners
@@ -28,7 +28,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-29 (updated
 - [~] Virtuoso SPARQL dialect: verified against a local OpenLink Virtuoso container (dialect check in CI); the live GRAPHIA store is still pending
 
 ## Backlog
-- [ ] Fix GitHub billing -> hosted runners, restore pull_request trigger + full matrix, remove the self-hosted runner (docs/self-hosted-runner.md step 7)
+- [ ] Fix GitHub billing -> hosted runners, restore pull_request trigger + full matrix, remove the self-hosted runner (self-hosted-runner.md step 7)
 - [ ] Real GRAPHIA test instance: verify Kafka topic names, WP4 message schema, named-graph URI scheme, Virtuoso SPARQL dialect (local OpenLink check done)
 - [ ] Register FEN NAAN + publish N2T/w3id redirects (ADR-003) — submission drafts ready in the working folder (outside the repo)
 - [ ] Replace the owl:imports stub with the official GRAPHIA Ontology IRI

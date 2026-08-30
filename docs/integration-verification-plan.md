@@ -3,7 +3,7 @@
 How we prove the two remaining external integration items. Everything here
 either needs the consortium (access grants) or can be done with local
 stand-ins first (marked **NOW**). The current assumptions live in
-`docs/architecture.md` ("Integration contract (to be verified)") and
+`architecture.md` ("Integration contract (to be verified)") and
 ADR-003.
 
 ## A. Real GRAPHIA (DAP Kafka + Virtuoso)

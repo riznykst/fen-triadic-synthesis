@@ -286,7 +286,7 @@ function renderReputation() {
   el.innerHTML = '<div style="margin-bottom:4px">' + accTxt + "</div>" + rows;
 }
 
-function renderGraph() {
+function renderGraphSvg() {
   const decided = state.candidates.filter((c) => c.decision);
   const box = $("graphBox");
   if (!decided.length) {
@@ -328,8 +328,8 @@ function renderGraph() {
 // -------------------------------------------------------------- registry graph
 let cy = null;
 
-function renderGraph() {
-  const el = $("regGraph");
+function renderGraphCy() {
+  const el = $("regGraph") || $("graphBox");
   const decided = state.candidates.filter((c) => c.decision);
   if (!decided.length) {
     if (cy) { cy.destroy(); cy = null; }
@@ -369,6 +369,21 @@ function renderGraph() {
     ],
     layout: { name: "cose", animate: false, padding: 8 },
   });
+}
+
+// Dispatcher: Cytoscape when vendored (regGraph/graphBox), else the SVG
+// fallback renderer. Fixes the duplicate-declaration conflict between the
+// SVG graph and the Cytoscape integration.
+function renderGraph() {
+  if (typeof cytoscape !== "undefined" && ($("regGraph") || $("graphBox"))) {
+    const box = $("regGraph") || $("graphBox");
+    box.style.display = "block";
+    renderGraphCy();
+  } else {
+    const box = $("graphBox");
+    if (box) box.style.display = "block";
+    renderGraphSvg();
+  }
 }
 
 // ------------------------------------------------------------------- load
