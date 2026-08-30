@@ -1,4 +1,4 @@
-﻿"""Tests for the QV voting mode and the /scaffold endpoint of the mock."""
+"""Tests for the QV voting mode and the /scaffold endpoint of the mock."""
 from __future__ import annotations
 
 import time
@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mock_fen_api import main as mock_main
+from mock_fen_api import scaffold as mock_scaffold
 
 
 @pytest.fixture(autouse=True)
@@ -177,7 +178,7 @@ def test_scaffold_llm_path(monkeypatch):
         '"object": "yu", "context": "hydronym", "language_or_domain": "Komi", '
         '"evidence_type": "community_consensus"}}'
     )
-    with mock.patch.object(mock_main, "chat_completion", return_value=agent_json):
+    with mock.patch.object(mock_scaffold, "chat_completion", return_value=agent_json):
         resp = TestClient(mock_main.app).post("/scaffold", json={"text": "In Komi, 'yu' means river"})
     assert resp.status_code == 200
     body = resp.json()
@@ -188,7 +189,7 @@ def test_scaffold_llm_path(monkeypatch):
 
 def test_scaffold_llm_failure_falls_back(monkeypatch):
     monkeypatch.setattr(mock_main, "_llm_config", mock.Mock(enabled=True))
-    with mock.patch.object(mock_main, "chat_completion", return_value=None):
+    with mock.patch.object(mock_scaffold, "chat_completion", return_value=None):
         resp = TestClient(mock_main.app).post("/scaffold", json={"text": "Some statement about a place"})
     assert resp.status_code == 200
     assert resp.json()["source"] == "rule_fallback"
@@ -214,7 +215,7 @@ def test_scaffold_shacl_valid(monkeypatch):
         '"triple": {"subject": "Komi river", "predicate": "means", "object": "yu", '
         '"language_or_domain": "Komi"}}'
     )
-    with mock.patch.object(mock_main, "chat_completion", return_value=agent_json):
+    with mock.patch.object(mock_scaffold, "chat_completion", return_value=agent_json):
         resp = TestClient(mock_main.app).post("/scaffold", json={"text": "In Komi, yu means river"})
     assert resp.status_code == 200
     body = resp.json()
@@ -227,7 +228,7 @@ def test_scaffold_shacl_invalid_reports_violations(monkeypatch):
     violations must be surfaced to the contributor before voting."""
     monkeypatch.setattr(mock_main, "_llm_config", mock.Mock(enabled=True))
     agent_json = '{"triple": {"subject": "Komi river", "language_or_domain": "Komi"}}'
-    with mock.patch.object(mock_main, "chat_completion", return_value=agent_json):
+    with mock.patch.object(mock_scaffold, "chat_completion", return_value=agent_json):
         resp = TestClient(mock_main.app).post("/scaffold", json={"text": "x"})
     assert resp.status_code == 200
     body = resp.json()
@@ -287,7 +288,7 @@ def test_scaffold_disambiguator_with_llm(monkeypatch):
     monkeypatch.setattr(mock_main, "_llm_config", mock.Mock(enabled=True))
     agent_json = '{"triple": {"subject": "Komi river", "predicate": "means", "object": "yu"}}'
     links = '[{"type": "wikidata", "value": "Q123", "label": "Komi"}]'
-    with mock.patch.object(mock_main, "chat_completion", side_effect=[agent_json, links]):
+    with mock.patch.object(mock_scaffold, "chat_completion", side_effect=[agent_json, links]):
         resp = TestClient(mock_main.app).post("/scaffold", json={"text": "x"})
     body = resp.json()
     assert body["agents"]["extractor"] == "llm"

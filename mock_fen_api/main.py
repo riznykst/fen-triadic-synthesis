@@ -1,4 +1,4 @@
-﻿"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
+"""Mock FEN API — stands in for the real Agentic Scaffolding + DAO
 Quadratic Voting system, for local development and consortium demos only.
 
 Accepts batches of EntityCandidate on POST /candidates and delivers a
@@ -11,6 +11,8 @@ synthetic GovernanceDecision to the FEN Bridge webhook. Two decision modes
 - "community": the UI-facing demo mode — candidates stay gfen:pending until
   community votes arrive via POST /candidates/{id}/vote; when the quorum
   (FEN_MOCK_QUORUM) is reached, the majority outcome is delivered.
+- "qv": Quadratic Voting demo — intensity-weighted votes
+  (FEN_MOCK_QV_THRESHOLD), delegation (liquid democracy, ADR-005 d.2).
 
 Decision logic (in priority order):
 1. If an OpenAI-compatible LLM endpoint is configured (FEN_LLM_BASE_URL —
@@ -24,6 +26,11 @@ This MUST NOT be mistaken for real DAO/Quadratic Voting governance, which
 lives entirely outside this repository (see ADR-002). The REST contract
 served here (see web/api.md) is the same contract the real FEN backend is
 expected to implement.
+
+Module layout (testability): pure QV math in mock_fen_api/qv_voting.py,
+delegation logic in mock_fen_api/delegation.py, the Scaffold agents in
+mock_fen_api/scaffold.py — this file keeps only the FastAPI app, the
+in-memory state and the decision delivery.
 
 Runs as the `mock-fen-api` container (see docker-compose.yml).
 """
@@ -42,16 +49,12 @@ from typing import Dict, Optional
 
 import asyncio
 import queue
-from pathlib import Path
 
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from rdflib import Graph, Literal, URIRef
-from rdflib.namespace import RDF
 
-from services.common import gfen_ontology as ns
 from services.common.llm import LLMConfig, chat_completion, parse_outcome
 from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.metrics import (
@@ -62,6 +65,18 @@ from services.common.metrics import (
     MOCK_LLM_JUDGE_CALLS,
     metrics_response,
 )
+
+from mock_fen_api.delegation import apply_delegation
+from mock_fen_api.qv_voting import (
+    MAX_INTENSITY,
+    OUTCOMES,
+    majority_outcome,
+    quorum_total,
+    qv_cost,
+    qv_decide,
+    qv_scores,
+)
+from mock_fen_api.scaffold import run_scaffold
 
 setup_logging("mock-fen-api", level=log_level_from_env())
 logger = logging.getLogger(__name__)
@@ -97,9 +112,6 @@ WEBHOOK_MAX_RETRIES = int(os.getenv("MOCK_FEN_WEBHOOK_RETRIES", "3"))
 VOTING_MODE = os.getenv("FEN_MOCK_VOTING", "auto")  # "auto" | "community" | "qv"
 QUORUM_REQUIRED = int(os.getenv("FEN_MOCK_QUORUM", "3"))     # classic count quorum
 QV_THRESHOLD = int(os.getenv("FEN_MOCK_QV_THRESHOLD", "10"))  # QV weighted-score threshold
-MAX_INTENSITY = 5                                             # QV intensity cap (cost = i^2)
-
-OUTCOMES = ("validated", "disputed", "rejected")
 
 _decision_counter = itertools.count(1)
 _reputation_counter = itertools.count(1)
@@ -170,88 +182,6 @@ _LLM_SYSTEM = (
     "Review the candidate record for factual quality and cultural sensitivity. "
     "Reply with exactly one word: validated, disputed, or rejected."
 )
-
-_SCAFFOLD_SYSTEM = (
-    "You are an Agentic Scaffolding layer for a community data-governance "
-    "framework (validation overlay for ANY dataset type). Analyse the statement "
-    "and return ONLY this JSON (no markdown, no code fences): "
-    '{"schema_hints": ["2-3 brief schema guidance notes for structuring this knowledge"], '
-    '"relationships": ["1-3 semantic relationships identified in the text"], '
-    '"ambiguities": ["any ambiguity or missing context - empty array [] if none"], '
-    '"triple": {"subject": "...", "predicate": "...", "object": "...", "context": "...", '
-    '"language_or_domain": "...", "evidence_type": "personal_expertise | community_consensus | archival"}}'
-)
-
-
-def _parse_scaffold_json(answer: Optional[str]) -> Optional[dict]:
-    """Parse the scaffold agent's JSON answer; tolerate code fences."""
-    if not answer:
-        return None
-    try:
-        cleaned = answer.replace("```json", "").replace("```", "").strip()
-        data = json.loads(cleaned)
-        triple = data.get("triple")
-        if not isinstance(triple, dict) or not triple.get("subject"):
-            return None
-        return {
-            "schema_hints": data.get("schema_hints", []),
-            "relationships": data.get("relationships", []),
-            "ambiguities": data.get("ambiguities", []),
-            "triple": triple,
-            "source": "llm",
-        }
-    except (json.JSONDecodeError, TypeError):
-        return None
-
-
-# ------------------------------------------------------------------ voting
-def majority_outcome(votes: Dict[str, int]) -> str:
-    """Deterministic majority: highest count, ties broken by OUTCOMES order."""
-    return max(OUTCOMES, key=lambda o: (votes.get(o, 0), -OUTCOMES.index(o)))
-
-
-def quorum_total(votes: Dict[str, int]) -> int:
-    return sum(votes.values())
-
-
-# ----------------------------------------------------------------------- QV
-def qv_cost(intensity: int) -> int:
-    """Quadratic cost: a vote with weight ``intensity`` spends intensity^2
-    credits (capture-resistance; the cost curve is not the participation
-    driver — ADR-005)."""
-    return intensity * intensity
-
-
-def qv_scores(qv_votes: list, delegations: Optional[Dict[str, str]] = None) -> Dict[str, int]:
-    """Weighted scores per outcome from QV votes (each vote carries an
-    ``intensity`` weight). One voter may vote at most once per proposal —
-    enforced in cast_vote (ADR-005 distinct-identity hint); scores weigh by
-    intensity.
-
-    Liquid democracy (ADR-005 decision 2): a voter who has NOT voted on the
-    proposal but has delegated to a voter who did contributes one extra
-    weight to the delegate's chosen outcome."""
-    scores = {o: 0 for o in OUTCOMES}
-    voted = set()
-    for vote in qv_votes:
-        voted.add(vote.get("voter"))
-        scores[vote["outcome"]] += int(vote.get("intensity", 1))
-    if delegations:
-        for voter, delegate in delegations.items():
-            if voter in voted or voter == delegate:
-                continue
-            for vote in qv_votes:
-                if vote.get("voter") == delegate:
-                    scores[vote["outcome"]] += 1
-                    break
-    return scores
-
-
-def qv_decide(scores: Dict[str, int], threshold: int) -> Optional[str]:
-    """Outcome whose weighted score reached the threshold; ties broken by
-    OUTCOMES order. Returns None while the proposal is still open."""
-    best = max(OUTCOMES, key=lambda o: (scores[o], -OUTCOMES.index(o)))
-    return best if scores[best] >= threshold else None
 
 
 def _record_candidate(candidate: dict) -> None:
@@ -447,84 +377,6 @@ def _deliver_decision_after_delay(
     MOCK_DELIVERY_FAILURES.inc()
 
 
-def _ontology_match(triple: dict) -> list:
-    """Agent 2 — Ontology Matcher (demo): look the triple's subject/object up
-    in the mock's in-memory registry (stand-in for a SPARQL lookup against
-    the existing knowledge graph). Returns known candidates with matching
-    labels."""
-    labels = {str(triple.get("subject", "")).lower(), str(triple.get("object", "")).lower()}
-    matches = []
-    with _state_lock:
-        for rec in _candidates.values():
-            label = str(rec.get("entity_label") or "").lower()
-            if label and label in labels:
-                matches.append({
-                    "annotation_id": rec["annotation_id"],
-                    "entity_label": rec.get("entity_label"),
-                    "status": rec["status"],
-                })
-    return matches
-
-
-def _disambiguate(triple: dict) -> list:
-    """Agent 3 — Disambiguator: propose external identifiers. Uses the LLM
-    (decision-support, ADR-004) when configured; otherwise returns an empty
-    list (the demo keeps working offline)."""
-    if not _llm_config.enabled:
-        return []
-    answer = chat_completion(
-        _llm_config,
-        "You are a knowledge-graph disambiguator. For the given triple, reply "
-        "with a JSON array of external identifiers, each "
-        '{"type": "wikidata"|"geonames"|"getty", "value": "<id>", "label": "<short label>"}. '
-        "Reply with [] if nothing applies. JSON only.",
-        json.dumps(triple, ensure_ascii=False),
-    )
-    if not answer:
-        return []
-    try:
-        parsed = json.loads(answer)
-        if isinstance(parsed, list):
-            return [item for item in parsed if isinstance(item, dict)][:5]
-    except json.JSONDecodeError:
-        logger.warning("disambiguator returned non-JSON; ignoring")
-    return []
-
-
-def _shacl_validate_scaffold(triple: dict) -> dict:
-    """Validate a scaffolded triple against gfen:ScaffoldedTripleShape
-    (docs/ontology/fen-shapes.ttl) BEFORE it goes to voting. Returns
-    ``{valid, violations}``. Never raises — validation failures are data,
-    not errors (the UI shows them to the contributor). Falls back to
-    ``valid: None`` when pyshacl is unavailable."""
-    try:
-        from pyshacl import validate  # lazy: pyshacl is a demo-time dependency
-
-        graph = Graph()
-        node = URIRef("urn:fen:scaffold:triple")
-        graph.add((node, RDF.type, URIRef(ns.SCAFFOLDED_TRIPLE)))
-        for field, prop_uri in (
-            ("subject", ns.PROP_SUBJECT),
-            ("predicate", ns.PROP_PREDICATE),
-            ("object", ns.PROP_OBJECT),
-            ("language_or_domain", ns.PROP_LANGUAGE_OR_DOMAIN),
-        ):
-            value = triple.get(field)
-            if value:
-                graph.add((node, URIRef(prop_uri), Literal(str(value))))
-        shapes_path = Path(__file__).resolve().parents[1] / "docs" / "ontology" / "fen-shapes.ttl"
-        conforms, results_graph, _ = validate(graph, shacl_graph=str(shapes_path))
-        violations = []
-        if not conforms:
-            for _s, pred, obj in results_graph:
-                if str(pred).endswith("resultMessage"):
-                    violations.append(str(obj))
-        return {"valid": bool(conforms), "violations": violations[:5]}
-    except Exception as exc:  # noqa: BLE001 - validation is advisory in the demo
-        logger.warning("SHACL validation unavailable (%s)", exc)
-        return {"valid": None, "violations": [], "error": str(exc)}
-
-
 # ------------------------------------------------------------------- routes
 @app.post("/candidates")
 def submit_candidates(payload: dict):
@@ -676,21 +528,12 @@ def delegate_vote(annotation_id: str, payload: dict):
     delegation per voter per proposal (re-delegation replaces it)."""
     voter = (payload.get("voter") or "").strip()
     delegate = (payload.get("delegate") or "").strip()
-    if not voter or not delegate:
-        raise HTTPException(status_code=422, detail="voter and delegate are required")
-    if voter == delegate:
-        raise HTTPException(status_code=422, detail="cannot delegate to yourself")
     with _state_lock:
         record = _candidates.get(annotation_id)
-        if record is None:
-            raise HTTPException(status_code=404, detail="unknown annotation_id")
-        if record["status"] != "pending":
-            raise HTTPException(status_code=409, detail=f"candidate already decided: {record['status']}")
-        if VOTING_MODE != "qv":
-            raise HTTPException(status_code=409, detail="delegation is a QV-mode feature (FEN_MOCK_VOTING=qv)")
-        if voter in {v.get("voter") for v in record["qv_votes"]}:
-            raise HTTPException(status_code=409, detail=f"voter {voter} has already voted — no delegation")
-        record["delegations"][voter] = delegate
+        error = apply_delegation(record, voter, delegate, VOTING_MODE)
+        if error is not None:
+            status = 422 if "required" in error or "yourself" in error else 409
+            raise HTTPException(status_code=status, detail=error)
     _broadcast("vote", {"annotation_id": annotation_id, "delegation": True, "voter": voter})
     return {
         "annotation_id": annotation_id,
@@ -705,49 +548,19 @@ def scaffold(payload: dict):
 
     Uses the configured OpenAI-compatible LLM (FEN_LLM_*) to structure a
     natural-language statement into a semantic triple with schema hints,
-    relationships and ambiguity flags. Generic — works for ANY dataset type
-    (framework, not language-specific). Falls back to a deterministic rule
-    when no LLM is configured, so the demo works offline.
+    relationships and ambiguity flags (agents: extractor -> ontology matcher
+    -> disambiguator, SHACL check at the end). Generic — works for ANY
+    dataset type (framework, not language-specific). Falls back to a
+    deterministic rule when no LLM is configured, so the demo works offline.
+    Logic lives in mock_fen_api/scaffold.py.
     """
     text = (payload.get("text") or "").strip()
     if not text:
         raise HTTPException(status_code=422, detail="text is required")
 
-    if _llm_config.enabled:
-        answer = chat_completion(_llm_config, _SCAFFOLD_SYSTEM, text)
-        parsed = _parse_scaffold_json(answer)
-        if parsed:
-            parsed["shacl"] = _shacl_validate_scaffold(parsed.get("triple", {}))
-            parsed["agents"] = {
-                "extractor": "llm",
-                "matcher": _ontology_match(parsed.get("triple", {})),
-                "disambiguator": _disambiguate(parsed.get("triple", {})),
-            }
-            return parsed
-        logger.warning("scaffold agent unavailable/indecisive; using rule fallback")
-
-    snippet = text[:48]
-    response = {
-        "schema_hints": ["rule-based fallback (no LLM configured) — the triple is a rough split"],
-        "relationships": [],
-        "ambiguities": [],
-        "triple": {
-            "subject": snippet,
-            "predicate": "mentions",
-            "object": text[-48:] if len(text) > 96 else snippet,
-            "context": "",
-            "language_or_domain": "und",
-            "evidence_type": "community_consensus",
-        },
-        "source": "rule_fallback",
-    }
-    response["shacl"] = _shacl_validate_scaffold(response["triple"])
-    response["agents"] = {
-        "extractor": "rule",
-        "matcher": _ontology_match(response["triple"]),
-        "disambiguator": [],
-    }
-    return response
+    with _state_lock:
+        registry = [dict(r) for r in _candidates.values()]
+    return run_scaffold(text, _llm_config, registry)
 
 
 @app.get("/events")
