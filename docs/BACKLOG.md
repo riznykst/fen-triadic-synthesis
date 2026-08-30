@@ -27,20 +27,38 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [~] k8s manifests: present, not deployed anywhere yet
 - [~] Virtuoso SPARQL dialect: verified against a local OpenLink Virtuoso container (dialect check in CI); the live GRAPHIA store is still pending
 
-## Backlog
-- [ ] Fix GitHub billing -> hosted runners, restore pull_request trigger + full matrix, remove the self-hosted runner (self-hosted-runner.md step 7)
-- [ ] Real GRAPHIA test instance: verify Kafka topic names, WP4 message schema, named-graph URI scheme, Virtuoso SPARQL dialect (local OpenLink check done)
+## Backlog (prioritised 2026-08-30)
+
+**P1 — local, quick wins**
+- [ ] e2e for the community/QV voting mode (the smoke test currently exercises only `auto`)
+- [ ] SHACL validation as a CI step (SHACL at Scaffold already exists backend-side)
+- [ ] Loki: log aggregation (Prometheus + Grafana metrics are already done)
+- [ ] Mobile-first adaptation of the portal
+- [ ] SSE real-time in the CLASSIC portal (`web/portal/app.js` still polls every 3 s — the triadic view already has SSE)
+- [ ] Export buttons (TTL / JSON-LD / N-Triples / RO-Crate) in the classic table view (`app.js`/`index.html`) — the `/export` endpoint exists
+
+> **Recommended next P1 bundle:** SSE in the classic portal → export buttons in the classic table
+> (CI↔host port isolation is already DONE via `COMPOSE_PROJECT_NAME=fen-ci`).
+
+**P2 — external-ish, prepared locally**
 - [ ] Register FEN NAAN + publish N2T/w3id redirects (ADR-003) — submission drafts ready in the working folder (outside the repo)
 - [ ] Replace the owl:imports stub with the official GRAPHIA Ontology IRI
-- [~] Real DAO/Quadratic Voting contract: mock QV mode (weighted scores, threshold) done; production contract + on-chain anchoring pending (ADR-001/ADR-004)
 - [ ] Use LLM4SSH/Quagga as Agentic Scaffolding backends (provider already pluggable via FEN_LLM_*)
-- [ ] SHACL validation step in CI
-- [~] Monitoring: Prometheus + Grafana (dashboard fen-overview) DONE 2026-08-29; log aggregation (Loki) still open
 - [ ] Secrets management (vault) for non-local deployments
-- [ ] e2e for the community-voting mode (portal Flow 1: /candidates + /vote end-to-end)
-- [ ] Precision/recall evaluation before vs after community validation (consortium deliverable)
-- [ ] Accessibility pass: mobile-first portal UI
+- [ ] Design unification: classic portal in the triadic view's style (light cards)
+- [ ] Flow 2 widget: SSE real-time status + `gfen:challengeWindowEnd` (once ADR-006 lands)
+- [ ] Reputation dashboard + history in the classic view (currently triadic-only)
+- [ ] Widget embedding example page for dataset owners
+- [ ] i18n (RU/EN) of the interface
 
+**P3 — consortium/production**
+- [ ] Fix GitHub billing -> hosted runners, restore pull_request trigger + full matrix (3.10/3.11/3.12), remove the self-hosted runner (self-hosted-runner.md step 7)
+- [ ] Real GRAPHIA test instance: verify Kafka topic names, WP4 message schema, named-graph URI scheme, Virtuoso SPARQL dialect (local OpenLink check done)
+- [~] Real DAO/Quadratic Voting contract + on-chain anchoring: mock QV mode done; production contract pending (ADR-001/ADR-004)
+- [ ] Precision/recall evaluation before vs after community validation (consortium deliverable)
+- [ ] Challenge window (ADR-006, reputation-lock) in the mock — after ADR-006 is accepted
+- [ ] UI e2e test (no Node.js available in the sandbox)
+- [ ] PID resolution as a CI step (once the NAAN is registered)
 ## Known environment quirks (dev machine)
 - D: nearly full (58.5/58.6 GB) -> runner work dir lives on C:
 - WSL bash breaks Windows paths in Actions steps -> use the powershell shell
