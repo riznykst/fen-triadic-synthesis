@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this software in your research, please cite it as below."
+title: "FEN — Triadic Synthesis Framework: A Federated Epistemic Node for Community-Governed Knowledge Validation"
+abstract: >-
+  A research prototype and reference architecture for a federated epistemic
+  validation layer for community-governed linguistic knowledge: AI scaffolds,
+  the community decides, the knowledge graph records. Runnable companion
+  implementation of "Decentralised Agentic Governance: A Methodology for
+  Community-Owned Linguistic Datasets and Knowledge Synthesis" (Riznyk, 2026,
+  DOI pending).
+authors:
+  - family-names: Riznyk
+    given-names: Vadym
+    orcid: ""
+    email: riznykv@gmx.de
+keywords:
+  - ai-governance
+  - epistemic-governance
+  - knowledge-graphs
+  - rdf
+  - kafka
+  - quadratic-voting
+  - linguistic-data
+  - human-ai
+  - decentralized-governance
+license: Apache-2.0
+version: 0.1.0
+date-released: "2026-08-30"
+url: "https://github.com/riznykst/fen-triadic-synthesis"
+# Set once the companion paper's DOI is active:
+# doi: "10.xxxx/xxxxx"

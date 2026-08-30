@@ -1,10 +1,67 @@
 # FEN — Triadic Synthesis Framework
 
-**A federated governance layer for community-validated linguistic data, designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.**
+**A research prototype and reference architecture for a federated epistemic validation layer for community-governed linguistic knowledge** — designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-MVP%20implemented-green.svg)](#status)
+[![Status](https://img.shields.io/badge/status-Research%20MVP-green.svg)](#status)
 [![GRAPHIA](https://img.shields.io/badge/integrates%20with-GRAPHIA%20D2.2-informational.svg)](docs/FEN-Whitepaper-Triadic-Synthesis.pdf)
+[![Tests](https://img.shields.io/badge/tests-104%20passing-brightgreen.svg)](#status)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](#running-locally)
+
+> **Status: Research MVP — runnable locally via `docker compose up`; live GRAPHIA integration pending.**
+
+---
+
+## Research entry point
+
+**Research question:** *How can AI-assisted knowledge synthesis remain
+community-governed without transferring epistemic authority to the AI system?*
+
+**Core idea:**
+
+> **AI scaffolds. Community decides. The knowledge graph records.**
+
+This repository is the runnable companion implementation of:
+
+> Riznyk, V. (2026). *Decentralised Agentic Governance: A Methodology for
+> Community-Owned Linguistic Datasets and Knowledge Synthesis* (submitted for
+> journal publication; DOI pending — will be linked here and in
+> [`CITATION.cff`](CITATION.cff) once active).
+
+**The architecture answers the question with a hard boundary** — the same
+boundary the paper argues for (epistemic assistance ≠ epistemic authority):
+
+```text
+        AI                     Community                 Knowledge Graph
+        │                      │                         │
+        ▼                      ▼                         ▼
+   SCAFFOLD            →   CONSENSUS            →    REGISTRY
+   AI-assisted              community judgment        RDF / provenance
+   epistemic                governance (QV,           persistent record
+   structuring              reputation, delegation)   (gfen:, PID, anchor)
+```
+
+AI participates in structuring. The community retains judgment. The
+knowledge graph keeps institutional memory. The ledger anchors integrity —
+nothing more ([ADR-001](docs/adr/ADR-001-rdf-anchoring-not-full-onchain.md)).
+
+### Research lineage
+
+```text
+PAPER         Decentralised Agentic Governance (2026, DOI pending)
+   │
+   ▼
+FRAMEWORK     Triadic Synthesis — Scaffold → Consensus → Registry
+   │
+   ▼
+SYSTEM        Federated Epistemic Node (FEN)
+   │
+   ▼
+IMPLEMENTATION  Kafka + RDF + mock DAO + PID + Web UI (this repository)
+   │
+   ▼
+EVALUATION    GRAPHIA integration + community validation study (next phase)
+```
 
 ---
 
@@ -118,6 +175,9 @@ pytest -q
 fen-triadic-synthesis/
 ├── README.md                       ← you are here
 ├── CHANGELOG.md                     dated record of notable changes
+├── CITATION.cff                     machine-readable citation metadata (research artifact)
+├── SECURITY.md                      vulnerability reporting + current security posture
+├── CONTRIBUTING.md                  how to contribute (roadmap + honesty contract)
 ├── AGENT_PLAN.md                    step-by-step build plan for an AI coding agent
 ├── LICENSE                          Apache 2.0
 ├── docker-compose.yml                full local dev stack (Kafka, Fuseki, all services; optional Virtuoso profile)
@@ -403,6 +463,23 @@ to start that.
 - **Companion paper:** *Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis* (Riznyk, 2026)
 - **Integrates with:** [GRAPHIA](https://graphia-ssh.eu/) — D2.2 Technical Architecture (SSH Knowledge Graph, Data Acquisition Platform)
 - **Research source:** [`docs/research/graphia-tech-stack-2026-08.pdf`](docs/research/graphia-tech-stack-2026-08.pdf) — GRAPHIA technology-stack research (English edition; RDF/LPG, Ontology, DAP, OKD/HPC, LLM services), the basis for the integration audit
+
+## Citing this repository
+
+```bibtex
+@software{riznyk2026fen,
+  author  = {Riznyk, Vadym},
+  title   = {{FEN} --- Triadic Synthesis Framework: A Federated Epistemic
+             Node for Community-Governed Knowledge Validation},
+  year    = {2026},
+  url     = {https://github.com/riznykst/fen-triadic-synthesis},
+  version = {0.1.0},
+  note    = {Research prototype; companion implementation of
+             "Decentralised Agentic Governance" (DOI pending)}
+}
+```
+
+Machine-readable metadata: [`CITATION.cff`](CITATION.cff).
 
 ## License
 
