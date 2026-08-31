@@ -23,6 +23,11 @@ Clicking the badge expands decision details: validation method,
 dereferenceable PID (`w3id.org/fen/id/decision/...`, ADR-003), reputation
 snapshot and the on-chain ledger anchor (hash only, ADR-001).
 
+For dataset owners: [`embed-example.html`](embed-example.html) is a ready-made
+page simulating a third-party dataset portal with embedded widgets (light +
+dark theme variants) and a copy-paste snippet — see also the Vercel route
+`/embed`.
+
 > **challengeWindowEnd**: the countdown (`gfen:challengeWindowEnd`) is
 > deliberately NOT rendered — ADR-006 is still a draft (ontology predicate
 > "proposed, not yet applied", nothing writes it). It ships only after

@@ -4,6 +4,7 @@
   "rewrites": [
     { "source": "/",        "destination": "/portal/index.html" },
     { "source": "/triadic", "destination": "/portal/triadic.html" },
-    { "source": "/widget",  "destination": "/widget/demo.html" }
+    { "source": "/widget",  "destination": "/widget/demo.html" },
+    { "source": "/embed",   "destination": "/widget/embed-example.html" }
   ]
 }

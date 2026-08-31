@@ -8,7 +8,8 @@ Plain HTML/JS/CSS, no build step. Talks to the FEN HTTP APIs (contract in
 - `portal/` — classic DAO portal (`index.html`, `app.js`) and the Triadic view
   Scaffold → Consensus → Registry (`triadic.html`, `triadic.js`, vendored
   Cytoscape in `portal/vendor/`).
-- `widget/` — embeddable `<fen-status>` widget (Flow 2) + `demo.html`.
+- `widget/` — embeddable `<fen-status>` widget (Flow 2) + `demo.html` +
+  `embed-example.html` (dataset-owner embedding example).
 
 ## Local run
 
@@ -37,7 +38,7 @@ Default API endpoints are `http://localhost:8100` (mock FEN) and
 - `ignoreCommand` — exit 0 when `web/` did not change since `HEAD^`, so
   backend-only pushes skip the deploy entirely;
 - `rewrites` — `/` → classic portal, `/triadic` → triadic view, `/widget` →
-  widget demo.
+  widget demo, `/embed` → dataset-owner embedding example.
 
 One-time project setup (Vercel dashboard, import
 `riznykst/fen-triadic-synthesis`):
