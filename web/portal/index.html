@@ -5,38 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FEN — Community DAO portal (Flow 1)</title>
 <style>
-  :root { --bg:#0f1420; --panel:#171e2e; --fg:#dde3f0; --muted:#8fa0bf; --accent:#4da3ff; --green:#3fce7c; --amber:#ffb020; --red:#ff5c5c; --border:#26314d; }
+  :root { --bg:#f7f5f0; --panel:#fdfcfa; --fg:#1c1b1f; --muted:#6b6560; --accent:#2d5a8e; --green:#2e7d5b; --amber:#8b6914; --red:#b23a3a; --border:#e3ded2; --chipline:rgba(45,90,142,.27); }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.55 "Segoe UI", system-ui, sans-serif; }
+  body { margin:0; min-height:100vh; background:radial-gradient(circle at 15% 20%,rgba(255,255,255,.6),transparent 40%),radial-gradient(circle at 85% 75%,rgba(255,255,255,.5),transparent 45%),linear-gradient(135deg,#efece6,#e7e4dc); color:var(--fg); font:14px/1.55 system-ui, sans-serif; }
   .wrap { max-width:980px; margin:0 auto; padding:28px 20px 60px; }
-  h1 { font-size:22px; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:10px; }
+  h1 { font-family:Georgia,serif; font-size:22px; font-weight:400; color:var(--fg); border-bottom:1px solid var(--border); padding-bottom:10px; }
   .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   @media (max-width:860px){ .grid { grid-template-columns:1fr; } }
-  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
-  label { display:block; color:var(--muted); font-size:12px; margin:8px 0 3px; }
-  input, select { width:100%; background:#0b101b; color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:7px 9px; font-size:13px; }
-  button { background:var(--panel); color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:7px 13px; cursor:pointer; font-size:13px; }
-  button.primary { background:var(--accent); border-color:var(--accent); color:#0b101b; font-weight:600; }
-  button:hover { filter:brightness(1.15); }
-  button:disabled { opacity:.4; cursor:not-allowed; }
-  .badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; border:1px solid var(--border); }
-  .b-validated { color:var(--green); border-color:var(--green); }
-  .b-disputed { color:var(--amber); border-color:var(--amber); }
-  .b-rejected { color:var(--red); border-color:var(--red); }
-  .b-pending { color:var(--accent); border-color:var(--accent); }
-  .b-deciding { color:var(--muted); }
+  .card { background:var(--panel); border:1.5px solid var(--accent); border-radius:18px; padding:14px 16px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .card h2 { font-family:Georgia,serif; font-weight:400; }
+  label { display:block; color:var(--muted); font-size:10px; letter-spacing:.09em; text-transform:uppercase; font-weight:600; margin:8px 0 3px; }
+  input, select { width:100%; background:#fff; color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:7px 9px; font-size:13px; outline:none; }
+  input:focus, select:focus { border-color:var(--accent); }
+  button { background:#fff; color:var(--accent); border:1px solid var(--chipline); border-radius:999px; padding:7px 13px; cursor:pointer; font-size:13px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; border-radius:8px; }
+  button:hover { filter:brightness(1.06); }
+  button:disabled { opacity:.55; cursor:not-allowed; }
+  .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .b-validated { color:var(--green); background:#e6f4ee; }
+  .b-disputed { color:var(--amber); background:#faf3e0; }
+  .b-rejected { color:var(--red); background:#fae8e8; }
+  .b-pending { color:var(--accent); background:#e8eff7; }
+  .b-deciding, .b-unknown { color:var(--muted); background:#f0eeea; }
   table { width:100%; border-collapse:collapse; margin-top:8px; }
   th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top; }
   th { color:var(--muted); font-weight:600; }
-  .bar { background:#0b101b; border:1px solid var(--border); border-radius:6px; height:8px; width:90px; overflow:hidden; }
-  .bar > div { height:100%; background:var(--accent); }
+  .bar { background:var(--border); border-radius:3px; height:5px; width:90px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--accent); border-radius:3px; }
   .vote { display:flex; gap:5px; }
-  .vote button { padding:4px 9px; font-size:12px; }
+  .vote button { padding:5px 9px; font-size:12px; color:#fff; border:none; border-radius:6px; font-weight:700; }
+  .vote button[data-outcome="validated"] { background:var(--green); }
+  .vote button[data-outcome="disputed"] { background:var(--amber); }
+  .vote button[data-outcome="rejected"] { background:var(--red); }
   .note { color:var(--muted); font-size:12px; }
   .err { color:var(--red); font-size:12px; margin-top:6px; }
   .exports { white-space:nowrap; }
-  .exp { color:var(--accent); text-decoration:none; border:1px solid var(--border); border-radius:4px; padding:2px 6px; margin:1px 3px 1px 0; font-size:11px; display:inline-block; }
-  .exp:hover { filter:brightness(1.2); border-color:var(--accent); }
+  .exp { color:var(--accent); text-decoration:none; border:1px solid var(--chipline); border-radius:999px; padding:2px 8px; margin:1px 3px 1px 0; font-size:11px; display:inline-block; }
+  .exp:hover { border-color:var(--accent); }
   /* ---- Mobile-first (min-width = desktop enhancements) ---- */
   .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   input, select, button { font-size:16px; }  /* prevents iOS auto-zoom */
