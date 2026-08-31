@@ -23,6 +23,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] P1 bundle shipped (3a7f43f, CI run 33306094359 green): e2e for community/QV voting (`smoke_test.py --mode community|qv` + `docker-compose.voting.yml`), SHACL validation as a CI step (`scripts/shacl_check.py`), Loki log aggregation (promtail + Loki datasource in Grafana), mobile-first portal (index/triadic 640/641px breakpoints, 44px touch targets)
 - [x] Vercel static hosting for the zero-build web layer (`web/vercel.json`: framework `other`, `ignoreCommand` skips deploys when only backend files change, rewrites `/`, `/triadic`, `/widget`; auto-deploy on push; API base config via query params/localStorage; `web/README.md`)
 - [x] Bugfixes found by the new e2e modes: vote-triggered decisions lost `document_id` (consumer fell back to the annotation-named graph) — the full candidate record is now delivered; `status-api` exposes `/metrics` (target was down); observability configs baked into images (`monitoring/docker/*.Dockerfile`) because Docker Desktop cannot share files from the removable drive hosting the repo
+- [x] P1 final bundle (2026-08-31, frontend-only commit): SSE real-time in the CLASSIC portal + export buttons in the classic table — **P1 exhausted**
 
 ## In progress / partial
 - [~] CI Python matrix on self-hosted: 3.10 only (setup-python toolchains get wiped); full 3.10/3.11/3.12 once back on hosted runners
@@ -37,11 +38,10 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] SHACL validation as a CI step (SHACL at Scaffold already exists backend-side) — DONE (3a7f43f): `scripts/shacl_check.py` step in the `test` job
 - [x] Loki: log aggregation (Prometheus + Grafana metrics are already done) — DONE (3a7f43f): promtail (docker_sd_configs) → Loki 3.2.2, datasource provisioned
 - [x] Mobile-first adaptation of the portal — DONE (3a7f43f): viewport meta, `.table-scroll`, 640/641px media queries
-- [ ] SSE real-time in the CLASSIC portal (`web/portal/app.js` still polls every 3 s — the triadic view already has SSE)
-- [ ] Export buttons (TTL / JSON-LD / N-Triples / RO-Crate) in the classic table view (`app.js`/`index.html`) — the `/export` endpoint exists
+- [x] SSE real-time in the CLASSIC portal (`web/portal/app.js` still polls every 3 s — the triadic view already has SSE) — DONE (2026-08-31): EventSource on `/events` + 15s polling fallback while the stream is down (no lost updates on reconnect); toggle renamed "Live updates"
+- [x] Export buttons (TTL / JSON-LD / N-Triples / RO-Crate) in the classic table view (`app.js`/`index.html`) — the `/export` endpoint exists — DONE (2026-08-31): per-record export links, `target=_blank rel=noopener`
 
-> **Recommended next P1 bundle:** SSE in the classic portal → export buttons in the classic table
-> (CI↔host port isolation is already DONE via `COMPOSE_PROJECT_NAME=fen-ci`).
+> **P1 exhausted (2026-08-31).** Next: P2 — reputation dashboard + history in the classic view, then design unification (classic portal in the triadic view's light-card style).
 
 **P2 — external-ish, prepared locally**
 - [ ] Register FEN NAAN + publish N2T/w3id redirects (ADR-003) — submission drafts ready in the working folder (outside the repo)

@@ -2,6 +2,22 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-31 — Classic portal: SSE real-time updates + export buttons (P1 done)
+
+Frontend-only commit (web/), P1 backlog exhausted.
+
+- **SSE in the classic view** (`web/portal/app.js`): the 3s polling timer is
+  gone. Live updates come from `EventSource` on the existing `GET /events`
+  stream (`vote`/`decision`/`candidates` events). While the stream is down
+  (EventSource auto-reconnects) a 15s polling fallback keeps the list fresh
+  so no update is lost, and the next `onopen` stops the ticker and catches
+  up; the toggle is renamed "Live updates: ON/OFF" (manual Refresh stays).
+- **Export buttons** (`web/portal/index.html` + `app.js`): new `export`
+  column with per-record TTL / JSON-LD / N-Triples / RO-Crate links to the
+  existing `GET /api/v1/export/{annotation_id}?format=...` endpoint
+  (`target="_blank" rel="noopener"`, classic dark-theme styling).
+- Tests: 104 (unchanged — JS-only change).
+
 ## 2026-08-31 — Vercel static hosting for the zero-build web layer
 
 - `web/vercel.json`: framework preset `other`, `ignoreCommand` (deploys are
