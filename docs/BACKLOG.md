@@ -12,7 +12,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] Observability: Prometheus /metrics (all 5 processes), JSON logs, /readyz, graceful shutdown
 - [x] CI: 104 unit tests + REAL e2e on Docker — green for consecutive runs; self-hosted runner as a Windows service (NSSM); runner paused during local demos (runs queue, no stack teardown)
 - [x] CI e2e: Virtuoso dialect check (`scripts/virtuoso_dialect_check.py`, OpenLink Virtuoso, Digest auth, idempotency) wired into the `e2e` job
-- [x] CI e2e scope filter (dorny/paths-filter in `.github/workflows/ci.yml`): the `e2e` job runs only when a push touches anything outside `web/` — frontend-only pushes run the 104 unit tests and skip the Docker e2e, so they no longer fight a locally running dev stack over published host ports
+- [x] CI e2e scope: `ci.yml` ignores web-only pushes (native `paths-ignore: ['web/**']`); `.github/workflows/web.yml` runs the unit suite for web-only pushes — frontend-only pushes skip the Docker e2e entirely and no longer fight a locally running dev stack over published host ports
 - [x] CI isolation: `COMPOSE_PROJECT_NAME=fen-ci` — the CI stack can never collide with or tear down a local dev stack on the same Docker daemon (self-hosted-runner.md §6a)
 - [x] e2e bug hunt: fuseki image tag, kafka-python 2.x/3.x compat (serializer, OffsetAndMetadata, admin API), datetime serializer, Fuseki basic auth, lazy fastapi import; rdflib in per-service requirements; `import os` in consumers
 - [x] Web layer: DAO portal (Flow 1) + status widget (Flow 2), community voting in the mock
