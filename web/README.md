@@ -25,6 +25,8 @@ Default API endpoints are `http://localhost:8100` (mock FEN) and
 
 ## Vercel deployment (static hosting)
 
+`web/package.json` is a **detection marker only** (zero-build, no dependencies): it makes Vercel list `web/` in the Root Directory picker.
+
 `vercel.json` in this directory wires everything:
 
 - `framework: "other"` — zero-build static output;
