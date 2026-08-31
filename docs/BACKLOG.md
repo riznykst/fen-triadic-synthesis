@@ -42,7 +42,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] SSE real-time in the CLASSIC portal (`web/portal/app.js` still polls every 3 s — the triadic view already has SSE) — DONE (2026-08-31): EventSource on `/events` + 15s polling fallback while the stream is down (no lost updates on reconnect); toggle renamed "Live updates"
 - [x] Export buttons (TTL / JSON-LD / N-Triples / RO-Crate) in the classic table view (`app.js`/`index.html`) — the `/export` endpoint exists — DONE (2026-08-31): per-record export links, `target=_blank rel=noopener`
 
-> **P1 exhausted (2026-08-31).** P2 reputation dashboard — DONE (2026-08-31); design unification — DONE (2026-08-31). Next: Flow 2 widget SSE real-time status + `gfen:challengeWindowEnd` (once ADR-006 lands).
+> **P1 exhausted (2026-08-31).** P2 reputation dashboard — DONE (2026-08-31); design unification — DONE (2026-08-31). Flow 2 widget SSE — DONE (2026-08-31); `challengeWindowEnd` pending ADR-006. **Next: widget embedding example page for dataset owners.**
 
 **P2 — external-ish, prepared locally**
 - [ ] Register FEN NAAN + publish N2T/w3id redirects (ADR-003) — submission drafts ready in the working folder (outside the repo)
@@ -50,7 +50,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [ ] Use LLM4SSH/Quagga as Agentic Scaffolding backends (provider already pluggable via FEN_LLM_*)
 - [ ] Secrets management (vault) for non-local deployments
 - [x] Design unification: classic portal in the triadic view's style (light cards) — DONE (2026-08-31): CSS-only re-theme of `web/portal/index.html` to the triadic light palette (same CSS variable names, `app.js` untouched); badges/buttons/vote/export unified; browser + jsdom verified
-- [ ] Flow 2 widget: SSE real-time status + `gfen:challengeWindowEnd` (once ADR-006 lands)
+- [~] Flow 2 widget: SSE real-time status + `gfen:challengeWindowEnd` (once ADR-006 lands) — SSE DONE (2026-08-31): status-api `GET /api/v1/events/{id}` (read-only, polls SPARQL, pushes only changed records, heartbeat) + widget `EventSource` with 15s polling fallback and `live="off"` opt-out. `gfen:challengeWindowEnd` deliberately NOT rendered — gated on ADR-006 acceptance (predicate "proposed, not yet applied"; only TODO hooks in `fen-status-widget.js` render + status-api `_PREDICATE_KEYS`)
 - [x] Reputation dashboard + history in the classic view (currently triadic-only) — DONE (2026-08-31): accuracy line + leaderboard + history panel in the classic portal (frontend-only; `GET /candidates` already exposes reputation/history/llm_accuracy; panel refreshes via the existing SSE `decision` event)
 - [ ] Widget embedding example page for dataset owners
 - [ ] i18n (RU/EN) of the interface

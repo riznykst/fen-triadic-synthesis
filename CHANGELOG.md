@@ -2,6 +2,43 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-31 — Flow 2 widget: live status via SSE (challengeWindowEnd gated on ADR-006)
+
+Backend (services/ + tests/):
+- `GET /api/v1/events/{annotation_id}` (SSE) in the Status API — read-only
+  (ADR-001): no Kafka consumer; the service re-polls the RDF store every
+  `STATUS_POLL_INTERVAL_S` (default 5s) per connected client and pushes
+  `event: status` ONLY when the record changed (canonical JSON comparison).
+  Event payloads are byte-for-byte the `GET /api/v1/status/{id}` body
+  (shared `_status_payload` builder), so records that do not exist yet are
+  seen as they appear (`found:false` → `validated`).
+- `event: error` + retry on the next tick when the store is unreachable;
+  `: ping` heartbeat every `STATUS_SSE_HEARTBEAT_S` (default 15s);
+  `Cache-Control: no-cache`.
+- The stream generator is `_status_stream(annotation_id, poller, interval_s,
+  heartbeat_s, stop_after=None)` — injectable poller + bounded ticks make it
+  deterministically testable offline (`asyncio.run` over the generator; a
+  TestClient GET would hang on the infinite stream by design).
+- Config: `STATUS_POLL_INTERVAL_S`, `STATUS_SSE_HEARTBEAT_S` via
+  `StatusApiConfig.from_env()`.
+- Tests: 111 (was 104) — 7 new SSE tests (first-event byte-identity with
+  REST, found:false, change-only pushes, error/retry, bounded termination,
+  heartbeat, headers).
+
+Frontend (web/ + web/api.md):
+- `<fen-status>` widget: polling timer replaced by `EventSource` on
+  `/api/v1/events/{annotation-id}`; `event: status` renders through the
+  exact same path as the REST fetch (no flicker). While the stream is down
+  (EventSource auto-reconnects) a 15s REST-polling fallback keeps the badge
+  fresh; `onopen` stops the ticker and catches up — no lost status flips.
+- New `live="off"` attribute lets embedders disable streaming (CSP/EventSource
+  restrictions); documented in `web/widget/README.md`.
+- `gfen:challengeWindowEnd` is deliberately NOT rendered: ADR-006 is still a
+  draft ("proposed, not yet applied" in the ontology, nothing writes it).
+  Only marked TODO hooks exist (widget render + status-api `_PREDICATE_KEYS`),
+  gated on ADR-006 acceptance — no fake data (honesty contract).
+- `web/api.md` §4b documents the SSE contract and event shapes.
+
 ## 2026-08-31 — Classic portal: light-card theme unification with the triadic view (P2)
 
 Frontend-only commit (web/), P2 backlog item done (design unification).
