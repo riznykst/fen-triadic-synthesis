@@ -1,0 +1,9 @@
+{
+  "framework": "other",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- .",
+  "rewrites": [
+    { "source": "/",        "destination": "/portal/index.html" },
+    { "source": "/triadic", "destination": "/portal/triadic.html" },
+    { "source": "/widget",  "destination": "/widget/demo.html" }
+  ]
+}

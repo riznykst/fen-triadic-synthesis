@@ -6,8 +6,13 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const MOCK = (localStorage.getItem("fen_mock_base") || "http://localhost:8100").replace(/\/+$/, "");
-const STATUS = (localStorage.getItem("fen_status_base") || "http://localhost:8082").replace(/\/+$/, "");
+function apiBase(key, fallback) {
+  const fromQuery = new URLSearchParams(location.search).get(key);
+  if (fromQuery) localStorage.setItem(key, fromQuery);
+  return (localStorage.getItem(key) || fallback).replace(/\/+$/, "");
+}
+const MOCK = apiBase("fen_mock_base", "http://localhost:8100");
+const STATUS = apiBase("fen_status_base", "http://localhost:8082");
 
 const THRESHOLD_DEFAULT = 10;
 const EXAMPLES = [
@@ -191,12 +196,12 @@ function renderConsensus() {
           "</div>" +
           '<div class="cost">Cost: ' + intens + "² = <b>" + (intens * intens) + "</b> credits · Your Rep: " + (state.reputation[$("voter").value.trim()] || 0) + "</div>" +
       (c.status === "pending"
-        ? '<div style="margin-top:6px;font-size:11px;display:flex;gap:6px;align-items:center">Delegate: <input id="del_' + jsAttr(c.annotation_id) + '" placeholder="voter" style="flex:1;min-width:60px;border:1px solid #e3ded2;border-radius:6px;padding:3px 6px;font-size:11px"/> <button class="step-btn" onclick="delegateVote('' + jsAttr(c.annotation_id) + '')">→</button></div>'
+        ? '<div style="margin-top:6px;font-size:11px;display:flex;gap:6px;align-items:center">Delegate: <input id="del_' + jsAttr(c.annotation_id) + '" placeholder="voter" style="flex:1;min-width:60px;border:1px solid #e3ded2;border-radius:6px;padding:3px 6px;font-size:11px"/> <button class="step-btn" onclick="delegateVote(\' + jsAttr(c.annotation_id) + \')">→</button></div>'
         : "") +
       (c.delegations && c.delegations[$("voter").value.trim()]
         ? '<div style="font-size:10.5px;color:' + C.mu + '">delegated to ' + esc(c.delegations[$("voter").value.trim()]) + "</div>"
         : "") +
-      "</div>";
+      "</div>");
   }).join("");
 }
 
