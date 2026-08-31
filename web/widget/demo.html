@@ -35,6 +35,12 @@ Click a badge for decision details (method, PID, ledger anchor).</p>
 widget — it never writes to the graph (ADR-001).</p>
 </div>
 
+<script>
+  // Vercel/demo deployments: point the widgets at a remote Status API via
+  // ?fen_status_base=... (no code edit needed; localhost default otherwise).
+  const _demoBase = new URLSearchParams(location.search).get("fen_status_base") || "http://localhost:8082";
+  document.querySelectorAll("fen-status").forEach((el) => el.setAttribute("api-base", _demoBase));
+</script>
 <script src="fen-status-widget.js"></script>
 </body>
 </html>

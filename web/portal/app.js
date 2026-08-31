@@ -241,6 +241,20 @@ function bindEvents() {
   });
 }
 
+// Vercel/remote deployments: allow overriding the API bases from the URL
+// (?fen_mock_base=...&fen_status_base=...), persisted to localStorage — the
+// same convention as the triadic view (triadic.js apiBase()). The inputs
+// stay editable; the fields just get sensible defaults.
+(function applyApiBases() {
+  const params = new URLSearchParams(location.search);
+  [["fen_mock_base", "mock_base"], ["fen_status_base", "status_base"]].forEach(([key, id]) => {
+    const fromQuery = params.get(key);
+    if (fromQuery) localStorage.setItem(key, fromQuery);
+    const saved = localStorage.getItem(key);
+    if (saved) $(id).value = saved;
+  });
+})();
+
 bindEvents();
 loadCandidates();
 startLiveUpdates();

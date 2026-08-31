@@ -20,8 +20,12 @@ Default API endpoints are `http://localhost:8100` (mock FEN) and
 - Triadic view: query params `?fen_mock_base=...&fen_status_base=...`
   (persisted to `localStorage`), or set the keys directly:
   `localStorage.setItem("fen_mock_base", "...")`.
-- Classic portal: type the base URL into the field on the page.
-- Widget: `api-base` attribute, e.g. `<fen-status annotation-id="a1" api-base="https://...">`.
+- Classic portal: query params `?fen_mock_base=...&fen_status_base=...`
+  (persisted to `localStorage`), or type the base URL into the fields on
+  the page.
+- Widget demo: query param `?fen_status_base=...`; the widget itself takes
+  an `api-base` attribute, e.g.
+  `<fen-status annotation-id="a1" api-base="https://...">`.
 
 ## Vercel deployment (static hosting)
 
