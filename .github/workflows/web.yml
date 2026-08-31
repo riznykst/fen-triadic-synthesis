@@ -1,0 +1,40 @@
+name: Web
+
+# Unit suite for frontend-only pushes: `ci.yml` ignores web-only pushes
+# (paths-ignore), so this workflow runs the same test job without Docker.
+# Mixed pushes (web + backend) run both workflows - the unit suite then runs
+# twice, which is harmless. Revert/merge into ci.yml once CI returns to
+# hosted runners with pull_request triggers (see docs/self-hosted-runner.md).
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**']
+
+jobs:
+  test:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        # TEMPORARY: system Python (C:\Python310) on the self-hosted runner.
+        # Restore ["3.10", "3.11", "3.12"] together with setup-python below.
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v5
+      # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
+      - name: Use system Python
+        run: python --version
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install --no-cache-dir -r requirements-common.txt
+      - name: Run tests
+        run: pytest -q
+      - name: Verify imports
+        run: |
+          python -c "import services.common.messages, services.common.gfen_ontology, services.common.pid, services.common.kafka_io, services.common.llm, services.fen_bridge.webhook, services.validation_consumer.sparql_updater, mock_fen_api.main; print('imports OK')"
+      - name: Parse RDF artefacts
+        run: |
+          python -c "from rdflib import Graph, Dataset; g=Graph(); g.parse('docs/ontology/fen-ontology.ttl', format='turtle'); d=Dataset(); d.parse('examples/sample-validation-flow.trig', format='trig'); print('RDF OK', len(g), len(d))"
+      - name: SHACL validation
+        run: python scripts/shacl_check.py

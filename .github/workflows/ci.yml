@@ -9,14 +9,16 @@ name: CI
 # 3.10/3.11/3.12 matrix + setup-python once the billing issue is resolved —
 # see docs/self-hosted-runner.md, step 7.
 #
-# e2e scope (paths-filter): the `e2e` job runs only when the push touches
-# anything OUTSIDE web/ (backend, docs, CI files, root files). Frontend-only
-# pushes run the unit suite (`test` job) but skip the Docker e2e — the CI
-# stack cannot share the published host ports with a locally running dev
-# stack, so web-only changes should not fight over them.
+# e2e scope: this workflow is skipped when a push touches ONLY web/ (native
+# `paths-ignore`) — web-only pushes run the unit suite via .github/workflows/
+# web.yml instead and never touch Docker. The CI stack cannot share the
+# published host ports with a locally running dev stack, so web-only changes
+# should not fight over them. Mixed pushes (web + anything else) run both
+# workflows; the unit suite then runs twice, which is harmless.
 on:
   push:
     branches: [main]
+    paths-ignore: ['web/**']
 
 jobs:
   test:
@@ -46,31 +48,13 @@ jobs:
       - name: SHACL validation
         run: python scripts/shacl_check.py
 
-  # Detect whether the push changed anything outside web/ (see header).
-  changes:
-    runs-on: self-hosted
-    outputs:
-      e2e: ${{ steps.filter.outputs.e2e }}
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0   # paths-filter diffs against the previous commit
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            e2e:
-              - '**'
-              - '!web/**'
-
   # End-to-end smoke test against the real docker-compose stack: publishes an
   # EntityCandidate and waits for the full pipeline (decision -> SPARQL ->
   # validated) to complete. Requires a Docker runner; skipped on machines
-  # without Docker. Runs only when the push touches anything outside web/.
+  # without Docker. Runs for any push that touches anything outside web/
+  # (web-only pushes never reach this workflow — see the trigger).
   e2e:
     runs-on: self-hosted
-    needs: changes
-    if: needs.changes.outputs.e2e == 'true'
     env:
       # Isolate the CI stack from any locally-running dev stack on the same
       # Docker daemon: both would otherwise default to the project name
