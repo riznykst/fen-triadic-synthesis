@@ -28,6 +28,13 @@ Default API endpoints are `http://localhost:8100` (mock FEN) and
   an `api-base` attribute, e.g.
   `<fen-status annotation-id="a1" api-base="https://...">`.
 
+## CI scope
+
+Frontend-only pushes (touching only `web/`) run the 104 unit tests and skip
+the Docker e2e job (`.github/workflows/ci.yml` paths-filter): the CI stack
+cannot share the published host ports with a locally running dev stack, and
+a web-only change does not need the e2e pipeline.
+
 ## Vercel deployment (static hosting)
 
 `web/package.json` is a **detection marker only** (zero-build, no dependencies): it makes Vercel list `web/` in the Root Directory picker.
