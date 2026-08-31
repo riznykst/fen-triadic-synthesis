@@ -52,6 +52,9 @@ function startLiveUpdates() {
 
 let currentFilter = "all";
 let cachedList = [];
+let reputation = {};            // actor -> points (current totals)
+let reputationHistory = [];      // newest first, last 50, validated only
+let llmAccuracy = {};           // { agreements, total, accuracy }
 
 function statusBadge(status) {
   return '<span class="badge b-' + (status || "unknown") + '">' + (status || "unknown") + "</span>";
@@ -111,12 +114,47 @@ function renderCandidates(data) {
   }).join("");
 }
 
+function renderReputation() {
+  const acc = llmAccuracy || {};
+  const accTxt = acc.total
+    ? "LLM judge vs community decisions: " + acc.agreements + "/" + acc.total +
+      " (" + Math.round((acc.accuracy || 0) * 100) + "%)"
+    : "LLM judge vs community decisions: no decisions yet";
+  $("llm_accuracy").textContent = accTxt;
+
+  const top = Object.entries(reputation || {}).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  $("rep_leader").innerHTML = top.length
+    ? top.map(([actor, pts]) =>
+        '<div style="display:flex;gap:8px;justify-content:space-between">' +
+          "<span>" + escapeHtml(actor) + ' <span class="note">· </span><b>' +
+            escapeHtml(String(pts)) + '</b> <span class="note">points</span></span>' +
+        "</div>"
+      ).join("")
+    : '<div class="note">no reputation yet</div>';
+
+  const rows = (reputationHistory || []).slice(0, 20).map((h) => {
+    const d = Number(h.delta) || 0;
+    return '<div style="display:flex;gap:8px;justify-content:space-between">' +
+      "<span>" + escapeHtml(h.actor) + ' <span class="note">· ' + escapeHtml(h.reason) +
+        " · " + escapeHtml(String(h.annotation_id || "").slice(-6)) + "</span></span>" +
+      '<b style="color:' + (d > 0 ? "var(--green)" : "var(--red)") + '">' +
+        (d > 0 ? "+" : "") + d + "</b>" +
+    "</div>";
+  }).join("");
+  $("rep_history").innerHTML = rows || '<div class="note">no reputation events yet</div>';
+}
+
 async function loadCandidates() {
   const base = $("mock_base").value.replace(/\/+$/, "");
   try {
     const resp = await fetch(base + "/candidates");
     if (!resp.ok) throw new Error("HTTP " + resp.status);
-    renderCandidates(await resp.json());
+    const data = await resp.json();
+    renderCandidates(data);
+    reputation = data.reputation || {};
+    reputationHistory = data.reputation_history || [];
+    llmAccuracy = data.llm_accuracy || {};
+    renderReputation();
     $("mode_note").textContent = "";
   } catch (err) {
     $("mode_note").textContent = "cannot reach " + base + " — start docker compose (mock-fen-api) first";
