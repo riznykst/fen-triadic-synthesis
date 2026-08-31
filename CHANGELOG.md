@@ -2,6 +2,23 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-31 — Widget embedding example page for dataset owners (P2)
+
+Frontend-only commit (web/):
+
+- New `web/widget/embed-example.html`: a ready-made page simulating a
+  third-party dataset portal with four embedded `<fen-status>` badges (light
+  and dark theme variants, including the honest "unknown" state for records
+  the pipeline has not validated yet) plus a copy-paste embed snippet and
+  going-live notes (HTTPS/mixed content, CORS `FEN_CORS_ORIGINS`, read-only
+  ADR-001, SSE contract `web/api.md` §4b, `challengeWindowEnd` gated on
+  ADR-006).
+- `web/vercel.json`: new rewrite `/embed` → `/widget/embed-example.html`;
+  `web/README.md` and `web/widget/README.md` link the page.
+- Verified: page serves over HTTP (200, 4 widget instances); `pytest -q`
+  passes (unchanged — static page).
+- Tests: 111 (unchanged).
+
 ## 2026-08-31 — Flow 2 widget: live status via SSE (challengeWindowEnd gated on ADR-006)
 
 Backend (services/ + tests/):
