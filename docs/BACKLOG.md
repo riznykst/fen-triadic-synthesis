@@ -41,7 +41,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] SSE real-time in the CLASSIC portal (`web/portal/app.js` still polls every 3 s — the triadic view already has SSE) — DONE (2026-08-31): EventSource on `/events` + 15s polling fallback while the stream is down (no lost updates on reconnect); toggle renamed "Live updates"
 - [x] Export buttons (TTL / JSON-LD / N-Triples / RO-Crate) in the classic table view (`app.js`/`index.html`) — the `/export` endpoint exists — DONE (2026-08-31): per-record export links, `target=_blank rel=noopener`
 
-> **P1 exhausted (2026-08-31).** Next: P2 — reputation dashboard + history in the classic view, then design unification (classic portal in the triadic view's light-card style).
+> **P1 exhausted (2026-08-31).** P2 reputation dashboard + history in the classic view — DONE (2026-08-31). Next: design unification (classic portal in the triadic view's light-card style).
 
 **P2 — external-ish, prepared locally**
 - [ ] Register FEN NAAN + publish N2T/w3id redirects (ADR-003) — submission drafts ready in the working folder (outside the repo)
@@ -50,7 +50,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [ ] Secrets management (vault) for non-local deployments
 - [ ] Design unification: classic portal in the triadic view's style (light cards)
 - [ ] Flow 2 widget: SSE real-time status + `gfen:challengeWindowEnd` (once ADR-006 lands)
-- [ ] Reputation dashboard + history in the classic view (currently triadic-only)
+- [x] Reputation dashboard + history in the classic view (currently triadic-only) — DONE (2026-08-31): accuracy line + leaderboard + history panel in the classic portal (frontend-only; `GET /candidates` already exposes reputation/history/llm_accuracy; panel refreshes via the existing SSE `decision` event)
 - [ ] Widget embedding example page for dataset owners
 - [ ] i18n (RU/EN) of the interface
 

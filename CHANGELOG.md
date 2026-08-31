@@ -2,6 +2,24 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-31 — Classic portal: reputation dashboard + history (P2 done)
+
+Frontend-only commit (web/), P2 backlog item done.
+
+- New **Reputation & LLM-judge accuracy (ADR-005)** card below the candidates
+  table (`web/portal/index.html` + `app.js`): amber LLM-judge accuracy line
+  (ADR-004 decision-support, display-only), top-10 leaderboard from the live
+  `reputation` map (points DESC), and the last 20 `reputation_history`
+  entries (newest first) with colored deltas (+ green / − red). All three
+  blocks have empty states.
+- Data comes from the existing `GET {mock}/candidates` response
+  (`reputation`, `reputation_history`, `llm_accuracy`) — no backend change.
+  The panel refreshes in real time via the existing SSE `decision` event
+  (reputation changes exactly when a decision lands); no new events.
+- XSS: every dynamic string is escaped with `escapeHtml()` (actor names are
+  user-controlled in QV mode via the `voter` field).
+- Tests: 104 (unchanged — JS-only change).
+
 ## 2026-08-31 — Classic portal: SSE real-time updates + export buttons (P1 done)
 
 Frontend-only commit (web/), P1 backlog exhausted.
