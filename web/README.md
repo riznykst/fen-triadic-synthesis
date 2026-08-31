@@ -30,10 +30,12 @@ Default API endpoints are `http://localhost:8100` (mock FEN) and
 
 ## CI scope
 
-Frontend-only pushes (touching only `web/`) run the 104 unit tests and skip
-the Docker e2e job (`.github/workflows/ci.yml` paths-filter): the CI stack
-cannot share the published host ports with a locally running dev stack, and
-a web-only change does not need the e2e pipeline.
+Frontend-only pushes (touching only `web/`) run the 104 unit tests via
+`.github/workflows/web.yml` and never touch Docker: `ci.yml` ignores
+web-only pushes (`paths-ignore: ['web/**']`), because the CI stack cannot
+share the published host ports with a locally running dev stack and a
+web-only change does not need the e2e pipeline. Mixed pushes run both
+workflows (unit suite twice — harmless).
 
 ## Vercel deployment (static hosting)
 
