@@ -216,7 +216,7 @@ fen-triadic-synthesis/
 │       └── entity-validated.schema.json
 ├── scripts/
 │   ├── generate_schemas.py           regenerates the schemas above — never hand-edit them
-│   ├── smoke_test.py                 e2e smoke test against the docker-compose stack (CI `e2e` job)
+│   ├── smoke_test.py                 e2e smoke test — auto + community/QV voting modes (CI `e2e` job)
 │   └── virtuoso_dialect_check.py     SPARQL dialect/idempotency check against a real Virtuoso (CI `e2e` job)
 ├── services/
 │   ├── common/                       shared models, gfen: constants, PID helpers, Kafka IO (at-least-once),
