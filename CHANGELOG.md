@@ -2,6 +2,34 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-30 — Governance e2e modes, SHACL CI gate, Loki, mobile-first portal
+
+- E2E now covers all three decision modes (3a7f43f, CI run 33306094359 green):
+  `scripts/smoke_test.py --mode auto|community|qv` — community casts votes
+  until quorum, QV casts intensity-5 votes until the threshold; both assert
+  `quorum_reached=True` + majority outcome and run the live SHACL gate on
+  the named graph. `docker-compose.voting.yml` overrides
+  `FEN_MOCK_VOTING/QUORUM/QV_THRESHOLD`; the CI `e2e` job runs all three.
+- SHACL validation as its own CI step: `scripts/shacl_check.py` (self-check
+  valid conforms / invalid rejected; `--graph-file`/`--endpoint` modes;
+  merges the gfen: ontology so `sh:class` resolves).
+- Loki log aggregation: `loki` + `promtail` compose services; promtail
+  scrapes the Docker socket (`docker_sd_configs`) and ships container logs
+  to Loki; Loki datasource provisioned into Grafana (Explore).
+- Mobile-first portal: viewport meta, `.table-scroll`, 44px touch targets,
+  640/641px breakpoints in `web/portal/index.html` and `triadic.html`.
+- Bugfixes from local verification: vote-triggered decisions now deliver the
+  FULL candidate record so `document_id` survives (community/QV decisions
+  were written to the annotation-named graph instead of
+  `urn:graphia:document:{id}:graph`); `status-api` exposes `/metrics`
+  (prometheus-client added to its requirements — the scrape target was
+  down); promtail image installs `wget` (healthcheck was always unhealthy);
+  observability configs are baked into images (`monitoring/docker/*.Dockerfile`)
+  because Docker Desktop cannot share files from the removable drive
+  hosting the repo (SD card is not registered in WSL drvfs).
+- Tests: 104 (unchanged — new coverage is e2e-level).
+
+
 ## 2026-08-29 — P1–P5 feature track: SHACL, RDF export, SSE, QV, reputation
 
 - Scaffold (mock): SHACL shape validation (`fen-shapes.ttl`, `ScaffoldedTripleShape`)

@@ -1,4 +1,4 @@
-﻿# BACKLOG — full development history and remaining work
+# BACKLOG — full development history and remaining work
 
 Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (prioritised).
 
@@ -20,6 +20,8 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] Motivation stack formalized: reputation capital + intrinsic motivation; gamification is UX-only, never core mechanics (f9356ec)
 - [x] Docs: README, architecture, user stories + infographics, whitepaper PDF, research (EN), CHANGELOG, self-hosted runner guide; README/CHANGELOG/.env.example audited against the repo state (2026-08-29)
 - [x] Repository published: riznykst/fen-triadic-synthesis (private at the owner's request; public), 72 commits
+- [x] P1 bundle shipped (3a7f43f, CI run 33306094359 green): e2e for community/QV voting (`smoke_test.py --mode community|qv` + `docker-compose.voting.yml`), SHACL validation as a CI step (`scripts/shacl_check.py`), Loki log aggregation (promtail + Loki datasource in Grafana), mobile-first portal (index/triadic 640/641px breakpoints, 44px touch targets)
+- [x] Bugfixes found by the new e2e modes: vote-triggered decisions lost `document_id` (consumer fell back to the annotation-named graph) — the full candidate record is now delivered; `status-api` exposes `/metrics` (target was down); observability configs baked into images (`monitoring/docker/*.Dockerfile`) because Docker Desktop cannot share files from the removable drive hosting the repo
 
 ## In progress / partial
 - [~] CI Python matrix on self-hosted: 3.10 only (setup-python toolchains get wiped); full 3.10/3.11/3.12 once back on hosted runners
@@ -30,10 +32,10 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 ## Backlog (prioritised 2026-08-30)
 
 **P1 — local, quick wins**
-- [ ] e2e for the community/QV voting mode (the smoke test currently exercises only `auto`)
-- [ ] SHACL validation as a CI step (SHACL at Scaffold already exists backend-side)
-- [ ] Loki: log aggregation (Prometheus + Grafana metrics are already done)
-- [ ] Mobile-first adaptation of the portal
+- [x] e2e for the community/QV voting mode (the smoke test currently exercises only `auto`) — DONE (3a7f43f): `--mode community|qv`, quorum/QV-threshold asserts, live SHACL gate
+- [x] SHACL validation as a CI step (SHACL at Scaffold already exists backend-side) — DONE (3a7f43f): `scripts/shacl_check.py` step in the `test` job
+- [x] Loki: log aggregation (Prometheus + Grafana metrics are already done) — DONE (3a7f43f): promtail (docker_sd_configs) → Loki 3.2.2, datasource provisioned
+- [x] Mobile-first adaptation of the portal — DONE (3a7f43f): viewport meta, `.table-scroll`, 640/641px media queries
 - [ ] SSE real-time in the CLASSIC portal (`web/portal/app.js` still polls every 3 s — the triadic view already has SSE)
 - [ ] Export buttons (TTL / JSON-LD / N-Triples / RO-Crate) in the classic table view (`app.js`/`index.html`) — the `/export` endpoint exists
 
