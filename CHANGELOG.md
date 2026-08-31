@@ -2,6 +2,21 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-31 — Vercel static hosting for the zero-build web layer
+
+- `web/vercel.json`: framework preset `other`, `ignoreCommand` (deploys are
+  skipped when only backend files change), rewrites `/` -> classic portal,
+  `/triadic` -> triadic view, `/widget` -> widget demo. One-time project
+  settings: Root Directory `web`, empty build/install commands.
+- API endpoints configurable per deployment: query params
+  `?fen_mock_base=...&fen_status_base=...` (persisted to localStorage) on the
+  triadic view; the classic portal keeps its base-URL field; the widget keeps
+  its `api-base` attribute. Backends must be HTTPS (SSE / mixed content) and
+  send CORS headers (`FEN_CORS_ORIGINS`, default `*`).
+- `web/README.md` documents local run (status-api serves `/web`) and Vercel
+  deployment.
+- Tests: 104 (unchanged — frontend-only change).
+
 ## 2026-08-30 — Governance e2e modes, SHACL CI gate, Loki, mobile-first portal
 
 - E2E now covers all three decision modes (3a7f43f, CI run 33306094359 green):

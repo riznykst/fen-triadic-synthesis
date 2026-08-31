@@ -21,6 +21,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] Docs: README, architecture, user stories + infographics, whitepaper PDF, research (EN), CHANGELOG, self-hosted runner guide; README/CHANGELOG/.env.example audited against the repo state (2026-08-29)
 - [x] Repository published: riznykst/fen-triadic-synthesis (private at the owner's request; public), 72 commits
 - [x] P1 bundle shipped (3a7f43f, CI run 33306094359 green): e2e for community/QV voting (`smoke_test.py --mode community|qv` + `docker-compose.voting.yml`), SHACL validation as a CI step (`scripts/shacl_check.py`), Loki log aggregation (promtail + Loki datasource in Grafana), mobile-first portal (index/triadic 640/641px breakpoints, 44px touch targets)
+- [x] Vercel static hosting for the zero-build web layer (`web/vercel.json`: framework `other`, `ignoreCommand` skips deploys when only backend files change, rewrites `/`, `/triadic`, `/widget`; auto-deploy on push; API base config via query params/localStorage; `web/README.md`)
 - [x] Bugfixes found by the new e2e modes: vote-triggered decisions lost `document_id` (consumer fell back to the annotation-named graph) — the full candidate record is now delivered; `status-api` exposes `/metrics` (target was down); observability configs baked into images (`monitoring/docker/*.Dockerfile`) because Docker Desktop cannot share files from the removable drive hosting the repo
 
 ## In progress / partial
