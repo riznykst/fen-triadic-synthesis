@@ -66,6 +66,16 @@ Frontend-only commit (web/), P2 backlog item done (design unification).
   `D:\FEN-GRAPHIA\portal_light_check.png`.
 - Tests: 104 (unchanged — CSS-only change).
 
+## 2026-08-31 — CI: e2e scoped to non-web changes (paths-filter)
+
+- `.github/workflows/ci.yml`: a `changes` job (dorny/paths-filter) computes
+  whether the push touches anything outside `web/`; the `e2e` job runs only
+  then (`needs: changes` + `if`). Frontend-only pushes run the unit suite
+  (104 tests) and skip the Docker e2e — web-only changes no longer fight a
+  locally running dev stack over the published host ports (the CI stack
+  cannot share them). Backend/docs/CI pushes behave exactly as before.
+- Tests: 104 (unchanged).
+
 ## 2026-08-31 — Classic portal: reputation dashboard + history (P2 done)
 
 Frontend-only commit (web/), P2 backlog item done.
