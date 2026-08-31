@@ -2,6 +2,33 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-08-31 — Classic portal: light-card theme unification with the triadic view (P2)
+
+Frontend-only commit (web/), P2 backlog item done (design unification).
+
+- `web/portal/index.html` switches from the dark palette to the triadic
+  view's light style. CSS-only: `app.js` is untouched — the inline
+  `var(--...)` references keep working because the variable NAMES are
+  unchanged, only their values changed.
+  - Background: triadic beige gradient (`#efece6`→`#e7e4dc`); cards
+    `#fdfcfa` with a 1.5px `#2d5a8e` border and 18px radius; Georgia serif
+    headings; uppercase micro-labels.
+  - Status badges → triadic tiles (colored text + pastel background:
+    validated `#2e7d5b`/`#e6f4ee`, disputed `#8b6914`/`#faf3e0`, rejected
+    `#b23a3a`/`#fae8e8`, pending `#2d5a8e`/`#e8eff7`, deciding/unknown
+    muted).
+  - Buttons: filled-accent primary (`#2d5a8e`, white text) + white chip
+    secondary; vote buttons are outcome-colored via `[data-outcome]`;
+    export links become chips.
+- Verified: `node --check web/portal/app.js`; `pytest -q` — 104 passed;
+  real-browser screenshot (headless Edge, 1280×1900) pixel-analyzed —
+  light beige background ≈51%, white cards ≈30%, no dark-navy pixels
+  (old theme `#0f1420` gone); jsdom functional run against the live mock:
+  3 validated rows, 12 export links, accuracy 3/3 (100%), leaderboard
+  `contributor_1 · 6`, 3 history entries. Screenshot kept at
+  `D:\FEN-GRAPHIA\portal_light_check.png`.
+- Tests: 104 (unchanged — CSS-only change).
+
 ## 2026-08-31 — Classic portal: reputation dashboard + history (P2 done)
 
 Frontend-only commit (web/), P2 backlog item done.
