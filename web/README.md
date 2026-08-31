@@ -44,8 +44,7 @@ workflows (unit suite twice — harmless).
 `vercel.json` in this directory wires everything:
 
 - `framework: "other"` — zero-build static output;
-- `ignoreCommand` — exit 0 when `web/` did not change since `HEAD^`, so
-  backend-only pushes skip the deploy entirely;
+- `ignoreCommand` — `git diff --quiet HEAD^ HEAD -- .` exits with 0 when the root directory (`web/`) did not change since `HEAD^`, so backend-only pushes skip the deploy entirely;
 - `rewrites` — `/` → classic portal, `/triadic` → triadic view, `/widget` →
   widget demo, `/embed` → dataset-owner embedding example.
 
