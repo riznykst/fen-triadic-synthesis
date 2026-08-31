@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FEN Community DAO portal (Flow 1) — zero-build demo UI against
  * mock_fen_api. Contract in web/api.md. The same contract is expected from
  * the real FEN backend in production (ADR-002: DAO lives outside this repo).
@@ -13,7 +13,43 @@ function escapeHtml(s) {
 
 const $ = (id) => document.getElementById(id);
 
-let autoTimer = null;
+let sse = null;            // EventSource for live updates (SSE)
+let sseOk = false;         // has the stream ever opened
+let fallbackTimer = null;  // slow polling while the stream is down
+
+function stopFallback() {
+  if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; }
+}
+
+function startFallback() {
+  if (!fallbackTimer) fallbackTimer = setInterval(loadCandidates, 15000);
+}
+
+function stopLiveUpdates() {
+  stopFallback();
+  if (sse) { sse.close(); sse = null; }
+  sseOk = false;
+}
+
+function startLiveUpdates() {
+  stopLiveUpdates();  // idempotent (re)connect
+  const base = $("mock_base").value.replace(/\/+$/, "");
+  try {
+    sse = new EventSource(base + "/events");
+  } catch (e) {
+    startFallback();  // EventSource unavailable -> poll instead
+    return;
+  }
+  const refresh = () => { sseOk = true; stopFallback(); loadCandidates(); };
+  sse.addEventListener("vote", refresh);
+  sse.addEventListener("decision", refresh);
+  sse.addEventListener("candidates", refresh);
+  sse.onopen = () => { sseOk = true; stopFallback(); loadCandidates(); };
+  // While the stream is down (EventSource auto-reconnects) poll slowly so no
+  // update is lost; the next onopen stops the ticker and catches up.
+  sse.onerror = startFallback;
+}
+
 let currentFilter = "all";
 let cachedList = [];
 
@@ -36,11 +72,12 @@ function renderCandidates(data) {
 
   const list = currentFilter === "all" ? cachedList : cachedList.filter((c) => c.status === currentFilter);
   if (!list.length) {
-    rows.innerHTML = '<tr><td colspan="7" class="note">no candidates' +
+    rows.innerHTML = '<tr><td colspan="8" class="note">no candidates' +
       (currentFilter !== "all" ? " with status " + escapeHtml(currentFilter) : "") +
       " — submit one above</td></tr>";
     return;
   }
+  const expBase = $("status_base").value.replace(/\/+$/, "");
   rows.innerHTML = list.map((c) => {
     const q = c.quorum || { votes: 0, required: 0 };
     const pct = q.required ? Math.min(100, Math.round((q.votes / q.required) * 100)) : 0;
@@ -55,6 +92,10 @@ function renderCandidates(data) {
           ).join("") +
           "</div>"
         : '<span class="note">—</span>';
+    const exportLinks = ["ttl", "jsonld", "nt", "crate"].map((f) =>
+      '<a class="exp" href="' + expBase + "/api/v1/export/" + encodeURIComponent(c.annotation_id) + "?format=" + f +
+      '" target="_blank" rel="noopener" title="export as ' + f + '">' + f + "</a>"
+    ).join("");
     return (
       "<tr>" +
       "<td><code>" + escapeHtml(c.annotation_id) + "</code><br><span class='note'>" + escapeHtml(c.document_id || "") + "</span></td>" +
@@ -64,6 +105,7 @@ function renderCandidates(data) {
       "<td>v:" + (c.votes.validated || 0) + " d:" + (c.votes.disputed || 0) + " r:" + (c.votes.rejected || 0) + "</td>" +
       '<td><div class="bar"><div style="width:' + pct + '%"></div></div><span class="note">' + q.votes + "/" + q.required + "</span></td>" +
       "<td>" + voteBtns + "</td>" +
+      '<td class="exports">' + exportLinks + "</td>" +
       "</tr>"
     );
   }).join("");
@@ -144,8 +186,8 @@ function bindEvents() {
   $("submit").onclick = submitCandidate;
   $("refresh").onclick = loadCandidates;
   $("auto_toggle").onclick = function () {
-    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; this.textContent = "Auto-refresh: OFF"; }
-    else { autoTimer = setInterval(loadCandidates, 3000); this.textContent = "Auto-refresh: ON"; }
+    if (sse) { stopLiveUpdates(); this.textContent = "Live updates: OFF"; }
+    else { startLiveUpdates(); this.textContent = "Live updates: ON"; }
   };
   document.addEventListener("click", (e) => {
     const vote = e.target.closest("[data-vote]");
@@ -163,3 +205,4 @@ function bindEvents() {
 
 bindEvents();
 loadCandidates();
+startLiveUpdates();

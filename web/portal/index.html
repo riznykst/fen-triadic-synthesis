@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -34,6 +34,9 @@
   .vote button { padding:4px 9px; font-size:12px; }
   .note { color:var(--muted); font-size:12px; }
   .err { color:var(--red); font-size:12px; margin-top:6px; }
+  .exports { white-space:nowrap; }
+  .exp { color:var(--accent); text-decoration:none; border:1px solid var(--border); border-radius:4px; padding:2px 6px; margin:1px 3px 1px 0; font-size:11px; display:inline-block; }
+  .exp:hover { filter:brightness(1.2); border-color:var(--accent); }
   /* ---- Mobile-first (min-width = desktop enhancements) ---- */
   .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   input, select, button { font-size:16px; }  /* prevents iOS auto-zoom */
@@ -92,7 +95,7 @@
       <input id="status_base" value="http://localhost:8082">
       <div style="margin-top:12px">
         <button id="refresh">Refresh</button>
-        <button id="auto_toggle">Auto-refresh: ON</button>
+        <button id="auto_toggle">Live updates: ON</button>
       </div>
       <p class="note" id="mode_note">—</p>
     </div>
@@ -110,9 +113,9 @@
     </div>
     <div class="table-scroll"><table id="table">
       <thead>
-        <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>LLM rec.</th><th>votes</th><th>quorum</th><th>vote (community mode)</th></tr>
+        <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>LLM rec.</th><th>votes</th><th>quorum</th><th>vote (community mode)</th><th>export</th></tr>
       </thead>
-      <tbody id="rows"><tr><td colspan="7" class="note">no candidates yet — submit one above</td></tr></tbody>
+      <tbody id="rows"><tr><td colspan="8" class="note">no candidates yet — submit one above</td></tr></tbody>
     </table></div>
   </div>
 </div>
