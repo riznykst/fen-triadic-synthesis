@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 # TEMPORARY self-hosted-runner mode (GitHub billing block): jobs run on the
 # local runner (label "self-hosted") and CI triggers on push only, so fork
@@ -21,7 +21,7 @@ jobs:
         # Restore ["3.10", "3.11", "3.12"] together with setup-python below.
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
       - name: Use system Python
         run: python --version
@@ -56,7 +56,7 @@ jobs:
       # allocated" instead of silently destroying local state.
       COMPOSE_PROJECT_NAME: fen-ci
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
       - name: Use system Python
         run: python --version
