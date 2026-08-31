@@ -9,11 +9,19 @@
  *   annotation-id  (required) — oa:Annotation id, e.g. annotation_a1
  *   api-base       (optional) — Status API origin, default http://localhost:8082
  *   theme          (optional) — "dark" (default) | "light"
+ *   live           (optional) — "off" disables the SSE live stream (some
+ *                                third-party pages disallow EventSource/CSP);
+ *                                default is on. Fallback polling still works.
  *
- * Reads GET {api-base}/api/v1/status/{annotation-id} (see web/api.md) and
- * renders the gfen:validationStatus badge; clicking expands decision
- * details (method, dereferenceable PID, reputation snapshot, ledger anchor).
- * Never writes anything — read-only by design (ADR-001).
+ * Live updates: subscribes to GET {api-base}/api/v1/events/{annotation-id}
+ * (SSE, see web/api.md §4b). `event: status` carries the same payload as
+ * GET /api/v1/status/{annotation-id} and reuses the exact same render path.
+ * While the stream is down (EventSource auto-reconnects) a 15s polling
+ * fallback keeps the badge fresh; the next `onopen` stops the ticker and
+ * catches up. Reads GET {api-base}/api/v1/status/{annotation-id} (see
+ * web/api.md) and renders the gfen:validationStatus badge; clicking expands
+ * decision details (method, dereferenceable PID, reputation snapshot, ledger
+ * anchor). Never writes anything — read-only by design (ADR-001).
  */
 (function () {
   "use strict";
@@ -46,7 +54,7 @@
 
   class FenStatusWidget extends HTMLElement {
     static get observedAttributes() {
-      return ["annotation-id", "api-base", "theme"];
+      return ["annotation-id", "api-base", "theme", "live"];
     }
 
     constructor() {
@@ -55,6 +63,9 @@
       this._error = null;
       this._loading = false;
       this._expanded = false;
+      this._sse = null;            // EventSource for live status
+      this._sseOk = false;         // has the stream ever opened
+      this._fallbackTimer = null;  // 15s polling while the stream is down
       this.attachShadow({ mode: "open" });
     }
 
@@ -67,13 +78,96 @@
     get theme() {
       return this.getAttribute("theme") || "dark";
     }
+    get live() {
+      return this.getAttribute("live") !== "off";
+    }
 
     connectedCallback() {
       this._load();
+      this._startLive();
     }
 
-    attributeChangedCallback() {
+    disconnectedCallback() {
+      this._stopLive();
+    }
+
+    attributeChangedCallback(name) {
+      if (name === "live") {
+        // Toggle streaming without reloading the current record.
+        if (this.live) this._startLive(); else this._stopLive();
+        return;
+      }
+      // annotation-id / api-base / theme changed: re-fetch and reconnect.
       this._load();
+      this._startLive();
+    }
+
+    // ------------------------------------------------------------- live (SSE)
+    _startLive() {
+      if (!this.live) return;
+      this._stopLive();  // idempotent (re)connect
+      if (!this.annotationId) return;
+      const url = this.apiBase + "/api/v1/events/" + encodeURIComponent(this.annotationId);
+      try {
+        this._sse = new EventSource(url);
+      } catch (e) {
+        this._startFallback();  // EventSource unavailable -> poll instead
+        return;
+      }
+      this._sseOk = false;
+      this._sse.addEventListener("status", (ev) => this._onSseStatus(ev));
+      this._sse.addEventListener("error", (ev) => this._onSseError(ev));
+      this._sse.onopen = () => {
+        // Stream (re)opened: stop the fallback ticker and catch up — the
+        // gap while disconnected must not lose a status flip.
+        this._sseOk = true;
+        this._stopFallback();
+        this._load();
+      };
+      // Transport-level failure: EventSource auto-reconnects; while it is
+      // down the fallback ticker keeps the badge fresh (no lost updates).
+      this._sse.onerror = () => this._startFallback();
+    }
+
+    _stopLive() {
+      this._stopFallback();
+      if (this._sse) { this._sse.close(); this._sse = null; }
+      this._sseOk = false;
+    }
+
+    _onSseStatus(ev) {
+      // Server pushed a CHANGED record — same payload shape as the REST
+      // endpoint, so it renders through the exact same path (no flicker).
+      this._sseOk = true;
+      this._stopFallback();
+      try {
+        this._data = JSON.parse(ev.data);
+        this._error = null;
+      } catch (e) {
+        this._error = "bad live payload";
+      }
+      this._loading = false;
+      this._render();
+    }
+
+    _onSseError(ev) {
+      // Server-side error frame (RDF store unreachable): show it, keep the
+      // stream — status-api retries on its next poll tick.
+      let msg = "Status API unavailable";
+      try {
+        const d = JSON.parse(ev.data);
+        if (d && d.error) msg = d.error;
+      } catch (e) { /* non-JSON error frame */ }
+      this._error = msg + " (live)";
+      this._render();
+    }
+
+    _startFallback() {
+      if (!this._fallbackTimer) this._fallbackTimer = setInterval(() => this._load(), 15000);
+    }
+
+    _stopFallback() {
+      if (this._fallbackTimer) { clearInterval(this._fallbackTimer); this._fallbackTimer = null; }
     }
 
     async _load() {
@@ -145,6 +239,12 @@
             ${d.governance_decision_id ? `<div><span class="k">decision PID</span> ${pidCell}</div>` : ""}
             ${d.reputation_snapshot ? `<div><span class="k">reputation snapshot</span> ${escapeHtml(d.reputation_snapshot)}</div>` : ""}
             ${d.ledger_anchor ? `<div><span class="k">ledger anchor</span> ${escapeHtml(d.ledger_anchor)}</div>` : ""}
+            ${/* TODO(ADR-006): render the gfen:challengeWindowEnd countdown
+                once the ADR lands (BACKLOG: "Flow 2 widget: SSE real-time
+                status + gfen:challengeWindowEnd"). The predicate is
+                "proposed, not yet applied" in the ontology and the
+                status-api must expose it first (_PREDICATE_KEYS) — gated,
+                never faked. */ ""}
           </div>` : "";
         body = `
           <div class="badge" id="toggle" title="click for decision details">

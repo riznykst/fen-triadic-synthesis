@@ -87,6 +87,25 @@ Resolved live from the RDF store via SPARQL (named graphs):
   record yet (never extracted or still pending without gfen: triples).
 - `503` — RDF store unreachable.
 
+## 4b. Live validation status (SSE, widget) — `GET /api/v1/events/{annotation_id}`
+
+Server-Sent Events stream for one annotation's governance record. Read-only
+(ADR-001): the Status API never consumes Kafka — it re-polls the RDF store
+every `STATUS_POLL_INTERVAL_S` (default 5s) per connected client and pushes
+only **changed** records; a Kafka-fed event bus is a future production
+option.
+
+Frames (`text/event-stream`, `Cache-Control: no-cache`):
+
+| Frame | Meaning |
+|---|---|
+| `event: status` | payload is byte-for-byte the `GET /api/v1/status/{id}` body — sent on connect and whenever the record changes; records that do not exist yet arrive as `{"found": false, "validation_status": "unknown"}` and flip to `validated`/… live |
+| `event: error` | RDF store unreachable — retried on the next poll tick (the stream itself stays open) |
+| `: ping` | heartbeat comment every `STATUS_SSE_HEARTBEAT_S` (default 15s) so proxies do not kill idle connections |
+
+Consumed by the Flow 2 widget (`<fen-status>`) via `EventSource`, with a 15s
+polling fallback over the REST endpoint while the stream is down.
+
 ## Notes
 
 - All endpoints are JSON; errors use FastAPI's default `{"detail": ...}`.
