@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FEN — Triadic Synthesis Framework Web Interface</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+  <header class="border-b border-slate-800 bg-slate-950 px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <div class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white">F</div>
+      <span class="text-xl font-semibold tracking-tight text-white">FEN Framework</span>
+      <span class="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">v1.0 Federation Node</span>
+    </div>
+    <nav class="flex space-x-6 text-sm font-medium text-slate-400">
+      <a href="#flow1" class="hover:text-white transition-colors">Flow 1: Community DAO</a>
+      <a href="#flow2" class="hover:text-white transition-colors">Flow 2: Dataset Overlay</a>
+      <a href="#architecture" class="hover:text-white transition-colors">Architecture</a>
+    </nav>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-12 space-y-16">
+    <!-- Hero section -->
+    <section class="text-center space-y-4">
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+        Federated Epistemic Node
+      </h1>
+      <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+        Decentralized community validation layer for low-resource languages & SSH Knowledge Graphs (GRAPHIA Integration).
+      </p>
+      <div class="flex justify-center gap-4 pt-4">
+        <a href="#flow1" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2.5 rounded-lg shadow-lg shadow-indigo-500/20 transition-all">Explore Flow 1 (DAO)</a>
+        <a href="#flow2" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-5 py-2.5 rounded-lg border border-slate-700 transition-all">Explore Flow 2 (Overlay)</a>
+      </div>
+    </section>
+
+    <!-- Flow 1 -->
+    <section id="flow1" class="bg-slate-950/60 rounded-2xl border border-slate-800 p-8 space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-indigo-400 font-bold">Use Case 1</span>
+          <h2 class="text-2xl font-bold text-white">Flow 1: Low-Resource Language Community DAO</h2>
+        </div>
+        <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-3 py-1 rounded-full font-mono">Agentic Scaffolding + Quadratic Voting</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Agentic Scaffolding Demo Widget -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+          <h3 class="font-semibold text-indigo-300 flex items-center gap-2">
+            <span>🤖 Agentic Scaffolding (ElizaOS)</span>
+          </h3>
+          <p class="text-xs text-slate-400">Assists contributors in structuring cultural & linguistic knowledge without deciding on their behalf.</p>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono space-y-2">
+            <div class="text-slate-400">&gt; Candidate: <span class="text-indigo-400">gfen:EntityCandidate</span></div>
+            <div class="text-slate-200">Label: "Крымскотатарский топоним" (qrim-tatar)</div>
+            <div class="text-emerald-400">Agent Status: Prepared for DAO Quadratic Voting</div>
+          </div>
+        </div>
+
+        <!-- Quadratic Voting Widget -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+          <h3 class="font-semibold text-indigo-300 flex items-center gap-2">
+            <span>🏛️ Community DAO Voting</span>
+          </h3>
+          <p class="text-xs text-slate-400">Quadratic voting ensures minority dialect speakers have weighted voice & sybil resistance.</p>
+          <div class="space-y-3">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Validation Quorum:</span>
+              <span class="text-emerald-400 font-semibold">Reached (84% Votes Validated)</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div class="bg-emerald-500 h-full w-[84%]"></div>
+            </div>
+            <div class="text-xs text-slate-400 font-mono">PID: <span class="text-indigo-400">ark:99999/g00042</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Flow 2 -->
+    <section id="flow2" class="bg-slate-950/60 rounded-2xl border border-slate-800 p-8 space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-cyan-400 font-bold">Use Case 2</span>
+          <h2 class="text-2xl font-bold text-white">Flow 2: Dataset Owner / Validation Overlay</h2>
+        </div>
+        <span class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs px-3 py-1 rounded-full font-mono">Universal Dataset Overlay</span>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+        <h3 class="font-semibold text-cyan-300">Validation Status Overlay Badge Preview</h3>
+        <div class="flex flex-wrap gap-4 items-center">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-medium">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> gfen:validated
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-medium">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span> gfen:pending
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/30 text-xs font-medium">
+            <span class="w-2 h-2 rounded-full bg-rose-400"></span> gfen:disputed
+          </span>
+        </div>
+        <div class="p-4 bg-slate-950 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono">
+          RDF Graph Provenance: gfen:ledgerAnchor "0xMOCK0000002a"^^xsd:string
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+    FEN Framework &bull; Integrated as an External Federation Node to GRAPHIA SSH Knowledge Graph
+  </footer>
+</body>
+</html>
