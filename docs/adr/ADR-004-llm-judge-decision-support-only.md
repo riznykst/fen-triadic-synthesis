@@ -1,4 +1,4 @@
-﻿# ADR-004: LLM judge is decision-support only — never a voter
+# ADR-004: LLM judge is decision-support only — never a voter
 
 **Status:** accepted
 **Date:** 2026 (pre-push formalization, audit feedback)

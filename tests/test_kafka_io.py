@@ -126,7 +126,7 @@ def test_commit_offsets_commits_offset_after_each_record():
 
     commit_offsets(consumer, records)
 
-    assert consumer.committed == {TopicPartition("t1", 3): OffsetAndMetadata(42, "")}
+    assert consumer.committed == {TopicPartition("t1", 3): OffsetAndMetadata(offset=42, leader_epoch=0, metadata="")}
 
 
 # ---- send() delivery callbacks -------------------------------------------

@@ -1,0 +1,21 @@
+﻿# Override file for the mock FEN API voting modes (community / QV).
+#
+# The mock reads FEN_MOCK_VOTING at startup, so the voting e2e recreates the
+# mock container with these environment variables set from the invoking shell:
+#
+#   FEN_MOCK_VOTING=community FEN_MOCK_QUORUM=2 \
+#     docker compose -f docker-compose.yml -f docker-compose.voting.yml up -d
+#   python scripts/smoke_test.py --mode community
+#
+#   FEN_MOCK_VOTING=qv FEN_MOCK_QV_THRESHOLD=10 \
+#     docker compose -f docker-compose.yml -f docker-compose.voting.yml up -d
+#   python scripts/smoke_test.py --mode qv
+#
+# Defaults keep the normal stack behaviour (auto mode) when the override is
+# not used or the variables are unset.
+services:
+  mock-fen-api:
+    environment:
+      FEN_MOCK_VOTING: ${FEN_MOCK_VOTING:-auto}
+      FEN_MOCK_QUORUM: ${FEN_MOCK_QUORUM:-3}
+      FEN_MOCK_QV_THRESHOLD: ${FEN_MOCK_QV_THRESHOLD:-10}

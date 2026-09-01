@@ -1,4 +1,4 @@
-﻿"""Shared Kafka message contracts — the single source of truth for the
+"""Shared Kafka message contracts — the single source of truth for the
 shapes of the three message types used across the FEN pipeline.
 
 JSON Schemas in ``schemas/kafka-events/`` are GENERATED from these models

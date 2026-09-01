@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FEN status widget — demo</title>
+<style>
+  body { background:#0f1420; color:#dde3f0; font:14px/1.6 "Segoe UI", system-ui, sans-serif; max-width:760px; margin:0 auto; padding:32px 20px; }
+  code { background:#171e2e; border:1px solid #26314d; border-radius:4px; padding:1px 6px; }
+  h1 { color:#4da3ff; font-size:22px; }
+  .row { margin:18px 0; }
+  .widget-row { display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+</style>
+</head>
+<body>
+<h1>FEN status widget — demo (Flow 2)</h1>
+<p>Shows <code>gfen:validationStatus</code> for an annotation, resolved live
+from the RDF store via the Status API (<code>GET /api/v1/status/{id}</code>).
+Click a badge for decision details (method, PID, ledger anchor).</p>
+
+<div class="row"><h2>Embedded widgets</h2>
+  <div class="widget-row">
+    <fen-status annotation-id="annotation_a1" api-base="http://localhost:8082"></fen-status>
+    <fen-status annotation-id="annotation_b07" api-base="http://localhost:8082"></fen-status>
+    <fen-status annotation-id="annotation_never_seen" api-base="http://localhost:8082"></fen-status>
+  </div>
+</div>
+
+<div class="row"><h2>How to embed</h2>
+<pre style="background:#171e2e;border:1px solid #26314d;border-radius:8px;padding:12px;overflow:auto">
+&lt;script src="fen-status-widget.js"&gt;&lt;/script&gt;
+&lt;fen-status annotation-id="annotation_a1" api-base="http://localhost:8082"&gt;&lt;/fen-status&gt;
+</pre>
+<p>Attributes: <code>annotation-id</code> (required), <code>api-base</code>
+(default http://localhost:8082), <code>theme</code> (dark|light). Read-only
+widget — it never writes to the graph (ADR-001).</p>
+</div>
+
+<script>
+  // Vercel/demo deployments: point the widgets at a remote Status API via
+  // ?fen_status_base=... (no code edit needed; localhost default otherwise).
+  const _demoBase = new URLSearchParams(location.search).get("fen_status_base") || "http://localhost:8082";
+  document.querySelectorAll("fen-status").forEach((el) => el.setAttribute("api-base", _demoBase));
+</script>
+<script src="fen-status-widget.js"></script>
+</body>
+</html>

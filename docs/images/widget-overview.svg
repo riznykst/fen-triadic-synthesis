@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="360" viewBox="0 0 920 360" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="920" height="360" fill="#0f1420"/>
+  <text x="20" y="32" fill="#4da3ff" font-size="17" font-weight="600">Flow 2 — validation-status widget: how it works</text>
+
+  <!-- Host page -->
+  <rect x="30" y="80" width="180" height="120" rx="10" fill="#171e2e" stroke="#8fa0bf" stroke-width="1.5"/>
+  <text x="120" y="106" fill="#dde3f0" font-size="13" text-anchor="middle" font-weight="600">Host page</text>
+  <text x="120" y="126" fill="#8fa0bf" font-size="11" text-anchor="middle">GoTriple · dataset portal</text>
+  <text x="120" y="146" fill="#8fa0bf" font-size="11" text-anchor="middle">any third-party page</text>
+  <text x="120" y="166" fill="#8fa0bf" font-size="11" text-anchor="middle">(CORS-enabled)</text>
+
+  <!-- Widget -->
+  <rect x="60" y="120" width="120" height="52" rx="8" fill="#0b101b" stroke="#3fce7c" stroke-width="1.5"/>
+  <circle cx="80" cy="142" r="5" fill="#3fce7c"/>
+  <text x="92" y="146" fill="#dde3f0" font-size="12" font-weight="600">&lt;fen-status&gt;</text>
+  <text x="120" y="164" fill="#8fa0bf" font-size="10" text-anchor="middle">validated ▾</text>
+
+  <defs><marker id="aw" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8fa0bf"/></marker></defs>
+  <line x1="210" y1="140" x2="256" y2="140" stroke="#8fa0bf" stroke-width="2" marker-end="url(#aw)"/>
+
+  <!-- Status API -->
+  <rect x="260" y="90" width="180" height="100" rx="10" fill="#171e2e" stroke="#4da3ff" stroke-width="1.5"/>
+  <text x="350" y="116" fill="#dde3f0" font-size="13" text-anchor="middle" font-weight="600">Status API :8082</text>
+  <text x="350" y="136" fill="#8fa0bf" font-size="11" text-anchor="middle">GET /api/v1/status/{id}</text>
+  <text x="350" y="152" fill="#8fa0bf" font-size="11" text-anchor="middle">read-only (ADR-001)</text>
+  <text x="350" y="168" fill="#8fa0bf" font-size="11" text-anchor="middle">JSON: status · PID · anchor</text>
+
+  <line x1="440" y1="140" x2="486" y2="140" stroke="#8fa0bf" stroke-width="2" marker-end="url(#aw)"/>
+
+  <!-- SPARQL -->
+  <rect x="490" y="90" width="180" height="100" rx="10" fill="#171e2e" stroke="#4da3ff" stroke-width="1.5"/>
+  <text x="580" y="116" fill="#dde3f0" font-size="13" text-anchor="middle" font-weight="600">SPARQL SELECT</text>
+  <text x="580" y="136" fill="#8fa0bf" font-size="11" text-anchor="middle">across named graphs</text>
+  <text x="580" y="152" fill="#8fa0bf" font-size="11" text-anchor="middle">gfen:validationStatus</text>
+  <text x="580" y="168" fill="#8fa0bf" font-size="11" text-anchor="middle">gfen:governanceDecisionId</text>
+
+  <line x1="670" y1="140" x2="716" y2="140" stroke="#8fa0bf" stroke-width="2" marker-end="url(#aw)"/>
+
+  <!-- Store -->
+  <rect x="720" y="90" width="170" height="100" rx="10" fill="#171e2e" stroke="#3fce7c" stroke-width="1.5"/>
+  <text x="805" y="116" fill="#dde3f0" font-size="13" text-anchor="middle" font-weight="600">Fuseki / Virtuoso</text>
+  <text x="805" y="136" fill="#8fa0bf" font-size="11" text-anchor="middle">named graph</text>
+  <text x="805" y="152" fill="#3fce7c" font-size="11" text-anchor="middle">written only by the</text>
+  <text x="805" y="168" fill="#3fce7c" font-size="11" text-anchor="middle">Validation Result Consumer</text>
+
+  <!-- Bottom strip -->
+  <rect x="30" y="240" width="860" height="100" rx="10" fill="#171e2e" stroke="#26314d" stroke-width="1"/>
+  <text x="50" y="268" fill="#4da3ff" font-size="13" font-weight="600">Properties</text>
+  <text x="50" y="292" fill="#8fa0bf" font-size="12">• Embed anywhere: one script tag + &lt;fen-status annotation-id="..."&gt; (Shadow DOM, theme dark/light).</text>
+  <text x="50" y="314" fill="#8fa0bf" font-size="12">• Click the badge for decision details: method, dereferenceable PID (ADR-003), ledger anchor (ADR-001).</text>
+  <text x="50" y="336" fill="#8fa0bf" font-size="12">• Never writes: the widget and the Status API are strictly read-only.</text>
+</svg>

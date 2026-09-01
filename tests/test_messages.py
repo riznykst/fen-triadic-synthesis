@@ -1,4 +1,4 @@
-﻿"""Tests for the shared Pydantic message contracts."""
+"""Tests for the shared Pydantic message contracts."""
 from __future__ import annotations
 
 import pytest

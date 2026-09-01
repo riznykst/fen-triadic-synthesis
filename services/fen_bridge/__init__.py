@@ -1,4 +1,4 @@
-﻿"""FEN Bridge — the only DAP-side component that talks to the external FEN
+"""FEN Bridge — the only DAP-side component that talks to the external FEN
 system (ADR-002): outbound consumer + inbound webhook, two independent
 processes/images."""
 

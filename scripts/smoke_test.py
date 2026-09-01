@@ -1,4 +1,4 @@
-"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
+﻿"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
 
 Publishes one EntityCandidate onto dap.entities.pending_validation.v1 and
 waits for the full pipeline to complete:
@@ -22,6 +22,7 @@ exactly this). Not part of the offline unit-test suite.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import socket
@@ -47,6 +48,8 @@ FUSEKI_PING = "http://localhost:3030/$/ping"
 FUSEKI_QUERY = "http://localhost:3030/fen/query"
 WEBHOOK_HEALTH = "http://localhost:8101/healthz"
 MOCK_FEN_HEALTH = "http://localhost:8100/healthz"
+STATUS_API_BASE = "http://localhost:8082"
+STATUS_API_HEALTH = STATUS_API_BASE + "/healthz"
 
 TOPIC_PENDING_VALIDATION = "dap.entities.pending_validation.v1"
 TOPIC_GOVERNANCE_DECISIONS = "fen.governance.decisions.v1"
@@ -58,19 +61,21 @@ DECISION_TIMEOUT_S = 30.0
 POLL_INTERVAL_S = 1.0
 
 
-def wait_for(predicate: Callable[[], bool], timeout_s: float, description: str) -> None:
+def wait_for(predicate: Callable[[], bool], timeout_s: float, description: str):
     """Poll ``predicate`` every second until it is truthy or ``timeout_s``
     elapses. Probe errors are expected while the stack is starting and are
     retried; on timeout the last probe error (if any) is surfaced so the
-    failure is diagnosable.
+    failure is diagnosable. Returns the last truthy probe result (callers
+    use it as the checked value, e.g. the SPARQL status string).
     """
     deadline = time.monotonic() + timeout_s
     last_error: Optional[Exception] = None
     while time.monotonic() < deadline:
         try:
-            if predicate():
+            result = predicate()
+            if result:
                 logger.info("%s: ready", description)
-                return
+                return result
             last_error = None
         except Exception as exc:  # noqa: BLE001 - probe errors expected while starting
             last_error = exc
@@ -105,15 +110,31 @@ def http_ready(url: str) -> bool:
 def outbound_group_active(admin: KafkaAdminClient) -> bool:
     """True once the outbound consumer group exists with at least one active
     member — i.e. fen-bridge-outbound is subscribed and will see our publish.
+
+    Handles the kafka-python API drift between 2.x and 3.x:
+    - 2.x: ``list_consumer_groups()`` -> list of ``(name, protocol_type)``
+      tuples; ``describe_consumer_groups()`` -> {group_id: GroupDescription}.
+    - 3.x: ``list_consumer_groups()`` -> [GroupOverview]; ``describe_groups()``
+      -> {group_id: GroupDescription}.
     """
-    groups = admin.list_groups()
-    known_ids = {
-        g.get("group_id") if isinstance(g, dict) else getattr(g, "group_id", None)
-        for g in groups
-    }
+    list_groups_fn = getattr(admin, "list_consumer_groups", None) or getattr(admin, "list_groups", None)
+    raw_groups = list_groups_fn() if list_groups_fn is not None else []
+    if isinstance(raw_groups, tuple):  # defensive: (error, groups)
+        raw_groups = raw_groups[1] or []
+    known_ids = set()
+    for g in raw_groups:
+        if isinstance(g, (list, tuple)):          # 2.x tuple (name, protocol_type)
+            known_ids.add(g[0])
+        elif isinstance(g, dict):                 # dict shape
+            known_ids.add(g.get("group_id") or g.get("group"))
+        else:                                     # 3.x GroupOverview
+            known_ids.add(getattr(g, "group_id", None) or getattr(g, "group", None))
     if OUTBOUND_GROUP_ID not in known_ids:
         return False
-    described = admin.describe_groups([OUTBOUND_GROUP_ID])
+    describe_fn = getattr(admin, "describe_consumer_groups", None) or getattr(admin, "describe_groups", None)
+    described = describe_fn([OUTBOUND_GROUP_ID]) if describe_fn is not None else {}
+    if isinstance(described, tuple):  # defensive: (error, descriptions)
+        described = described[1] or {}
     info = described.get(OUTBOUND_GROUP_ID, {})
     members = info.get("members") if isinstance(info, dict) else getattr(info, "members", None)
     return bool(members)
@@ -132,7 +153,14 @@ def wait_for_outbound_group() -> None:
         time.sleep(5)
         return
     try:
-        wait_for(lambda: outbound_group_active(admin), READY_TIMEOUT_S, f"{OUTBOUND_GROUP_ID} consumer group")
+        wait_for(lambda: outbound_group_active(admin), 15, f"{OUTBOUND_GROUP_ID} consumer group")
+    except Exception as exc:  # noqa: BLE001 - the admin API is flaky on some
+        # kafka-python/broker combinations (e.g. kafka-python 2.3.2 against
+        # Kafka 3.6 on Windows): fall back to a settle delay instead of
+        # failing the whole e2e. The outbound consumer joins within seconds,
+        # so a short settle preserves the "do not miss our publish" guarantee.
+        logger.warning("consumer-group check failed (%s); falling back to %ds settle delay", exc, 5)
+        time.sleep(5)
     finally:
         admin.close()
 
@@ -184,6 +212,18 @@ def wait_for_message(consumer: KafkaConsumer, topic: str, annotation_id: str, ti
     raise RuntimeError(f"no {topic} message for {annotation_id} within {timeout_s:.0f}s")
 
 
+def check_status_api(annotation_id: str) -> dict:
+    """The web-interface layer's read API must expose the same record the
+    SPARQL check just saw (Flow 2 widget data source).
+    """
+    resp = requests.get(f"{STATUS_API_BASE}/api/v1/status/{annotation_id}", timeout=10.0)
+    resp.raise_for_status()
+    body = resp.json()
+    if not body.get("found") or not body.get("validation_status"):
+        raise RuntimeError(f"status-api: governance record not found for {annotation_id}")
+    return body
+
+
 def check_named_graph_status(annotation_id: str, document_id: str) -> str:
     """Query Fuseki for the annotation's gfen:validationStatus inside the
     document's named graph; return the status string. Raises when the triple
@@ -213,12 +253,104 @@ SELECT ?status WHERE {{
     return rows[0]["status"]["value"]
 
 
-def run() -> None:
-    """The whole smoke cycle. Raises RuntimeError on any failed step."""
+MOCK_FEN_BASE = "http://localhost:8100"
+SHAPES_PATH = str(Path(__file__).resolve().parents[1] / "docs" / "ontology" / "fen-shapes.ttl")
+ONTOLOGY_PATH = str(Path(__file__).resolve().parents[1] / "docs" / "ontology" / "fen-ontology.ttl")
+
+
+def mock_candidate_status(annotation_id: str) -> Optional[str]:
+    """The mock FEN API's recorded status for ``annotation_id``, or None."""
+    resp = requests.get(f"{MOCK_FEN_BASE}/candidates", timeout=5.0)
+    resp.raise_for_status()
+    for cand in resp.json().get("candidates", []):
+        if cand.get("annotation_id") == annotation_id:
+            return cand.get("status")
+    return None
+
+
+def cast_vote(annotation_id: str, outcome: str, intensity: int = 1, voter: Optional[str] = None) -> dict:
+    """Cast one vote on the mock DAO (community/QV modes)."""
+    payload: dict = {"outcome": outcome}
+    if intensity != 1:
+        payload["intensity"] = intensity
+    if voter:
+        payload["voter"] = voter
+    resp = requests.post(f"{MOCK_FEN_BASE}/candidates/{annotation_id}/vote", json=payload, timeout=5.0)
+    if resp.status_code >= 400:
+        raise RuntimeError(f"vote failed ({resp.status_code}): {resp.text[:200]}")
+    return resp.json()
+
+
+def decide_by_votes(annotation_id: str, mode: str) -> dict:
+    """Community/QV decision phase: wait for the candidate to be registered,
+    cast the votes needed to reach the configured quorum/threshold, then wait
+    for the mock to decide and deliver. Returns the mock's final record.
+    """
+    wait_for(
+        lambda: mock_candidate_status(annotation_id) == "pending",
+        DECISION_TIMEOUT_S,
+        f"candidate {annotation_id} registered as pending (mock)",
+    )
+    if mode == "community":
+        # quorum=2 in the CI override (docker-compose.voting.yml); cast two
+        # validated votes -> majority validated.
+        cast_vote(annotation_id, "validated")
+        cast_vote(annotation_id, "validated")
+    else:  # qv: two intensity-5 votes reach FEN_MOCK_QV_THRESHOLD=10
+        cast_vote(annotation_id, "validated", intensity=5, voter="smoke_qv_a")
+        cast_vote(annotation_id, "validated", intensity=5, voter="smoke_qv_b")
+
+    def decided() -> Optional[dict]:
+        record = mock_candidate_status(annotation_id)
+        if record in ("validated", "disputed", "rejected"):
+            return {"status": record}
+        return None
+
+    result = wait_for(decided, DECISION_TIMEOUT_S, f"{mode} decision by votes (mock)")
+    logger.info("mock %s decision: %s", mode, result)
+    return result
+
+
+def shacl_check_named_graph(document_id: str) -> dict:
+    """Fetch the document's named graph from Fuseki and validate it against
+    fen-shapes.ttl (SHACL). The e2e asserts the pipeline's output conforms —
+    this is the live SHACL gate for written governance provenance.
+    """
+    query = f"""
+CONSTRUCT {{ ?s ?p ?o }} WHERE {{
+  GRAPH <urn:graphia:document:{document_id}:graph> {{ ?s ?p ?o }}
+}}
+"""
+    resp = requests.post(
+        FUSEKI_QUERY, data={"query": query}, headers={"Accept": "text/turtle"}, timeout=10.0
+    )
+    resp.raise_for_status()
+    from pyshacl import validate  # lazy: only needed for the SHACL gate
+
+    # Merge the gfen: ontology into the data graph — sh:class checks need
+    # the class/individual declarations from the ontology.
+    ontology = open(ONTOLOGY_PATH, encoding="utf-8-sig").read()
+    conforms, _, results_text = validate(
+        ontology + "\n" + resp.text,
+        shacl_graph=SHAPES_PATH,
+        data_graph_format="turtle",
+    )
+    return {"conforms": conforms, "text": results_text}
+
+def run(mode: str = "auto") -> None:
+    """The whole smoke cycle. Raises RuntimeError on any failed step.
+
+    ``mode`` selects how the decision is reached:
+      - "auto" (default): the mock's simulated DAO decides after a delay;
+      - "community" / "qv": votes are cast via POST /candidates/{id}/vote
+        until the quorum/threshold is reached (mock must run with
+        FEN_MOCK_VOTING=community|qv, see docker-compose.voting.yml).
+    """
     wait_for(lambda: kafka_ready(), READY_TIMEOUT_S, "Kafka (localhost:9092)")
     wait_for(lambda: http_ready(FUSEKI_PING), READY_TIMEOUT_S, "Fuseki (http://localhost:3030/$/ping)")
     wait_for(lambda: http_ready(WEBHOOK_HEALTH), READY_TIMEOUT_S, "fen-bridge-webhook (http://localhost:8101/healthz)")
     wait_for(lambda: http_ready(MOCK_FEN_HEALTH), READY_TIMEOUT_S, "mock-fen-api (http://localhost:8100/healthz)")
+    wait_for(lambda: http_ready(STATUS_API_HEALTH), READY_TIMEOUT_S, "status-api (http://localhost:8082/healthz)")
     wait_for_outbound_group()
 
     run_id = uuid.uuid4().hex[:8]
@@ -231,6 +363,9 @@ def run() -> None:
         candidate = publish_candidate(producer)
         annotation_id = candidate["annotation_id"]
         document_id = candidate["document_id"]
+
+        if mode in ("community", "qv"):
+            decide_by_votes(annotation_id, mode)
 
         decision = wait_for_message(
             make_watch_consumer(TOPIC_GOVERNANCE_DECISIONS, f"smoke-{run_id}-decisions"),
@@ -247,6 +382,13 @@ def run() -> None:
         )
         logger.info("named graph carries gfen:validationStatus=%s", status)
 
+        status_api = wait_for(
+            lambda: check_status_api(annotation_id),
+            DECISION_TIMEOUT_S,
+            "status-api /api/v1/status",
+        )
+        logger.info("status-api reports validation_status=%s", status_api["validation_status"])
+
         validated = wait_for_message(
             make_watch_consumer(TOPIC_VALIDATED, f"smoke-{run_id}-validated"),
             TOPIC_VALIDATED,
@@ -254,18 +396,38 @@ def run() -> None:
             DECISION_TIMEOUT_S,
         )
         logger.info("EntityValidated confirmation: %s -> %s", validated["decision_id"], validated["outcome"])
+
+        if mode in ("community", "qv"):
+            assert decision.get("quorum_reached") is True, "community/QV decision must report quorum_reached=True"
+            assert decision.get("outcome") == "validated", "majority of the cast votes must win"
+
+        shacl = shacl_check_named_graph(document_id)
+        if not shacl["conforms"]:
+            raise RuntimeError(f"SHACL validation of the named graph FAILED:\n{shacl['text']}")
+        logger.info("SHACL: named graph conforms to fen-shapes.ttl")
     finally:
         producer.close()
 
-    logger.info("E2E SMOKE TEST PASSED: %s", annotation_id)
+    logger.info("E2E SMOKE TEST PASSED (%s mode): %s", mode, annotation_id)
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="FEN end-to-end smoke test")
+    parser.add_argument(
+        "--mode",
+        choices=("auto", "community", "qv"),
+        default="auto",
+        help="decision mode to exercise (auto = mock decides after a delay; "
+        "community/qv = cast votes via POST /candidates/{id}/vote; the mock "
+        "must run with FEN_MOCK_VOTING set accordingly, see "
+        "docker-compose.voting.yml)",
+    )
+    args = parser.parse_args()
     try:
-        run()
+        run(mode=args.mode)
         return 0
     except Exception as exc:  # noqa: BLE001 - any failed step is a failed smoke test
-        logger.error("E2E SMOKE TEST FAILED: %s", exc)
+        logger.error("E2E SMOKE TEST FAILED (%s mode): %s", args.mode, exc)
         return 1
 
 

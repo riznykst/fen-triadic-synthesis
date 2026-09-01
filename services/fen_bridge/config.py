@@ -24,7 +24,8 @@ class FenBridgeConfig:
     def from_env(cls) -> "FenBridgeConfig":
         return cls(
             kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
-            topic_pending_validation=os.getenv("TOPIC_PENDING_VALIDATION", "dap.entities.pending_validation.v1"),
+            topic_pending_validation=os.getenv("TOPIC_PENDING_VALIDATION")
+            or os.getenv("FEN_TOPIC_CANDIDATES") or "dap.entities.pending_validation.v1",
             topic_governance_decisions=os.getenv("TOPIC_GOVERNANCE_DECISIONS", "fen.governance.decisions.v1"),
             fen_api_base_url=os.getenv("FEN_API_BASE_URL", "http://localhost:8100"),
             consumer_group_id=os.getenv("FEN_BRIDGE_GROUP_ID", "fen-bridge-outbound"),

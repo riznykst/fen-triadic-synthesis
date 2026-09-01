@@ -1,4 +1,4 @@
-﻿"""Tests for the observability layer: JSON structured logging, Prometheus
+"""Tests for the observability layer: JSON structured logging, Prometheus
 /metrics endpoints, readiness probes, and graceful-shutdown plumbing.
 
 All offline — TestClient with fakes, mocked HTTP for the mock's delivery

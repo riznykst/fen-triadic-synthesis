@@ -34,6 +34,13 @@ fen.governance.decisions.v1
 dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (GoTriple KG)
 ```
 
+Web interface layer (zero-build, see `web/api.md`):
+
+```
+[ Flow 1 portal ]  --HTTP-->  mock_fen_api (/candidates, /vote)   [demo DAO]
+[ Flow 2 widget ]  --HTTP-->  status_api /api/v1/status/{id}  --SPARQL-->  Fuseki/Virtuoso
+```
+
 ## Component map
 
 | Component | File(s) | Runs as |
@@ -46,6 +53,8 @@ dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (GoTriple K
 | FEN Bridge (webhook) | `services/fen_bridge/webhook.py` | `fen-bridge-webhook` container |
 | Validation Result Consumer | `services/validation_consumer/main.py`, `sparql_updater.py` | `validation-consumer` container |
 | Mock DAO (demo only) | `mock_fen_api/main.py` | `mock-fen-api` container |
+| Status API (read-side web) | `services/status_api/main.py` | `status-api` container |
+| Web interface (zero-build) | `web/` (portal + widget) | static files served by `status-api` |
 | RDF store (local dev) | — | `fuseki` container, stand-in for Virtuoso (see ADR-001) |
 | Message bus | — | `kafka` + `zookeeper` containers |
 
@@ -160,7 +169,16 @@ consumer lag) and ship the JSON stdout logs to **Loki** (or ELK/Splunk) with
 alerting on `fen_webhook_validation_failures_total`, `fen_mock_delivery_failures_total`
 and `fen_kafka_messages_failed_total` growth. Set `LOG_LEVEL` per service and
 keep `/readyz` as the orchestration gate so no service is load-balanced or
-restarted while its dependencies are unreachable.
+restarted while its dependencies are unreachable.restarted while its dependencies are unreachable.
+
+**Local stack.** `docker-compose.yml` ships the same observability locally:
+**Prometheus** (`:9090`, config in `monitoring/prometheus/`), **Grafana**
+(`:3000`, anonymous viewer, datasources/dashboards provisioned from
+`monitoring/grafana/`), and **Loki** (`:3100`) with **Promtail** scraping all
+container JSON logs through the Docker socket (`monitoring/promtail/
+promtail.yml`). Open Grafana → Explore → **Loki** to query logs by
+`service`/`container` labels, e.g. `{service="fen-bridge-webhook"} |=
+"401"`.
 
 ## Kubernetes / OKD deployment
 

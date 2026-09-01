@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime
 from typing import List, NamedTuple, Optional
 
 from kafka import KafkaConsumer, KafkaProducer
@@ -116,7 +117,9 @@ def commit_offsets(consumer: KafkaConsumer, records: List[MessageRecord]) -> Non
     (at-least-once). ``records`` must come from ``poll_batch_with_offsets``.
     """
     offsets = {
-        TopicPartition(record.topic, record.partition): OffsetAndMetadata(record.offset + 1, "")
+        TopicPartition(record.topic, record.partition): OffsetAndMetadata(
+            offset=record.offset + 1, metadata="", leader_epoch=0
+        )
         for record in records
     }
     consumer.commit(offsets=offsets)
@@ -132,7 +135,7 @@ def make_producer(bootstrap_servers: str) -> KafkaProducer:
     """
     return KafkaProducer(
         bootstrap_servers=bootstrap_servers,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        value_serializer=lambda v: json.dumps(v, default=_json_default).encode("utf-8"),
         acks="all",
         retries=5,
         linger_ms=50,
@@ -170,3 +173,13 @@ def _log_delivery_error(exc: Exception) -> None:
     raise.
     """
     logger.error("Kafka delivery failed: %s", exc)
+
+
+def _json_default(obj):
+    """``json.dumps`` default for non-serializable objects: datetimes (e.g.
+    ``GovernanceDecision.decided_at``) become ISO-8601 strings so the webhook
+    can publish full decision payloads to Kafka.
+    """
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")

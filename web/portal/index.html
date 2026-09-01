@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FEN — Community DAO portal (Flow 1)</title>
+<style>
+  :root { --bg:#f7f5f0; --panel:#fdfcfa; --fg:#1c1b1f; --muted:#6b6560; --accent:#2d5a8e; --green:#2e7d5b; --amber:#8b6914; --red:#b23a3a; --border:#e3ded2; --chipline:rgba(45,90,142,.27); }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(circle at 15% 20%,rgba(255,255,255,.6),transparent 40%),radial-gradient(circle at 85% 75%,rgba(255,255,255,.5),transparent 45%),linear-gradient(135deg,#efece6,#e7e4dc); color:var(--fg); font:14px/1.55 system-ui, sans-serif; }
+  .wrap { max-width:980px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-family:Georgia,serif; font-size:22px; font-weight:400; color:var(--fg); border-bottom:1px solid var(--border); padding-bottom:10px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:860px){ .grid { grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1.5px solid var(--accent); border-radius:18px; padding:14px 16px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .card h2 { font-family:Georgia,serif; font-weight:400; }
+  label { display:block; color:var(--muted); font-size:10px; letter-spacing:.09em; text-transform:uppercase; font-weight:600; margin:8px 0 3px; }
+  input, select { width:100%; background:#fff; color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:7px 9px; font-size:13px; outline:none; }
+  input:focus, select:focus { border-color:var(--accent); }
+  button { background:#fff; color:var(--accent); border:1px solid var(--chipline); border-radius:999px; padding:7px 13px; cursor:pointer; font-size:13px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; border-radius:8px; }
+  button:hover { filter:brightness(1.06); }
+  button:disabled { opacity:.55; cursor:not-allowed; }
+  .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .b-validated { color:var(--green); background:#e6f4ee; }
+  .b-disputed { color:var(--amber); background:#faf3e0; }
+  .b-rejected { color:var(--red); background:#fae8e8; }
+  .b-pending { color:var(--accent); background:#e8eff7; }
+  .b-deciding, .b-unknown { color:var(--muted); background:#f0eeea; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .bar { background:var(--border); border-radius:3px; height:5px; width:90px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--accent); border-radius:3px; }
+  .vote { display:flex; gap:5px; }
+  .vote button { padding:5px 9px; font-size:12px; color:#fff; border:none; border-radius:6px; font-weight:700; }
+  .vote button[data-outcome="validated"] { background:var(--green); }
+  .vote button[data-outcome="disputed"] { background:var(--amber); }
+  .vote button[data-outcome="rejected"] { background:var(--red); }
+  .note { color:var(--muted); font-size:12px; }
+  .err { color:var(--red); font-size:12px; margin-top:6px; }
+  .exports { white-space:nowrap; }
+  .exp { color:var(--accent); text-decoration:none; border:1px solid var(--chipline); border-radius:999px; padding:2px 8px; margin:1px 3px 1px 0; font-size:11px; display:inline-block; }
+  .exp:hover { border-color:var(--accent); }
+  /* ---- Mobile-first (min-width = desktop enhancements) ---- */
+  .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  input, select, button { font-size:16px; }  /* prevents iOS auto-zoom */
+  button { min-height:40px; }
+  .vote button { min-height:32px; }
+  @media (min-width:641px) {
+    input, select, button { font-size:13px; }
+    button { min-height:auto; }
+    .vote button { min-height:auto; }
+  }
+  @media (max-width:640px) {
+    .wrap { padding:14px 10px 40px; }
+    h1 { font-size:18px; line-height:1.35; }
+    h1 .note, h1 a { display:block; margin-top:4px; }
+    .card { padding:12px; }
+    input, select { min-height:44px; }
+    button { width:100%; margin-bottom:6px; }
+    .vote { flex-wrap:wrap; }
+    .vote button { width:auto; min-height:34px; flex:1; }
+    #filters { gap:4px; }
+    #filters button { width:auto; min-height:34px; padding:5px 10px; }
+    table { white-space:nowrap; }
+    .bar { width:100%; }
+  }</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FEN — Community DAO portal <span class="note">(Flow 1 · demo against mock_fen_api)</span> <a href="triadic.html" style="font-size:12px;color:var(--green)">⇄ Triadic view</a></h1>
+
+  <div class="grid">
+    <div class="card">
+      <h2 style="margin-top:0;color:var(--accent);font-size:16px">Submit a candidate</h2>
+      <label>entity_label *</label>
+      <input id="entity_label" placeholder="e.g. Sokolowizna (regional dialect term)" value="Sokolowizna (regional dialect term)">
+      <label>entity_type</label>
+      <input id="entity_type" placeholder="e.g. schema:DefinedTerm" value="schema:DefinedTerm">
+      <label>document_id</label>
+      <input id="document_id" placeholder="e.g. d2026_014" value="d2026_014">
+      <label>annotation_id (auto-generated if empty)</label>
+      <input id="annotation_id" placeholder="annotation_...">
+      <div style="margin-top:12px">
+        <button class="primary" id="submit">Submit candidate → dap.entities.pending_validation.v1</button>
+      </div>
+      <div class="err" id="submit_err"></div>
+      <p class="note">POST {mock}/candidates — the same endpoint the FEN Bridge
+      uses for batches. In <b>community</b> mode candidates wait for votes
+      (FEN_MOCK_VOTING=community); in <b>auto</b> mode the simulated DAO
+      decides after a delay.</p>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;color:var(--accent);font-size:16px">Configuration</h2>
+      <label>Mock FEN API base</label>
+      <input id="mock_base" value="http://localhost:8100">
+      <label>Status API base (widget data)</label>
+      <input id="status_base" value="http://localhost:8082">
+      <div style="margin-top:12px">
+        <button id="refresh">Refresh</button>
+        <button id="auto_toggle">Live updates: ON</button>
+      </div>
+      <p class="note" id="mode_note">—</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0;color:var(--accent);font-size:16px">Candidates &amp; community voting <span class="note" id="summary" style="margin-left:8px"></span></h2>
+<div style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap" id="filters">
+      <button data-filter="all" class="primary">All</button>
+      <button data-filter="pending">pending</button>
+      <button data-filter="deciding">deciding</button>
+      <button data-filter="validated">validated</button>
+      <button data-filter="disputed">disputed</button>
+      <button data-filter="rejected">rejected</button>
+    </div>
+    <div class="table-scroll"><table id="table">
+      <thead>
+        <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>LLM rec.</th><th>votes</th><th>quorum</th><th>vote (community mode)</th><th>export</th></tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="8" class="note">no candidates yet — submit one above</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0;color:var(--accent);font-size:16px">Reputation &amp; LLM-judge accuracy <span class="note">(ADR-005)</span></h2>
+    <p class="note" style="margin:4px 0 10px">community votes are anonymous; voter rewards appear in QV mode</p>
+    <div id="llm_accuracy" style="color:var(--amber);font-size:13px;margin-bottom:10px">loading…</div>
+    <div class="note" style="margin:6px 0 3px">Leaderboard (top 10)</div>
+    <div id="rep_leader" style="font-size:13px">loading…</div>
+    <div class="note" style="margin:10px 0 3px">History (last 20)</div>
+    <div id="rep_history" style="font-size:13px">loading…</div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

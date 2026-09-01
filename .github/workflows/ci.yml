@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 # TEMPORARY self-hosted-runner mode (GitHub billing block): jobs run on the
 # local runner (label "self-hosted") and CI triggers on push only, so fork
@@ -8,9 +8,17 @@
 # Docker is unavailable. Revert to ubuntu-latest + pull_request + the full
 # 3.10/3.11/3.12 matrix + setup-python once the billing issue is resolved —
 # see docs/self-hosted-runner.md, step 7.
+#
+# e2e scope: this workflow is skipped when a push touches ONLY web/ (native
+# `paths-ignore`) — web-only pushes run the unit suite via .github/workflows/
+# web.yml instead and never touch Docker. The CI stack cannot share the
+# published host ports with a locally running dev stack, so web-only changes
+# should not fight over them. Mixed pushes (web + anything else) run both
+# workflows; the unit suite then runs twice, which is harmless.
 on:
   push:
     branches: [main]
+    paths-ignore: ['web/**']
 
 jobs:
   test:
@@ -21,7 +29,7 @@ jobs:
         # Restore ["3.10", "3.11", "3.12"] together with setup-python below.
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
       - name: Use system Python
         run: python --version
@@ -37,15 +45,27 @@ jobs:
       - name: Parse RDF artefacts
         run: |
           python -c "from rdflib import Graph, Dataset; g=Graph(); g.parse('docs/ontology/fen-ontology.ttl', format='turtle'); d=Dataset(); d.parse('examples/sample-validation-flow.trig', format='trig'); print('RDF OK', len(g), len(d))"
+      - name: SHACL validation
+        run: python scripts/shacl_check.py
 
   # End-to-end smoke test against the real docker-compose stack: publishes an
   # EntityCandidate and waits for the full pipeline (decision -> SPARQL ->
   # validated) to complete. Requires a Docker runner; skipped on machines
-  # without Docker.
+  # without Docker. Runs for any push that touches anything outside web/
+  # (web-only pushes never reach this workflow — see the trigger).
   e2e:
     runs-on: self-hosted
+    env:
+      # Isolate the CI stack from any locally-running dev stack on the same
+      # Docker daemon: both would otherwise default to the project name
+      # "fen-triadic-synthesis", so CI "up/down" collides with (and can tear
+      # down) the developer's local containers. With this override the CI
+      # containers are fen-ci-*; if the local stack holds the published
+      # ports, the compose up step fails fast with "port is already
+      # allocated" instead of silently destroying local state.
+      COMPOSE_PROJECT_NAME: fen-ci
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
       - name: Use system Python
         run: python --version
@@ -61,20 +81,32 @@ jobs:
         id: docker
         shell: powershell
         run: |
-          $docker = Get-Command docker -ErrorAction SilentlyContinue
-          $available = $false
-          if ($docker) {
-            docker version *> $null
-            if ($LASTEXITCODE -eq 0) { $available = $true }
-          }
-          if ($available) { "available=true" >> $env:GITHUB_OUTPUT } else { "available=false" >> $env:GITHUB_OUTPUT }
+          # cmd-level redirection: never lets a daemon-down stderr turn into a
+          # PowerShell error record (which failed this step with exit 1 before).
+          cmd /c "docker version >nul 2>&1"
+          if ($LASTEXITCODE -eq 0) { "available=true" >> $env:GITHUB_OUTPUT } else { "available=false" >> $env:GITHUB_OUTPUT }
           exit 0
       - name: Start the stack
         if: steps.docker.outputs.available == 'true'
-        run: docker compose up --build -d
+        run: docker compose --profile virtuoso up --build -d
       - name: Run end-to-end smoke test
         if: steps.docker.outputs.available == 'true'
         run: python scripts/smoke_test.py
+      - name: Run community/QV voting e2e
+        if: steps.docker.outputs.available == 'true'
+        shell: powershell
+        run: |
+          $env:FEN_MOCK_VOTING = 'community'
+          $env:FEN_MOCK_QUORUM = '2'
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d
+          python scripts/smoke_test.py --mode community
+          $env:FEN_MOCK_VOTING = 'qv'
+          $env:FEN_MOCK_QV_THRESHOLD = '10'
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d
+          python scripts/smoke_test.py --mode qv
+      - name: Run Virtuoso dialect check
+        if: steps.docker.outputs.available == 'true'
+        run: python scripts/virtuoso_dialect_check.py
       - name: Tear down the stack
         if: always() && steps.docker.outputs.available == 'true'
-        run: docker compose down
+        run: docker compose --profile virtuoso down

@@ -1,0 +1,260 @@
+/**
+ * FEN Community DAO portal (Flow 1) — zero-build demo UI against
+ * mock_fen_api. Contract in web/api.md. The same contract is expected from
+ * the real FEN backend in production (ADR-002: DAO lives outside this repo).
+ */
+"use strict";
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+const $ = (id) => document.getElementById(id);
+
+let sse = null;            // EventSource for live updates (SSE)
+let sseOk = false;         // has the stream ever opened
+let fallbackTimer = null;  // slow polling while the stream is down
+
+function stopFallback() {
+  if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; }
+}
+
+function startFallback() {
+  if (!fallbackTimer) fallbackTimer = setInterval(loadCandidates, 15000);
+}
+
+function stopLiveUpdates() {
+  stopFallback();
+  if (sse) { sse.close(); sse = null; }
+  sseOk = false;
+}
+
+function startLiveUpdates() {
+  stopLiveUpdates();  // idempotent (re)connect
+  const base = $("mock_base").value.replace(/\/+$/, "");
+  try {
+    sse = new EventSource(base + "/events");
+  } catch (e) {
+    startFallback();  // EventSource unavailable -> poll instead
+    return;
+  }
+  const refresh = () => { sseOk = true; stopFallback(); loadCandidates(); };
+  sse.addEventListener("vote", refresh);
+  sse.addEventListener("decision", refresh);
+  sse.addEventListener("candidates", refresh);
+  sse.onopen = () => { sseOk = true; stopFallback(); loadCandidates(); };
+  // While the stream is down (EventSource auto-reconnects) poll slowly so no
+  // update is lost; the next onopen stops the ticker and catches up.
+  sse.onerror = startFallback;
+}
+
+let currentFilter = "all";
+let cachedList = [];
+let reputation = {};            // actor -> points (current totals)
+let reputationHistory = [];      // newest first, last 50, validated only
+let llmAccuracy = {};           // { agreements, total, accuracy }
+
+function statusBadge(status) {
+  return '<span class="badge b-' + (status || "unknown") + '">' + (status || "unknown") + "</span>";
+}
+
+function renderCandidates(data) {
+  const rows = $("rows");
+  cachedList = (data && data.candidates) || [];
+  const counts = { all: cachedList.length };
+  cachedList.forEach((c) => { counts[c.status] = (counts[c.status] || 0) + 1; });
+  $("summary").textContent =
+    "total " + counts.all +
+    " · pending " + (counts.pending || 0) +
+    " · deciding " + (counts.deciding || 0) +
+    " · validated " + (counts.validated || 0) +
+    " · disputed " + (counts.disputed || 0) +
+    " · rejected " + (counts.rejected || 0);
+
+  const list = currentFilter === "all" ? cachedList : cachedList.filter((c) => c.status === currentFilter);
+  if (!list.length) {
+    rows.innerHTML = '<tr><td colspan="8" class="note">no candidates' +
+      (currentFilter !== "all" ? " with status " + escapeHtml(currentFilter) : "") +
+      " — submit one above</td></tr>";
+    return;
+  }
+  const expBase = $("status_base").value.replace(/\/+$/, "");
+  rows.innerHTML = list.map((c) => {
+    const q = c.quorum || { votes: 0, required: 0 };
+    const pct = q.required ? Math.min(100, Math.round((q.votes / q.required) * 100)) : 0;
+    const rec = c.llm_recommendation
+      ? '<span class="note" style="color:var(--amber)">' + escapeHtml(c.llm_recommendation) + " (support)</span>"
+      : "—";
+    const voteBtns =
+      c.status === "pending"
+        ? '<div class="vote">' +
+          ["validated", "disputed", "rejected"].map(
+            (o) => '<button data-vote="' + escapeHtml(c.annotation_id) + '" data-outcome="' + o + '">' + o + "</button>"
+          ).join("") +
+          "</div>"
+        : '<span class="note">—</span>';
+    const exportLinks = ["ttl", "jsonld", "nt", "crate"].map((f) =>
+      '<a class="exp" href="' + expBase + "/api/v1/export/" + encodeURIComponent(c.annotation_id) + "?format=" + f +
+      '" target="_blank" rel="noopener" title="export as ' + f + '">' + f + "</a>"
+    ).join("");
+    return (
+      "<tr>" +
+      "<td><code>" + escapeHtml(c.annotation_id) + "</code><br><span class='note'>" + escapeHtml(c.document_id || "") + "</span></td>" +
+      "<td>" + escapeHtml(c.entity_label || "—") + "</td>" +
+      "<td>" + statusBadge(c.status) + "</td>" +
+      "<td>" + rec + "</td>" +
+      "<td>v:" + (c.votes.validated || 0) + " d:" + (c.votes.disputed || 0) + " r:" + (c.votes.rejected || 0) + "</td>" +
+      '<td><div class="bar"><div style="width:' + pct + '%"></div></div><span class="note">' + q.votes + "/" + q.required + "</span></td>" +
+      "<td>" + voteBtns + "</td>" +
+      '<td class="exports">' + exportLinks + "</td>" +
+      "</tr>"
+    );
+  }).join("");
+}
+
+function renderReputation() {
+  const acc = llmAccuracy || {};
+  const accTxt = acc.total
+    ? "LLM judge vs community decisions: " + acc.agreements + "/" + acc.total +
+      " (" + Math.round((acc.accuracy || 0) * 100) + "%)"
+    : "LLM judge vs community decisions: no decisions yet";
+  $("llm_accuracy").textContent = accTxt;
+
+  const top = Object.entries(reputation || {}).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  $("rep_leader").innerHTML = top.length
+    ? top.map(([actor, pts]) =>
+        '<div style="display:flex;gap:8px;justify-content:space-between">' +
+          "<span>" + escapeHtml(actor) + ' <span class="note">· </span><b>' +
+            escapeHtml(String(pts)) + '</b> <span class="note">points</span></span>' +
+        "</div>"
+      ).join("")
+    : '<div class="note">no reputation yet</div>';
+
+  const rows = (reputationHistory || []).slice(0, 20).map((h) => {
+    const d = Number(h.delta) || 0;
+    return '<div style="display:flex;gap:8px;justify-content:space-between">' +
+      "<span>" + escapeHtml(h.actor) + ' <span class="note">· ' + escapeHtml(h.reason) +
+        " · " + escapeHtml(String(h.annotation_id || "").slice(-6)) + "</span></span>" +
+      '<b style="color:' + (d > 0 ? "var(--green)" : "var(--red)") + '">' +
+        (d > 0 ? "+" : "") + d + "</b>" +
+    "</div>";
+  }).join("");
+  $("rep_history").innerHTML = rows || '<div class="note">no reputation events yet</div>';
+}
+
+async function loadCandidates() {
+  const base = $("mock_base").value.replace(/\/+$/, "");
+  try {
+    const resp = await fetch(base + "/candidates");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    renderCandidates(data);
+    reputation = data.reputation || {};
+    reputationHistory = data.reputation_history || [];
+    llmAccuracy = data.llm_accuracy || {};
+    renderReputation();
+    $("mode_note").textContent = "";
+  } catch (err) {
+    $("mode_note").textContent = "cannot reach " + base + " — start docker compose (mock-fen-api) first";
+  }
+}
+
+async function submitCandidate() {
+  const err = $("submit_err");
+  err.textContent = "";
+  const label = $("entity_label").value.trim();
+  if (!label) { err.textContent = "entity_label is required"; return; }
+  let annotationId = $("annotation_id").value.trim();
+  if (!annotationId) annotationId = "annotation_" + Date.now();
+  const candidate = {
+    annotation_id: annotationId,
+    document_id: $("document_id").value.trim() || null,
+    entity_label: label,
+    entity_type: $("entity_type").value.trim() || null,
+  };
+  const base = $("mock_base").value.replace(/\/+$/, "");
+  try {
+    const resp = await fetch(base + "/candidates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ candidates: [candidate] }),
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const body = await resp.json();
+    $("annotation_id").value = annotationId;
+    err.textContent = "accepted: " + body.accepted + " candidate(s) — " + annotationId;
+    loadCandidates();
+  } catch (e) {
+    err.textContent = "submit failed: " + e.message;
+  }
+}
+
+async function castVote(annotationId, outcome) {
+  const base = $("mock_base").value.replace(/\/+$/, "");
+  try {
+    const resp = await fetch(base + "/candidates/" + encodeURIComponent(annotationId) + "/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outcome: outcome }),
+    });
+    if (resp.status === 409) {
+      let detail = "vote rejected";
+      try {
+        const body = await resp.json();
+        if (body && body.detail) detail = body.detail;
+      } catch (e) { /* non-JSON error body */ }
+      $("mode_note").textContent = detail;
+    } else if (!resp.ok) {
+      $("mode_note").textContent = "vote failed: HTTP " + resp.status;
+    } else {
+      const body = await resp.json();
+      $("mode_note").textContent = body.outcome
+        ? "quorum reached → outcome: " + body.outcome + " (decision being delivered)"
+        : "vote recorded: " + body.quorum.votes + "/" + body.quorum.required;
+    }
+    loadCandidates();
+  } catch (e) {
+    $("mode_note").textContent = "vote failed: " + e.message;
+  }
+}
+
+function bindEvents() {
+  $("submit").onclick = submitCandidate;
+  $("refresh").onclick = loadCandidates;
+  $("auto_toggle").onclick = function () {
+    if (sse) { stopLiveUpdates(); this.textContent = "Live updates: OFF"; }
+    else { startLiveUpdates(); this.textContent = "Live updates: ON"; }
+  };
+  document.addEventListener("click", (e) => {
+    const vote = e.target.closest("[data-vote]");
+    if (vote) castVote(vote.dataset.vote, vote.dataset.outcome);
+    const filter = e.target.closest("[data-filter]");
+    if (filter) {
+      currentFilter = filter.dataset.filter;
+      document.querySelectorAll("#filters button").forEach((b) => {
+        b.classList.toggle("primary", b === filter);
+      });
+      renderCandidates({ candidates: cachedList });
+    }
+  });
+}
+
+// Vercel/remote deployments: allow overriding the API bases from the URL
+// (?fen_mock_base=...&fen_status_base=...), persisted to localStorage — the
+// same convention as the triadic view (triadic.js apiBase()). The inputs
+// stay editable; the fields just get sensible defaults.
+(function applyApiBases() {
+  const params = new URLSearchParams(location.search);
+  [["fen_mock_base", "mock_base"], ["fen_status_base", "status_base"]].forEach(([key, id]) => {
+    const fromQuery = params.get(key);
+    if (fromQuery) localStorage.setItem(key, fromQuery);
+    const saved = localStorage.getItem(key);
+    if (saved) $(id).value = saved;
+  });
+})();
+
+bindEvents();
+loadCandidates();
+startLiveUpdates();

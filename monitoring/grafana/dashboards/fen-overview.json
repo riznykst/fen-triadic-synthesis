@@ -1,0 +1,62 @@
+﻿{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["fen"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "FEN — Validation Pipeline Overview",
+  "uid": "fen-overview",
+  "version": 1,
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Candidates accepted (rate)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rate(fen_mock_candidates_accepted_total[5m])", "legendFormat": "accepted" }]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Decisions delivered vs failures",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "rate(fen_mock_decisions_delivered_total[5m])", "legendFormat": "delivered" },
+        { "expr": "rate(fen_mock_delivery_failures_total[5m])", "legendFormat": "failures" }
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "LLM judge calls by outcome",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum by (outcome) (rate(fen_mock_llm_judge_calls_total[5m]))", "legendFormat": "{{outcome}}" }]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Webhook: received / validation failures / auth rejections",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "rate(fen_webhook_decisions_received_total[5m])", "legendFormat": "received" },
+        { "expr": "rate(fen_webhook_validation_failures_total[5m])", "legendFormat": "422" },
+        { "expr": "rate(fen_webhook_auth_rejections_total[5m])", "legendFormat": "401" }
+      ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Kafka consumers: processed vs failed",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "rate(fen_kafka_messages_processed_total[5m])", "legendFormat": "processed" },
+        { "expr": "rate(fen_kafka_messages_failed_total[5m])", "legendFormat": "failed" }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Delivery duration (histogram buckets)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rate(fen_mock_delivery_duration_seconds_bucket[5m])", "legendFormat": "le={{le}}" }]
+    }
+  ]
+}

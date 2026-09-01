@@ -34,7 +34,7 @@ services:
   # testing. Swap SPARQL_UPDATE_ENDPOINT to point at Virtuoso in any
   # non-local deployment; no application code needs to change.
   fuseki:
-    image: stain/jena-fuseki:4.9.0
+    image: stain/jena-fuseki:5.1.0  # was 4.9.0 — that tag does not exist in the registry
     environment:
       ADMIN_PASSWORD: admin
       FUSEKI_DATASET_1: fen
@@ -76,6 +76,7 @@ services:
       TOPIC_PENDING_VALIDATION: dap.entities.pending_validation.v1
       FEN_API_BASE_URL: http://mock-fen-api:8100
       FEN_BRIDGE_GROUP_ID: fen-bridge-outbound
+      METRICS_PORT: "9101"
 
   fen-bridge-webhook:
     build:
@@ -96,6 +97,26 @@ services:
       retries: 10
       start_period: 5s
 
+  # ---- Web interface layer (read API + static UI) -----------------------
+  status-api:
+    build:
+      context: .
+      dockerfile: services/status_api/Dockerfile
+    depends_on:
+      fuseki:
+        condition: service_started
+    ports:
+      - "8082:8082"
+    environment:
+      SPARQL_QUERY_ENDPOINT: http://fuseki:3030/fen/query
+      FEN_CORS_ORIGINS: "*"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8082/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   # ---- Validation Result Consumer -------------------------------------
   validation-consumer:
     build:
@@ -111,4 +132,105 @@ services:
       TOPIC_GOVERNANCE_DECISIONS: fen.governance.decisions.v1
       TOPIC_VALIDATED: dap.entities.validated.v1
       SPARQL_UPDATE_ENDPOINT: http://fuseki:3030/fen/update
+      SPARQL_UPDATE_USER: admin
+      SPARQL_UPDATE_PASSWORD: admin
       FEN_NAAN: "99999"
+      METRICS_PORT: "9102"
+
+  # ---- Observability (local dev: Prometheus + Grafana) -------------------
+  # Configs are baked into images (monitoring/docker/*.Dockerfile) instead of
+  # bind-mounting them: Docker Desktop cannot share files from removable
+  # drives (the repo lives on an SD card that WSL never registers in drvfs),
+  # and single-file bind mounts break under gRPC-FUSE. Rebuild the affected
+  # image after editing monitoring/*: docker compose build <service>.
+  prometheus:
+    build:
+      context: ./monitoring
+      dockerfile: docker/prometheus.Dockerfile
+    ports:
+      - "9090:9090"
+    depends_on: [kafka]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  grafana:
+    build:
+      context: ./monitoring
+      dockerfile: docker/grafana.Dockerfile
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ---- Log aggregation (Loki + Promtail) ----------------------------------
+  # JSON structured logs from every container are scraped by Promtail via the
+  # Docker socket and stored in Loki; explore them in Grafana (Explore ->
+  # Loki datasource) at http://localhost:3000. Metrics stay in Prometheus.
+  loki:
+    image: grafana/loki:3.2.2
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:3100/ready' >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  promtail:
+    build:
+      context: ./monitoring
+      dockerfile: docker/promtail.Dockerfile
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:9080/ready' >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+  # ---- Virtuoso (OPTIONAL: SPARQL dialect verification) -------------------
+  # GoTriple KG's engine (OpenLink Virtuoso). NOT part of the default stack:
+  #   docker compose --profile virtuoso up -d virtuoso
+  # then run python scripts/virtuoso_dialect_check.py (see the script header).
+  virtuoso:
+    image: openlink/virtuoso-opensource-7
+    profiles: ["virtuoso"]
+    environment:
+      DBA_PASSWORD: dba
+      VIRT_Parameters_DirsAllowed: /database
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    volumes:
+      - virtuoso-data:/database
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:8890/sparql?query=SELECT+1+WHERE+%7B%7D' >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  virtuoso-data:

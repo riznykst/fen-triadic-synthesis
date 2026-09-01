@@ -49,3 +49,10 @@ METHOD_MAP = {
 # (whitepaper section 7). Keep in sync with the .ttl file.
 GRAPHIA_ONTOLOGY_IRI = "https://w3id.org/gotriple/ontology"
 OWL_IMPORTS = GRAPHIA_ONTOLOGY_IRI
+
+# Agentic Scaffolding output (Phase 1) — mirror of docs/ontology/fen-ontology.ttl
+PROP_SUBJECT = GFEN + "subject"
+PROP_PREDICATE = GFEN + "predicate"
+PROP_OBJECT = GFEN + "object"
+PROP_LANGUAGE_OR_DOMAIN = GFEN + "languageOrDomain"
+SCAFFOLDED_TRIPLE = GFEN + "ScaffoldedTriple"

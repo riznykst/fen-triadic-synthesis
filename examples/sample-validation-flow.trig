@@ -1,4 +1,4 @@
-﻿# sample-validation-flow.trig — RDF before/after one validation cycle
+# sample-validation-flow.trig — RDF before/after one validation cycle
 # (parser-checked; matches tests/test_sparql_updater.py and sparql_updater.py)
 
 @prefix :      <urn:graphia:> .

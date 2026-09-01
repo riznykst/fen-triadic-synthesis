@@ -59,3 +59,29 @@ gfen:GovernanceDecisionShape a sh:NodeShape ;
     sh:datatype xsd:dateTime ;
     sh:maxCount 1 ;
   ] .
+
+gfen:ScaffoldedTripleShape a sh:NodeShape ;
+  sh:targetClass gfen:ScaffoldedTriple ;
+  sh:property [
+    sh:path gfen:subject ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:predicate ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:object ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path gfen:languageOrDomain ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+  ] .

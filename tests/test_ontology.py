@@ -1,4 +1,4 @@
-﻿"""Tests that the RDF/SHACL artefacts stay parseable and complete."""
+"""Tests that the RDF/SHACL artefacts stay parseable and complete."""
 from __future__ import annotations
 
 from rdflib import Graph, Namespace

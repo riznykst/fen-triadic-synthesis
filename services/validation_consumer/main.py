@@ -14,6 +14,7 @@ redelivered on the next rebalance or restart.
 from __future__ import annotations
 
 import logging
+import os
 import signal
 import threading
 import time
@@ -23,6 +24,8 @@ from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.messages import EntityValidated, GovernanceDecision
 from services.common.metrics import KAFKA_MESSAGES_FAILED, KAFKA_MESSAGES_PROCESSED
 from services.validation_consumer.config import ValidationConsumerConfig
+from prometheus_client import start_http_server
+
 from services.validation_consumer.sparql_updater import apply_update, build_update_query
 
 setup_logging("validation-consumer", level=log_level_from_env())
@@ -45,7 +48,8 @@ def handle_decision(config: ValidationConsumerConfig, payload: dict) -> Governan
     """
     decision = GovernanceDecision.model_validate(payload)
     query = build_update_query(decision, named_graph_uri(decision))
-    apply_update(config.sparql_update_endpoint, query)
+    auth = (config.sparql_update_user, config.sparql_update_password) if config.sparql_update_user else None
+    apply_update(config.sparql_update_endpoint, query, auth=auth)
     return decision
 
 
@@ -113,6 +117,10 @@ def _install_signal_handlers(stop_event: threading.Event) -> None:
 
 def main() -> None:
     config = ValidationConsumerConfig.from_env()
+    # Expose Prometheus metrics on a dedicated port (scraped by the local
+    # prometheus service, see monitoring/prometheus.yml). Only inside main()
+    # — imports must never start a server (tests stay offline).
+    start_http_server(int(os.getenv("METRICS_PORT", "9102")))
     consumer = kafka_io.make_consumer(
         config.kafka_bootstrap_servers,
         config.topic_governance_decisions,

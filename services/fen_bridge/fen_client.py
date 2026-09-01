@@ -1,4 +1,4 @@
-﻿"""HTTP client that forwards candidate batches to the external FEN API.
+"""HTTP client that forwards candidate batches to the external FEN API.
 
 Deliberately swallows delivery errors (log and continue) — this is the one
 point in the pipeline where a failure must NOT block or stall anything; a

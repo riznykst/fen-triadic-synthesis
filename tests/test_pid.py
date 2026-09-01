@@ -1,4 +1,4 @@
-﻿"""Tests for the ARK/w3id PID helpers (ADR-003)."""
+"""Tests for the ARK/w3id PID helpers (ADR-003)."""
 from __future__ import annotations
 
 import pytest

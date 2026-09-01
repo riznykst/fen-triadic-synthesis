@@ -1,4 +1,4 @@
-﻿# Self-hosted GitHub Actions runner (billing-block workaround)
+# Self-hosted GitHub Actions runner (billing-block workaround)
 
 **Purpose.** While the GitHub account's Actions jobs are blocked by the
 *"recent account payments have failed or your spending limit needs to be
@@ -102,6 +102,28 @@ Notes:
 - The Windows runner carries the labels `self-hosted`, `Windows`, `X64` —
   `runs-on: self-hosted` matches it.
 
+### 6a. CI vs. the local dev stack (same Docker daemon)
+
+The runner runs on the same machine where the developer's `docker compose
+up` stack lives. Both used to share the default compose project name
+`fen-triadic-synthesis`, so a CI `docker compose down` would tear down the
+developer's local containers (and vice versa — a running local stack would
+sabotage the CI e2e job). Since the Observability/P1 commits the `e2e` job
+sets `COMPOSE_PROJECT_NAME: fen-ci`, so:
+
+- CI containers/networks are `fen-ci-*` and never touch local ones;
+- if the local stack holds the published ports (3030/8082/8100/8101/8890/
+  9092/9090/3000), the CI "Start the stack" step fails fast with *"port is
+  already allocated"* — the local stack is left untouched;
+- to make CI pass, stop the local stack first (or run it on different ports):
+
+```powershell
+docker compose --profile virtuoso down   # from the repo directory
+```
+
+Forgetting to stop the local stack is safe (nothing gets deleted), just
+red — the error message names the conflicting port.
+
 ### 7. Revert when billing is fixed
 
 1. Restore `runs-on: ubuntu-latest` in both jobs.
@@ -146,3 +168,32 @@ install, 61 unit tests, import/RDF checks, e2e job logic. Docker Desktop
 installer is downloaded to `C:\Users\Dell latitude 5480\Downloads\DockerDesktopInstaller.exe`;
 once Docker runs, the e2e job automatically switches to the full stack
 (Kafka + Fuseki + pipeline via `scripts/smoke_test.py`) — no CI change needed.
+
+## Run history (2026-08-30)
+
+| Run | Result | Note |
+|---|---|---|
+| 08:52�08:54 UTC | success | test + e2e green (auto smoke, SHACL CI step, Loki stack up) |
+| 10:17 UTC + | running | commit 3a7f43f � community/QV voting e2e + SHACL + Loki + mobile portal |
+
+## Environment notes (2026-08-30)
+
+- **Docker Desktop file sharing is broken for D:** � the repo lives on an SD
+  card (Realtek PCIE Card Reader, exFAT, DriveType=Removable). WSL automounts
+  fixed drives only, so `/mnt/d` never exists and Docker Desktop never
+  registers D: in `/run/desktop/mnt/host` � bind mounts from D: show files
+  as empty directories (`drwxr-xr-x ... prometheus.yml`). C: mounts work.
+  Workaround: **observability configs are baked into images**
+  (`monitoring/docker/*.Dockerfile`) � no host bind mounts in the stack,
+  CI and local dev behave identically.
+- `settings-store.json` (`%APPDATA%\Docker`) was edited to add
+  `"UseGrpcFuse": false` (falls back to the plan9 file-sharing daemon).
+  Write the file WITHOUT a UTF-8 BOM � Docker's JSON parser crashes on BOM
+  (`invalid character '\u00c3\u00af'`) and the backend exits with status 2.
+- A `wsl --shutdown` + Docker Desktop restart does NOT fix the missing D:
+  share; a manual `mount -t drvfs D: /mnt/d` inside WSL works, but Docker
+  Desktop's own share table is separate and still misses D:.
+- Re-running `docker compose up -d` recreates the whole stack (fresh
+  Fuseki in-memory/TDB2 state) � expected; smoke tests tolerate it.
+- promtail healthcheck reports "starting" until its first scrape batch �
+  Loki ingestion verified by querying `/loki/api/v1/labels`.
