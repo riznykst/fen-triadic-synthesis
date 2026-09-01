@@ -28,6 +28,7 @@ def test_w3id_uri_all_kinds():
 
 def test_w3id_uri_accepts_string_ref():
     assert w3id_uri("g", "00042") == "https://w3id.org/fen/id/decision/g00042"
+    assert w3id_uri("g", "g00042") == "https://w3id.org/fen/id/decision/g00042"
 
 
 def test_w3id_uri_unknown_kind_raises():

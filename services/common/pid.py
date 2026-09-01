@@ -40,6 +40,12 @@ def default_naan() -> str:
 def _assigned_name(kind: str, seq: Union[int, str]) -> str:
     if kind not in KIND_TO_PATH:
         raise ValueError(f"unknown PID kind {kind!r}; expected one of {sorted(KIND_TO_PATH)}")
+    if isinstance(seq, str) and seq.startswith(kind):
+        try:
+            val = int(seq[len(kind):])
+            return f"{kind}{val:05d}"
+        except ValueError:
+            pass
     return f"{kind}{int(seq):05d}"
 
 
