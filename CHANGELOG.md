@@ -1,6 +1,22 @@
-# Changelog
+﻿# Changelog
 
 All notable changes are recorded here in reverse chronological order.
+## 2026-09-02 — Landing page cleanup (self-contained, honest content)
+
+- `web/index.html`: removed the **Tailwind CDN** runtime dependency - the
+  page is now fully self-contained (hand-written CSS mirrors the original
+  slate/indigo classes; zero-build principle restored).
+- Honesty fixes: prominent **"Sample data notice"** banner - every figure,
+  PID and ledger anchor on the page is explicitly labeled a static
+  illustration, not live data; the hero CTA now opens the real DAO portal.
+- **Live demo links** added (DAO portal, Triadic view, Status widget,
+  Embedding example).
+- Fixed the dead `#architecture` nav anchor by adding a real Architecture
+  section (microservice overview + links).
+- Audit: no non-English user-facing strings; rendering verified via
+  headless-Edge screenshot (slate palette 88%, indigo accents - CSS works
+  without Tailwind).
+- Tests: 111 (unchanged - static page).
 
 ## 2026-09-02 — Working protocol for all chats (self-hosted-runner.md)
 

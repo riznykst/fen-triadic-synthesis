@@ -137,7 +137,7 @@ red — the error message names the conflicting port.
 |---|---|
 | Runner | `fen-laptop` — registered, **online**, "Listening for Jobs" |
 | Service | `GitHubActionsRunner` (NSSM) — Running, Automatic, auto-restart. `svc.cmd` was removed in runner v2.3xx; NSSM is the official replacement |
-| Runner dir | `D:\FEN-GRAPHIA\actions-runner` (outside the repo) |
+| Runner dir | `C:\actions-runner` (outside the repo) |
 | Work dir | `C:\fen-runner-work` — D: is full and does not support symlinks |
 | Git fix | `.env` → `GIT_CONFIG_GLOBAL` pointing to a config with `safe.directory = *` (D: is FAT; git sees every directory as "dubious ownership") |
 | Python | system `C:\Python310` (actions/setup-python toolchains get wiped by this environment; matrix reduced to 3.10 — TEMPORARY) |
@@ -146,9 +146,9 @@ red — the error message names the conflicting port.
 Service management:
 
 ```powershell
-D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe stop GitHubActionsRunner
-D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe start GitHubActionsRunner
-D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe remove GitHubActionsRunner confirm
+C:\nssm\nssm-2.24\win64\nssm.exe stop GitHubActionsRunner
+C:\nssm\nssm-2.24\win64\nssm.exe start GitHubActionsRunner
+C:\nssm\nssm-2.24\win64\nssm.exe remove GitHubActionsRunner confirm
 ```
 
 ## Run history (2026-08-28)
@@ -230,7 +230,7 @@ parallel AI sessions plus the Google Jules bot, which opens PRs) and the owner.
 6. **Git hygiene with parallel sessions.** Always `git status -s` before
    committing and before pushing; push only from a clean tree. After any
    change run `pytest -q`, update CHANGELOG/BACKLOG, then refresh
-   `D:\FEN-GRAPHIA\FEN-SYNC.md` with `python D:\FEN-GRAPHIA\fen_sync_check.py`.
+   `C:\FEN-GRAPHIA\FEN-SYNC.md` with `python C:\FEN-GRAPHIA\fen_sync_check.py`.
 7. **Roles.**
    - **Owner:** external actions only - GitHub billing fix (hosted runners,
      step 7 revert), NAAN/N2T registration, Vercel Root Directory, ADR-006
@@ -253,9 +253,31 @@ Ops notes (learned the hard way):
   jobs queue with multi-hour durations. Check
   `gh api repos/riznykst/fen-triadic-synthesis/actions/runners` - expect
   `"status": "online"`.
-- **Diagnostics.** Listener log: `D:\FEN-GRAPHIA\actions-runner\_diag\Runner_*.log`;
+- **Diagnostics.** Listener log: `C:\actions-runner\_diag\Runner_*.log`;
   job log: `Worker_*.log`. Service control:
-  `D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe stop|start GitHubActionsRunner`.
+  `C:\nssm\nssm-2.24\win64\nssm.exe stop|start GitHubActionsRunner`.
 - **CI actions.** `actions/checkout@v5` (v4 targets deprecated Node.js 20);
   the earlier `dorny/paths-filter` was replaced by native `paths-ignore` +
   `web.yml`.
+
+## Incident log
+
+### 2026-09-02 - D: (SD card) failure and full recovery
+- The SD card hosting `D:\FEN-GRAPHIA` failed mid-session: files were wiped
+  with 0xFF garbage (repo working tree, `.vendor`, `FEN-SYNC.md`,
+  `fen_sync_check.py`, the old `actions-runner` install, nssm). The local
+  `.git` was destroyed too; only a handful of root files survived.
+- No committed work was lost: the GitHub remote was the source of truth.
+- Recovery (all on C:, NTFS):
+  - Repo: cloned to `C:\fen-triadic-synthesis` (HEAD preserved, 111 tests
+    green with the fresh venv `C:\fen-venv`).
+  - Runner: reinstalled from scratch at `C:\actions-runner` (v2.337.0),
+    registered as `fen-laptop`, NSSM service `GitHubActionsRunner`
+    (`C:\nssm\nssm-2.24\win64\nssm.exe`) running `cmd.exe /c run.cmd`, work
+    dir `C:\fen-runner-work`. A full service recreate was required: the old
+    service ImagePath still pointed at the dead `D:\...\nssm.exe`.
+  - The landing-page rewrite (uncommitted at the time) was the only file
+    that survived intact on D: and was restored into the clone.
+- **Do not write to D: until the card is replaced or reformatted.**
+  Convention files (FEN-SYNC.md, fen_sync_check.py) now live at
+  `C:\FEN-GRAPHIA\`.
