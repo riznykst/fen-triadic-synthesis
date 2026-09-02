@@ -30,7 +30,7 @@ Default API endpoints are `http://localhost:8100` (mock FEN) and
 
 ## CI scope
 
-Frontend-only pushes (touching only `web/`) run the 104 unit tests via
+Frontend-only pushes (touching only `web/`) run the 111 unit tests via
 `.github/workflows/web.yml` and never touch Docker: `ci.yml` ignores
 web-only pushes (`paths-ignore: ['web/**']`), because the CI stack cannot
 share the published host ports with a locally running dev stack and a
@@ -39,19 +39,23 @@ workflows (unit suite twice — harmless).
 
 ## Vercel deployment (static hosting)
 
-`web/package.json` is a **detection marker only** (zero-build, no dependencies): it makes Vercel list `web/` in the Root Directory picker.
-
-`vercel.json` in this directory wires everything:
+Zero-build static layer, deployed from the **repository root**: `vercel.json`
+at the repo root is the single source of truth (there is intentionally no
+`web/vercel.json`), so `vercel` can be run from the repository root.
 
 - `framework: "other"` — zero-build static output;
-- `ignoreCommand` — `git diff --quiet HEAD^ HEAD -- .` exits with 0 when the root directory (`web/`) did not change since `HEAD^`, so backend-only pushes skip the deploy entirely;
-- `rewrites` — `/` → classic portal, `/triadic` → triadic view, `/widget` →
-  widget demo, `/embed` → dataset-owner embedding example.
+- `cleanUrls: true` — extension-less pretty URLs;
+- `ignoreCommand` — `git diff --quiet HEAD^ HEAD -- web/` exits with 0 when
+  the `web/` layer did not change since `HEAD^`, so backend/docs-only pushes
+  skip the deploy entirely;
+- `rewrites` — `/` → landing (`web/index.html`), `/portal` → classic DAO
+  portal, `/triadic` → triadic view, `/widget` → widget demo, `/embed` →
+  dataset-owner embedding example (all pages live under `web/`).
 
 One-time project setup (Vercel dashboard, import
 `riznykst/fen-triadic-synthesis`):
 
-1. Framework Preset: **Other** · Root Directory: **`web`** ·
+1. Framework Preset: **Other** · Root Directory: **repository root** ·
    Build/Install commands: empty.
 2. Deploy. Every push to `main` touching `web/` auto-deploys.
 

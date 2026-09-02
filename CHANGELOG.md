@@ -2,6 +2,21 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-02 — Vercel: single deploy config at the repository root
+
+- `vercel.json` (repo root) is now the full, single source of truth for the
+  Vercel deployment — `framework: "other"`, `cleanUrls`, `ignoreCommand`
+  scoped to `web/` changes (`git diff --quiet HEAD^ HEAD -- web/`), and
+  rewrites `/` → `web/index.html` (landing), `/portal` → classic DAO portal,
+  `/triadic` → triadic view, `/widget` → widget demo, `/embed` → embedding
+  example. `web/vercel.json` removed — deploys run from the repository root.
+- Fixes the `/triadic` → `/triadic.html` 404 regression (the route now points
+  at the real `web/portal/triadic.html`) and re-exposes the classic DAO
+  portal at the clean `/portal` route.
+- `web/README.md` updated (Root Directory: repository root; 111 unit tests
+  in the CI-scope note).
+- Tests: 111 (unchanged — configuration only).
+
 ## 2026-08-31 — Widget embedding example page for dataset owners (P2)
 
 Frontend-only commit (web/):

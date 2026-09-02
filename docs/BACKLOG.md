@@ -26,6 +26,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] Bugfixes found by the new e2e modes: vote-triggered decisions lost `document_id` (consumer fell back to the annotation-named graph) — the full candidate record is now delivered; `status-api` exposes `/metrics` (target was down); observability configs baked into images (`monitoring/docker/*.Dockerfile`) because Docker Desktop cannot share files from the removable drive hosting the repo
 - [x] P1 final bundle (2026-08-31, frontend-only commit): SSE real-time in the CLASSIC portal + export buttons in the classic table — **P1 exhausted**
 - [x] P2 (2026-08-31, frontend-only commits): reputation dashboard + history in the classic view; design unification — classic portal re-themed to the triadic view's light-card style — **P2 done**
+- [x] Vercel single-source config at the repo root (2026-09-02): `vercel.json` at the root deploys from the repository root (rewrites `/`, `/portal`, `/triadic`, `/widget`, `/embed` into `web/`; `/triadic` 404 fixed); `web/vercel.json` removed
 
 ## In progress / partial
 - [~] CI Python matrix on self-hosted: 3.10 only (setup-python toolchains get wiped); full 3.10/3.11/3.12 once back on hosted runners
