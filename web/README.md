@@ -43,7 +43,9 @@ Zero-build static layer, deployed from the **repository root**: `vercel.json`
 at the repo root is the single source of truth (there is intentionally no
 `web/vercel.json`), so `vercel` can be run from the repository root.
 
-- `framework: "other"` — zero-build static output;
+- zero-build static: no `framework` preset in the config (the current Vercel
+  schema has no "other" value — plain static is the default when `framework`
+  is omitted; "Other" is chosen in the dashboard);
 - `cleanUrls: true` — extension-less pretty URLs;
 - `ignoreCommand` — `git diff --quiet HEAD^ HEAD -- web/` exits with 0 when
   the `web/` layer did not change since `HEAD^`, so backend/docs-only pushes

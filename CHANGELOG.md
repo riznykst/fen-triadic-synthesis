@@ -5,8 +5,8 @@ All notable changes are recorded here in reverse chronological order.
 ## 2026-09-02 — Vercel: single deploy config at the repository root
 
 - `vercel.json` (repo root) is now the full, single source of truth for the
-  Vercel deployment — `framework: "other"`, `cleanUrls`, `ignoreCommand`
-  scoped to `web/` changes (`git diff --quiet HEAD^ HEAD -- web/`), and
+  Vercel deployment — `cleanUrls`, `ignoreCommand` scoped to `web/` changes
+  (`git diff --quiet HEAD^ HEAD -- web/`), and
   rewrites `/` → `web/index.html` (landing), `/portal` → classic DAO portal,
   `/triadic` → triadic view, `/widget` → widget demo, `/embed` → embedding
   example. `web/vercel.json` removed — deploys run from the repository root.
