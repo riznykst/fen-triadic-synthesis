@@ -197,3 +197,65 @@ once Docker runs, the e2e job automatically switches to the full stack
   Fuseki in-memory/TDB2 state) � expected; smoke tests tolerate it.
 - promtail healthcheck reports "starting" until its first scrape batch �
   Loki ingestion verified by querying `/loki/api/v1/labels`.
+## Working protocol (all chats, 2026-09-02)
+
+Operating model agreed across the AI working chats (this repo has several
+parallel AI sessions plus the Google Jules bot, which opens PRs) and the owner.
+
+1. **Offline development loop (no Docker).** Most business logic is fully
+   mocked and covered offline: `pytest -q` (111 tests - Kafka schemas, SPARQL
+   UPDATE generator, QV logic, PID helpers, FastAPI handlers, SSE), plus
+   `python scripts/generate_schemas.py` and `python scripts/shacl_check.py`.
+   `node --check` for web-layer JS. ~90% of bugs are caught here.
+2. **E2E is automatic, not manual.** Every push to `main` runs CI on the
+   self-hosted runner; the `e2e` job boots the real stack
+   (`COMPOSE_PROJECT_NAME=fen-ci`): Kafka/Fuseki (+ optional Virtuoso profile)
+   -> `scripts/smoke_test.py` (auto/community/QV) -> Virtuoso dialect check ->
+   teardown. Prerequisite: **Docker Desktop must be running** - otherwise the
+   job skips the Docker steps by design, and a skipped e2e does NOT count as
+   validation.
+3. **Local stack vs CI.** The local dev stack must not hold the published
+   ports (3030/8082/8100/8101/8890/9092/9090/3000) when backend pushes are
+   expected: CI fails fast with "port is already allocated" by design (it
+   never tears down a local stack). Free the ports with `docker compose stop`
+   (containers and volumes are preserved).
+4. **Web-only pushes skip e2e.** `ci.yml` carries `paths-ignore: ['web/**']`;
+   `.github/workflows/web.yml` runs the unit suite for web-only pushes.
+   Mixed pushes run both workflows (the unit suite twice - harmless).
+5. **Honesty contract.** An offline-green suite is NOT "done" for backend
+   changes: a green CI run with the real e2e is required before
+   CHANGELOG/BACKLOG/FEN-SYNC claims. Test counts must be the actual `pytest`
+   number (currently 111). Never claim browser-verified or e2e-verified what
+   was only unit-tested.
+6. **Git hygiene with parallel sessions.** Always `git status -s` before
+   committing and before pushing; push only from a clean tree. After any
+   change run `pytest -q`, update CHANGELOG/BACKLOG, then refresh
+   `D:\FEN-GRAPHIA\FEN-SYNC.md` with `python D:\FEN-GRAPHIA\fen_sync_check.py`.
+7. **Roles.**
+   - **Owner:** external actions only - GitHub billing fix (hosted runners,
+     step 7 revert), NAAN/N2T registration, Vercel Root Directory, ADR-006
+     acceptance.
+   - **Working chats:** features/bugfixes offline + pytest, commits, pushes,
+     CI verification, CHANGELOG/BACKLOG upkeep.
+   - **Google Jules bot:** opens PRs - review before merging (its PID-helper
+     PR carried unrelated vercel/landing changes and introduced the `/triadic`
+     -> `/triadic.html` 404 regression).
+
+Ops notes (learned the hard way):
+
+- **Stale runner session.** If a CI run stays `queued` while the runner API
+  reports `busy` with no visible in-progress job, a stale session is stuck
+  (typically after the runner service was restarted mid-job). Do NOT restart
+  the service again: the listener retries session creation every ~30 s
+  (`_diag\Runner_*.log` shows "Session created" when it recovers); then
+  cancel the stuck run and re-run it.
+- **Runner offline.** While the machine is off or Docker Desktop is updating,
+  jobs queue with multi-hour durations. Check
+  `gh api repos/riznykst/fen-triadic-synthesis/actions/runners` - expect
+  `"status": "online"`.
+- **Diagnostics.** Listener log: `D:\FEN-GRAPHIA\actions-runner\_diag\Runner_*.log`;
+  job log: `Worker_*.log`. Service control:
+  `D:\FEN-GRAPHIA\nssm\nssm-2.24\win64\nssm.exe stop|start GitHubActionsRunner`.
+- **CI actions.** `actions/checkout@v5` (v4 targets deprecated Node.js 20);
+  the earlier `dorny/paths-filter` was replaced by native `paths-ignore` +
+  `web.yml`.

@@ -2,6 +2,18 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-02 — Working protocol for all chats (self-hosted-runner.md)
+
+- New **Working protocol (all chats)** section in
+  `docs/self-hosted-runner.md`: offline dev loop (pytest 111 + schema/SHACL
+  checks), automatic CI e2e on push (Docker must be running; a skipped e2e
+  does NOT count as validation), local-stack port discipline, web-only pushes
+  skip e2e (`paths-ignore` + `web.yml`), honesty contract, git hygiene with
+  parallel sessions, roles (owner / working chats / Google Jules bot), and
+  ops notes (stale runner-session recovery, multi-hour queueing while the
+  runner is offline, diagnostics).
+- Tests: 111 (unchanged — docs only).
+
 ## 2026-09-02 — Interface language: English-only (i18n item resolved)
 
 - The BACKLOG i18n item (RU/EN bilingual) is dropped: the product UI is
