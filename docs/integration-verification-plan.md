@@ -1,4 +1,4 @@
-﻿# Integration Verification Plan: real GRAPHIA + NAAN
+# Integration Verification Plan: real GRAPHIA + NAAN
 
 How we prove the two remaining external integration items. Everything here
 either needs the consortium (access grants) or can be done with local
@@ -44,7 +44,7 @@ ADR-003.
 - [ ] Use `SPARQL_UPDATE_USER/PASSWORD` (already plumbed) for Virtuoso auth.
 - [ ] Validate a real annotated record against `fen-shapes.ttl` — does the
       real graph's annotation pass the SHACL shapes?
-- [ ] **NOW** — run the dialect check locally against a Dockerized
+- [x] **NOW** — run the dialect check locally against a Dockerized
       Virtuoso (`openlink/virtuoso-opensource`) **before** the consortium
       step: optional compose profile `virtuoso` + a smoke that applies
       `build_update_query` and SELECTs the triples back. This is the
@@ -78,7 +78,7 @@ ADR-003.
       `curl -I https://n2t.net/ark:{NAAN}/g00001` → 303 →
       `https://w3id.org/fen/id/decision/g00001` → HTML (Accept: text/html)
       and RDF (Accept: application/ld+json).
-- [ ] **NOW** — prepare the w3id redirect rules and the N2T registration
+- [x] **NOW** — prepare the w3id redirect rules and the N2T registration
       request as a ready-to-submit artefact (no access needed to draft it);
       validate the rules syntax against the w3id.org conventions.
 
