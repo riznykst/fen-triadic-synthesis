@@ -44,7 +44,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] SSE real-time in the CLASSIC portal (`web/portal/app.js` still polls every 3 s — the triadic view already has SSE) — DONE (2026-08-31): EventSource on `/events` + 15s polling fallback while the stream is down (no lost updates on reconnect); toggle renamed "Live updates"
 - [x] Export buttons (TTL / JSON-LD / N-Triples / RO-Crate) in the classic table view (`app.js`/`index.html`) — the `/export` endpoint exists — DONE (2026-08-31): per-record export links, `target=_blank rel=noopener`
 
-> **P1 exhausted (2026-08-31).** P2 reputation dashboard — DONE (2026-08-31); design unification — DONE (2026-08-31). Flow 2 widget SSE — DONE (2026-08-31); embedding example page — DONE (2026-08-31); `challengeWindowEnd` pending ADR-006. **Next: i18n (RU/EN) of the interface.**
+> **P1 exhausted (2026-08-31).** P2 reputation dashboard — DONE (2026-08-31); design unification — DONE (2026-08-31). Flow 2 widget SSE — DONE (2026-08-31); embedding example page — DONE (2026-08-31); `challengeWindowEnd` pending ADR-006. i18n — resolved as English-only (2026-09-02). **Next: challenge window in the mock once ADR-006 is accepted (P3); UI e2e can be revisited (Node.js is available now).**
 
 **P2 — external-ish, prepared locally**
 - [ ] Register FEN NAAN + publish N2T/w3id redirects (ADR-003) — submission drafts ready in the working folder (outside the repo)
@@ -55,7 +55,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [~] Flow 2 widget: SSE real-time status + `gfen:challengeWindowEnd` (once ADR-006 lands) — SSE DONE (2026-08-31): status-api `GET /api/v1/events/{id}` (read-only, polls SPARQL, pushes only changed records, heartbeat) + widget `EventSource` with 15s polling fallback and `live="off"` opt-out. `gfen:challengeWindowEnd` deliberately NOT rendered — gated on ADR-006 acceptance (predicate "proposed, not yet applied"; only TODO hooks in `fen-status-widget.js` render + status-api `_PREDICATE_KEYS`)
 - [x] Reputation dashboard + history in the classic view (currently triadic-only) — DONE (2026-08-31): accuracy line + leaderboard + history panel in the classic portal (frontend-only; `GET /candidates` already exposes reputation/history/llm_accuracy; panel refreshes via the existing SSE `decision` event)
 - [x] Widget embedding example page for dataset owners — DONE (2026-08-31): `web/widget/embed-example.html` (dataset-portal mockup with 4 embedded badges, light/dark themes, copy-paste snippet, going-live notes) + `/embed` Vercel rewrite
-- [ ] i18n (RU/EN) of the interface
+- [x] Interface language: English-only (2026-09-02) — the RU/EN bilingual plan is dropped: the product UI stays English. Replaced the only non-English user-facing string (the Jules landing example, `web/index.html`); full `web/` audit clean (grep for non-ASCII/Cyrillic → 0 matches)
 
 **P3 — consortium/production**
 - [ ] Fix GitHub billing -> hosted runners, restore pull_request trigger + full matrix (3.10/3.11/3.12), remove the self-hosted runner (self-hosted-runner.md step 7)

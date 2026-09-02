@@ -2,6 +2,16 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-02 — Interface language: English-only (i18n item resolved)
+
+- The BACKLOG i18n item (RU/EN bilingual) is dropped: the product UI is
+  English-only by decision.
+- Replaced the only non-English user-facing string in the entire `web/`
+  layer — the Jules landing example (`web/index.html`) showed
+  `"Крымскотатарский топоним"`; it now reads `"Crimean Tatar toponym"`.
+- Audit: grep for non-ASCII/Cyrillic across `web/` → 0 matches.
+- Tests: 111 (unchanged — static page text only).
+
 ## 2026-09-02 — Vercel: single deploy config at the repository root
 
 - `vercel.json` (repo root) is now the full, single source of truth for the
