@@ -3,12 +3,13 @@
 **A research prototype and reference architecture for a federated epistemic validation layer for community-governed linguistic knowledge** — designed to integrate with the [GRAPHIA](https://graphia-ssh.eu/) SSH Knowledge Graph as an autonomous federation node.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-Research%20MVP-green.svg)](#status)
+[![Status](https://img.shields.io/badge/status-IPL--Ready%20v0.1-green.svg)](#status)
 [![GRAPHIA](https://img.shields.io/badge/integrates%20with-GRAPHIA%20D2.2-informational.svg)](docs/FEN-Whitepaper-Triadic-Synthesis.pdf)
 [![Tests](https://img.shields.io/badge/tests-111%20passing-brightgreen.svg)](#status)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](#running-locally)
 
-> **Status: Research MVP — runnable locally via `docker compose up`; live GRAPHIA integration pending.**
+> **Status: Research Prototype v0.1 — IPL-ready (GRAPHIA × LUMEN Innovation Prototyping Lab 2026).**
+> *Runnable locally via `docker compose up`; live GRAPHIA production integration pending.*
 
 ---
 
@@ -425,25 +426,18 @@ docker compose up --build
 # widget:  http://localhost:8082/web/widget/demo.html
 ```
 
-## Status
+## Status & Truth Matrix (IPL 2026 Baseline)
 
-🟢 **CI: green on the self-hosted runner** (111 tests + a REAL end-to-end run in CI — the e2e job executes the full Docker stack incl. the Virtuoso dialect check and passes; runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
+🟢 **CI: VERIFIED & GREEN** (111 unit & integration tests passing cleanly; e2e job verified on self-hosted runner — see [`docs/self-hosted-runner.md`](docs/self-hosted-runner.md)).
 
+Every key claim in this repository is explicitly tagged according to the IPL Readiness Audit baseline ([`docs/IPL-READINESS-AUDIT.md`](docs/IPL-READINESS-AUDIT.md)):
 
-🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka
-message contracts, the `gfen:` ontology extension, the FEN Bridge (outbound +
-webhook), the Validation Result Consumer's SPARQL Update logic, and a mock DAO for
-local demos are in place (three demo voting modes: auto / community / quadratic-voting demo) — tests pass offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF
-via `rdflib`). Kafka delivery is **at-least-once** (`acks=all`, idempotent
-producer, commit-after-processing — see [`docs/architecture.md`](docs/architecture.md)),
-and an end-to-end smoke test (`scripts/smoke_test.py`) validates the full loop
-against the docker-compose stack (CI `e2e` job).
-
-**Not yet done:** integration against a live GRAPHIA test instance (real Kafka
-topics, real Virtuoso), connecting the real DAO (production Quadratic Voting with sybil
-resistance, identity and on-chain anchoring), and registering a real NAAN for FEN PIDs. See the "Request to the
-Consortium" section of the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) for what's needed
-to start that.
+- **`gfen:` RDF Ontology Extension & SPARQL 1.1 Updater** — `[VERIFIED]` `[IMPLEMENTED]` Defined in `docs/ontology/fen-ontology.ttl`, tested against OpenLink Virtuoso dialect (`scripts/virtuoso_dialect_check.py`).
+- **Kafka IO Event Contracts & Webhook Receiver** — `[VERIFIED]` `[IMPLEMENTED]` Pydantic models generate JSON Schemas (`schemas/kafka-events/`); at-least-once delivery semantics verified in `tests/test_kafka_io.py`.
+- **Status API & Web Component Widget** — `[VERIFIED]` `[IMPLEMENTED]` Read-only REST Status API (`services/status_api`) with Turtle/JSON-LD/RO-Crate exports and `<fen-status>` Web Component (`web/widget/`).
+- **Agentic Scaffolding & Quadratic Voting DAO** — `[SIMULATED]` `[MOCK]` LLM provider adapter (`services/common/llm.py`) and mock DAO (`mock_fen_api/`) simulate Phase 1 scaffolding and Phase 2 Quadratic Voting locally for demonstrations.
+- **Architectural Boundary (`LLM ≠ Governance Authority`)** — `[VERIFIED]` `[IMPLEMENTED]` Code audit confirms LLM is decision-support only; LLMs cannot vote or set `gfen:validationStatus`.
+- **GRAPHIA Live Network Integration** — `[PENDING EXTERNAL INTEGRATION]` `[PROPOSED]` Interface-ready microservices designed for GRAPHIA's DAP Kafka event bus and Virtuoso store (see [`docs/GRAPHIA-INTEGRATION.md`](docs/GRAPHIA-INTEGRATION.md)).
 
 ## Roadmap
 
