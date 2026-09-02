@@ -1,3 +1,13 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "other",
+  "cleanUrls": true,
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- web/",
+  "rewrites": [
+    { "source": "/",        "destination": "/web/index.html" },
+    { "source": "/portal",  "destination": "/web/portal/index.html" },
+    { "source": "/triadic", "destination": "/web/portal/triadic.html" },
+    { "source": "/widget",  "destination": "/web/widget/demo.html" },
+    { "source": "/embed",   "destination": "/web/widget/embed-example.html" }
+  ]
 }
