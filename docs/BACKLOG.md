@@ -1,6 +1,6 @@
 # BACKLOG — full development history and remaining work
 
-Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (prioritised).
+Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-09-02 (kept current).
 
 ## Delivered
 - [x] MVP core: FEN Bridge (outbound + webhook), Validation Result Consumer, mock DAO, shared Pydantic contracts, Kafka topics, docker-compose stack
@@ -10,7 +10,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] Kafka delivery guarantees: acks=all, idempotent producer, commit-after-processing (at-least-once)
 - [x] Security: webhook Bearer auth, no secrets tracked, k8s Secret placeholder
 - [x] Observability: Prometheus /metrics (all 5 processes), JSON logs, /readyz, graceful shutdown
-- [x] CI: 104 unit tests + REAL e2e on Docker — green for consecutive runs; self-hosted runner as a Windows service (NSSM); runner paused during local demos (runs queue, no stack teardown)
+- [x] CI: 111 unit tests + REAL e2e on Docker — green for consecutive runs; self-hosted runner as a Windows service (NSSM); runner paused during local demos (runs queue, no stack teardown)
 - [x] CI e2e: Virtuoso dialect check (`scripts/virtuoso_dialect_check.py`, OpenLink Virtuoso, Digest auth, idempotency) wired into the `e2e` job
 - [x] CI e2e scope: `ci.yml` ignores web-only pushes (native `paths-ignore: ['web/**']`); `.github/workflows/web.yml` runs the unit suite for web-only pushes — frontend-only pushes skip the Docker e2e entirely and no longer fight a locally running dev stack over published host ports
 - [x] CI isolation: `COMPOSE_PROJECT_NAME=fen-ci` — the CI stack can never collide with or tear down a local dev stack on the same Docker daemon (self-hosted-runner.md §6a)
@@ -20,7 +20,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [x] QV hardening: one-vote-per-voter, reputation only for validated records, API error details (409), stored-XSS fix in the portal
 - [x] Motivation stack formalized: reputation capital + intrinsic motivation; gamification is UX-only, never core mechanics (f9356ec)
 - [x] Docs: README, architecture, user stories + infographics, whitepaper PDF, research (EN), CHANGELOG, self-hosted runner guide; README/CHANGELOG/.env.example audited against the repo state (2026-08-29)
-- [x] Repository published: riznykst/fen-triadic-synthesis (private at the owner's request; public), 72 commits
+- [x] Repository published: riznykst/fen-triadic-synthesis (private; 13 commits at publish — 2026-08-28 —, 127 by 2026-09-02)
 - [x] P1 bundle shipped (3a7f43f, CI run 33306094359 green): e2e for community/QV voting (`smoke_test.py --mode community|qv` + `docker-compose.voting.yml`), SHACL validation as a CI step (`scripts/shacl_check.py`), Loki log aggregation (promtail + Loki datasource in Grafana), mobile-first portal (index/triadic 640/641px breakpoints, 44px touch targets)
 - [x] Vercel static hosting for the zero-build web layer (`web/vercel.json`: framework `other`, `ignoreCommand` skips deploys when only backend files change, rewrites `/`, `/triadic`, `/widget`; auto-deploy on push; API base config via query params/localStorage; `web/README.md`)
 - [x] Bugfixes found by the new e2e modes: vote-triggered decisions lost `document_id` (consumer fell back to the annotation-named graph) — the full candidate record is now delivered; `status-api` exposes `/metrics` (target was down); observability configs baked into images (`monitoring/docker/*.Dockerfile`) because Docker Desktop cannot share files from the removable drive hosting the repo
@@ -63,13 +63,23 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-08-30 (priorit
 - [~] Real DAO/Quadratic Voting contract + on-chain anchoring: mock QV mode done; production contract pending (ADR-001/ADR-004)
 - [ ] Precision/recall evaluation before vs after community validation (consortium deliverable)
 - [ ] Challenge window (ADR-006, reputation-lock) in the mock — after ADR-006 is accepted
-- [ ] UI e2e test (no Node.js available in the sandbox)
+- [ ] UI e2e test (revisit — Node.js is available now, see the P1/P2 note)
 - [ ] PID resolution as a CI step (once the NAAN is registered)
 ## Known environment quirks (dev machine)
-- D: nearly full (58.5/58.6 GB) -> runner work dir lives on C:
+- D: (SD card) FAILED 2026-09-02 — repo home moved to `C:\fen-triadic-synthesis`, runner to `C:\actions-runner`, work dir `C:\fen-runner-work`, sync tooling `C:\FEN-GRAPHIA\`, venv `C:\fen-venv`; salvage copy `C:\fen-salvage` (see docs/TECH-DEBT.md "Environment note")
 - WSL bash breaks Windows paths in Actions steps -> use the powershell shell
 - actions/setup-python toolchains get wiped -> system Python on self-hosted
 - Schannel blocked inside the harness sandbox -> the runner runs as a Windows service (outside the sandbox)
+
+## Technical debt (audit 2026-09-02)
+
+Full plan with per-item details: **docs/TECH-DEBT.md** (P0–P3 checklists,
+verified-clean list, environment note). Summary:
+
+- **P0 — correctness:** outbound.py whole-consumer `commit()` vs shared `commit_offsets` (at-least-once risk); k8s manifests drift vs compose (wrong endpoints, missing SPARQL creds, `:latest`, EMPTY webhook token — fail-open); Vercel `ignoreCommand` `HEAD^` fragility.
+- **P1 — consistency:** SSE fallback drift in triadic.js (inverted onerror, no catch-up); last unescaped XSS surface (statusBadge + vote counters in app.js); URN/IRI/NAAN duplication (annotation URI ×2, predicate IRIs as literals, dead `fen_naan` ×2); JSON-schema freshness unguarded; 5 duplicated Dockerfiles + missing `.dockerignore`; Virtuoso `:latest` floating; compose healthcheck gaps (fuseki/consumers/zookeeper, status-api ping env).
+- **P2 — quality:** shared web module (escape ×3, apiBase ×4, palette ×4, badges ×3); a11y (labels/caption/scope, widget toggle semantics); dead code (poll_batch, renderGraphSvg, `_sseOk`, queue.Full pass); config hygiene (batch/group/timeouts hardcoded, substring-matched HTTP statuses); test blind spots (FenClient, delegation) + 1616 warnings + no lint config; metrics collision (kafka counters ×2 processes); docs drift (architecture /metrics table, self-hosted-runner step 7, ADR-005 numbering, counts).
+- **P3 — structural:** retire TEMPORARY self-hosted CI mode; single env source for compose + k8s; JS-level tests.
 
 ## Flow roadmap (Scaffold → Consensus → Registry) — Top-10 recommendations
 

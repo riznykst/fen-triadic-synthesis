@@ -13,7 +13,7 @@ feature surface.
 - **Keep the honesty contract:** README/CHANGELOG/BACKLOG must reflect the
   actual repo state (test counts, CI status, what is real vs. mock). Never
   claim something is verified that is not.
-- Run the full suite before pushing: `pytest -q` (104 tests, all offline).
+- Run the full suite before pushing: `pytest -q` (111 tests, all offline).
 
 ## Getting started
 

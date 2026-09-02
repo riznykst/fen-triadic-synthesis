@@ -1,6 +1,23 @@
-﻿# Changelog
+# Changelog
 
 All notable changes are recorded here in reverse chronological order.
+
+## 2026-09-02 — Technical-debt audit plan (docs/TECH-DEBT.md)
+
+- Full-repo audit (5 parallel area reviews: backend, infra/CI, web, docs/
+  ontology, tests), findings re-verified on this tree after the D:-drive
+  failure moved the repo home to `C:\fen-triadic-synthesis`.
+- New `docs/TECH-DEBT.md`: prioritized P0–P3 plan (P0: outbound commit
+  semantics, k8s env drift + empty webhook token, Vercel ignoreCommand;
+  P1: SSE-fallback drift in triadic.js, last unescaped XSS surface in
+  app.js, URN/IRI/NAAN duplication, schema-freshness guard, Dockerfile
+  duplication + .dockerignore, Virtuoso tag, compose healthchecks; P2/P3:
+  web consolidation, a11y, dead code, config hygiene, test blind spots,
+  CI-mode retirement) + verified-clean list + environment note.
+- BACKLOG: new "Technical debt" section referencing the plan; stale figures
+  fixed (104→111 tests, 72→13-at-publish commits, snapshot date, Node
+  contradiction, D:-failure note).
+
 ## 2026-09-02 — Landing page cleanup (self-contained, honest content)
 
 - `web/index.html`: removed the **Tailwind CDN** runtime dependency - the
