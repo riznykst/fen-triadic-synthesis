@@ -2,6 +2,36 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT wave 10: web consolidation into web/shared/, k8s env single source, JS tests in CI
+
+- **Web-layer consolidation (P2)**: the duplicated helpers are now ONE
+  implementation each in `web/shared/` (UMD: window + module.exports) and
+  both portal views alias them:
+  - `escape.js` — `fenEscapeHtml`/`fenJsAttr`/`fenSafeHref` (was: escapeHtml
+    in app.js, esc/jsAttr in triadic.js, escapeHtml/safeHref in the widget);
+  - `api-base.js` — `fenApiBase` (was: app.js applyApiBases vs triadic.js
+    apiBase, two divergent conventions — now one query → localStorage →
+    default rule);
+  - `theme.js` — `fenTheme.FEN_LIGHT` + status→color (was: the palette
+    duplicated in triadic.js C + OUTCOME_STYLE and portal CSS; JS callers
+    now share one map, documented to stay in sync with the CSS variables);
+  - `live.js` gained a CommonJS export (was browser-only).
+  Dead `OUTCOME_BG` removed with its definition. The Flow-2 widget keeps a
+  self-contained copy (third-party embedding) and documents mirroring.
+- **k8s env single source (P3)**: `k8s/env-shared.yaml` is now the only
+  hand-edited env map; `scripts/generate_k8s_configmap.py` renders
+  `k8s/configmap.yaml` from it; `tests/test_k8s_configmap.py` (2 tests)
+  enforces freshness (regenerate-in-memory + compare, same pattern as the
+  JSON-schema guard). Compose stays the source for listener/dev-specific
+  values; shared TOPIC_* names are asserted end to end by the CI e2e.
+- **JS-level tests (P3)**: `web/tests/` — 18 Node tests
+  (`node --test "web/tests/*.test.js"`) covering escape semantics, the
+  apiBase convention (query/localStorage/default, fake storage) and
+  fenLive behavior (fake EventSource: connect, idempotent restart, named
+  frames stop the fallback, onopen catch-up, server error frames,
+  EventSource-unavailable degradation). Wired into the CI `test` job.
+- Tests: 125 (was 123).
+
 ## 2026-09-03 — TECH-DEBT wave 9: single service Dockerfile (consolidation)
 
 - **Five near-identical Dockerfiles → ONE** (`docker/service.Dockerfile`):

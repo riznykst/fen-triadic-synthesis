@@ -1,17 +1,3 @@
-# Shared environment for the four FEN application deployments. Kafka and
-# the RDF store (Virtuoso in production, Fuseki in local dev) are EXTERNAL
-# to this deployment — see docs/architecture.md, "Kubernetes / OKD
-# deployment". Values below are placeholders; replace before deploying.
-# GENERATED from k8s/env-shared.yaml by scripts/generate_k8s_configmap.py —
-# edit the SOURCE file, then run the generator (freshness is enforced by
-# tests/test_k8s_configmap.py).
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: fen-config
-  labels:
-    app.kubernetes.io/part-of: fen-triadic-synthesis
-data:
   # --- Kafka (DAP's real broker in production) ---------------------------
   # In-cluster Kafka Service name:port. NOTE: docker-compose's container
   # listener is kafka:29092 (9092 advertises localhost for host clients) —

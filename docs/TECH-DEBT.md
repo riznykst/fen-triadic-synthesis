@@ -150,7 +150,7 @@ P3 = structural.
 
 ## P2 — quality / maintenance
 
-- [ ] **Web layer consolidation** — `escapeHtml` implemented three times
+- [x] **Web layer consolidation** — `escapeHtml` implemented three times
   under three names (`app.js`, `triadic.js` esc/jsAttr, widget); API-base
   convention implemented four divergent ways (query → localStorage → default
   vs snapshotted consts vs attribute-only vs demo param); the light palette
@@ -162,6 +162,12 @@ P3 = structural.
   Fix: one shared zero-dependency `web/shared/` module (escape, tokens CSS,
   status→color map, apiBase convention); align widget default with the light
   portal.
+  DONE 2026-09-03 (in tree, commit pending): web/shared/escape.js +
+  api-base.js + theme.js + live.js (UMD); both portal views alias them;
+  dead OUTCOME_BG removed. Widget stays self-contained by design (third-
+  party embedding) and documents mirroring; portal CSS variables documented
+  to stay in sync with theme.js; demo.html/dark-leftovers and
+  prefers-color-scheme kept as deliberate visual choices (noted, not debt).
 - [~] **Accessibility (a11y)** — form controls without `for`/`id` pairing,
   table without `<caption>`/`scope="col"` (`web/portal/index.html`,
   `triadic.html`); widget expand control is a `<div>` (not focusable, no
@@ -252,8 +258,20 @@ P3 = structural.
   web.yml back.
 - [ ] **Single env source for compose + k8s** — generate `k8s/configmap.yaml`
   from the same definitions docker-compose uses (see P0 k8s item).
-- [ ] **JS-level testing/a11y automation** — revisit once the Node
+  DONE (k8s side) 2026-09-03 (in tree, commit pending):
+  `k8s/env-shared.yaml` is the single hand-edited k8s env map;
+  `scripts/generate_k8s_configmap.py` renders configmap.yaml;
+  `tests/test_k8s_configmap.py` enforces freshness. Compose remains its own
+  source for listener/dev-specific values; the shared TOPIC_* names are
+  asserted end to end by the CI e2e — a full compose-driven generation is
+  intentionally not attempted (listener/credential values legitimately
+  differ per environment).
+- [x] **JS-level testing/a11y automation** — revisit once the Node
   availability question is settled (BACKLOG P3 "UI e2e test").
+  DONE (JS unit level) 2026-09-03 (in tree, commit pending):
+  `web/tests/` — 18 Node tests for web/shared/* (`node --test
+  "web/tests/*.test.js"`), wired into the CI `test` job. Full browser/UI
+  e2e (Playwright-style) remains a BACKLOG P3 item.
 
 ## Clean (verified during audit — not debt)
 

@@ -47,6 +47,8 @@ jobs:
           python -c "from rdflib import Graph, Dataset; g=Graph(); g.parse('docs/ontology/fen-ontology.ttl', format='turtle'); d=Dataset(); d.parse('examples/sample-validation-flow.trig', format='trig'); print('RDF OK', len(g), len(d))"
       - name: SHACL validation
         run: python scripts/shacl_check.py
+      - name: JS tests (web/shared + web/tests, node --test)
+        run: node --test "web/tests/*.test.js"
 
   # End-to-end smoke test against the real docker-compose stack: publishes an
   # EntityCandidate and waits for the full pipeline (decision -> SPARQL ->
