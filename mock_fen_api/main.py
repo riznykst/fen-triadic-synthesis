@@ -450,8 +450,8 @@ def cast_vote(annotation_id: str, payload: dict):
 
     try:
         intensity = int(payload.get("intensity", 1))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=422, detail=f"intensity must be an integer 1..{MAX_INTENSITY}")
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=f"intensity must be an integer 1..{MAX_INTENSITY}") from exc
     if not 1 <= intensity <= MAX_INTENSITY:
         raise HTTPException(status_code=422, detail=f"intensity must be 1..{MAX_INTENSITY}")
 

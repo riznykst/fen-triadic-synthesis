@@ -17,7 +17,6 @@ import logging
 import os
 import signal
 import threading
-import time
 
 from services.common import kafka_io
 from services.common.graph_uris import annotation_graph_uri, document_graph_uri

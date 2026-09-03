@@ -1,6 +1,24 @@
 # Project-level tool config (TECH-DEBT P2: no linter config existed).
 # Zero-build Python services — no build-system section on purpose (pip
 # installs from requirements-*.txt), this file only configures tooling.
+
+# --- pytest ------------------------------------------------------------
+[tool.pytest.ini_options]
+# Warning triage (TECH-DEBT P2): the 1616-warning wall was ~99% rdflib
+# INTERNAL deprecations (Dataset.default_context / .identifier /
+# ConjunctiveGraph) fired from library code when tests use Dataset/GRAPH
+# updates, plus one starlette/fastapi TestClient notice. All are upstream —
+# nothing in this repo calls the deprecated API directly (verified by grep).
+# They are suppressed HERE so regressions in OUR code stay loud; revisit on
+# the next rdflib/starlette upgrade.
+filterwarnings = [
+  "ignore:Dataset.default_context is deprecated:DeprecationWarning:rdflib",
+  "ignore:Dataset.identifier is deprecated:DeprecationWarning:rdflib",
+  "ignore:ConjunctiveGraph is deprecated:DeprecationWarning:rdflib",
+  # starlette/fastapi TestClient import-time notice (upstream httpx2 plan).
+  "ignore::DeprecationWarning:fastapi.testclient",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -21,3 +39,4 @@ ignore = [
 "services/*/main.py" = ["BLE001"]    # long-running loops must survive blips
 "services/common/kafka_io.py" = ["BLE001"]
 "services/fen_bridge/fen_client.py" = ["BLE001"]
+"scripts/fen_sync_check.py" = ["BLE001"]  # run() returns <error> instead of raising

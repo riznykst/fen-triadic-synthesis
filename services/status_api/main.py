@@ -18,7 +18,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import sys
 import time
 from pathlib import Path
@@ -244,9 +243,9 @@ def get_status(annotation_id: str):
     """
     try:
         data = _query_sparql(annotation_id)
-    except Exception:  # noqa: BLE001 - any store failure -> 503, never 500
+    except Exception as exc:  # noqa: BLE001 - any store failure -> 503, never 500
         logger.exception("SPARQL endpoint %s unreachable", _config.sparql_query_endpoint)
-        raise HTTPException(status_code=503, detail="RDF store unavailable")
+        raise HTTPException(status_code=503, detail="RDF store unavailable") from exc
 
     return _status_payload(annotation_id, data)
 
@@ -291,9 +290,9 @@ def export_annotation(annotation_id: str, format: str = "ttl"):
     """
     try:
         data = _query_sparql(annotation_id)
-    except Exception:  # noqa: BLE001 - any store failure -> 503, never 500
+    except Exception as exc:  # noqa: BLE001 - any store failure -> 503, never 500
         logger.exception("SPARQL endpoint %s unreachable", _config.sparql_query_endpoint)
-        raise HTTPException(status_code=503, detail="RDF store unavailable")
+        raise HTTPException(status_code=503, detail="RDF store unavailable") from exc
 
     if format == "crate":
         crate = _ro_crate(annotation_id, data)

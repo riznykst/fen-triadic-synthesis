@@ -19,7 +19,6 @@ import logging
 import os
 import signal
 import threading
-import time
 
 from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.metrics import KAFKA_MESSAGES_FAILED, KAFKA_MESSAGES_PROCESSED

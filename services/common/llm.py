@@ -14,10 +14,9 @@ pipeline can fall back to a deterministic rule (no blocking points).
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
-from typing import List, Optional
+from typing import Optional
 
 import requests
 
