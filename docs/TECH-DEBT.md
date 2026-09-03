@@ -15,14 +15,17 @@ P3 = structural.
 
 ## P0 — correctness / reliability
 
-- [ ] **outbound.py commits whole-consumer position** — `services/fen_bridge/outbound.py:48`
+- [x] **outbound.py commits whole-consumer position** — `services/fen_bridge/outbound.py:48`
   calls `consumer.commit()` while the rest of the pipeline uses the shared
   per-record `commit_offsets(consumer, batch)` (`services/common/kafka_io.py`).
   A change to poll caps/batch truncation could silently downgrade
   at-least-once to at-most-once.
   Fix: route outbound through `commit_offsets`; update the `_FakeConsumer`
   double in `tests/test_fen_bridge.py`.
-- [ ] **k8s manifests drift vs compose and fail open** —
+  DONE 2026-09-03 (in tree, commit pending): `commit_offsets(consumer, batch)`
+  + per-record offset+1 asserted in `tests/test_fen_bridge.py`; pytest 111
+  green.
+- [~] **k8s manifests drift vs compose and fail open** —
   `k8s/configmap.yaml` points `FEN_API_BASE_URL` at `http://fen-api:8080`
   (no such service; compose/code use `mock-fen-api:8100`), Kafka at
   `kafka:9092` (compose container listener is `29092`), no
@@ -36,17 +39,30 @@ P3 = structural.
   imagePullPolicy; add probes/metrics port to consumer deployments
   (`k8s/fen-bridge-outbound.yaml`, `k8s/validation-consumer.yaml`); align
   status-api labels (`app.kubernetes.io/name`).
-- [ ] **Stale test counts (honesty contract)** — README `104 tests` in three
+  PARTIAL 2026-09-03 (in tree, commit pending): secret.yaml now carries
+  intentionally INVALID base64 (kubectl apply refuses it — fail-closed);
+  empty SPARQL creds removed from configmap (documented
+  `kubectl create secret generic fen-sparql-credentials`); Kafka-listener
+  and FEN_API_BASE_URL comments clarified; readiness/liveness probes +
+  containerPort 9101/9102 on both consumer Deployments; stale "no HTTP
+  port" comments fixed. OPEN: single env source, pinned image tags,
+  status-api label alignment.
+- [x] **Stale test counts (honesty contract)** — README `104 tests` in three
   places (badge line 8, layout line 234, CI section line 430), plus
   CONTRIBUTING and BACKLOG delivered items; the suite is **111**.
   Fix: update all occurrences (done for README/CONTRIBUTING 2026-09-02 —
   verify BACKLOG).
-- [ ] **Vercel `ignoreCommand` fragile on shallow history** — root
+  DONE 2026-09-02: README (3×), CONTRIBUTING (2×), BACKLOG delivered item
+  — all now say 111.
+- [x] **Vercel `ignoreCommand` fragile on shallow history** — root
   `vercel.json` uses `git diff --quiet HEAD^ HEAD -- web/`; `HEAD^` fails on
   the first commit and under limited-history clones (degrades to
   always-deploy), and merge commits compare only the first parent.
   Fix: diff against `$VERCEL_GIT_PREVIOUS_SHA` with a build-on-error guard;
   document the file's actual location (repo root, not `web/`).
+  DONE 2026-09-03 (in tree, commit pending): ignoreCommand =
+  `git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- web/ 2>/dev/null || exit 1`
+  — any diff error → deploy; clean diff → skip.
 
 ## P1 — consistency
 
@@ -57,12 +73,15 @@ P3 = structural.
   drop leaves Consensus/Registry silently stale (`web/portal/triadic.js:475-476`).
   Fix: unify semantics (onerror → always fallback; onopen → stop ticker +
   reload), then extract one shared helper.
-- [ ] **Last unescaped XSS surface in the portal** — `statusBadge()`
+- [x] **Last unescaped XSS surface in the portal** — `statusBadge()`
   interpolates the server `status` value unescaped into class + text;
   vote/quorum counters are interpolated raw and `c.votes` is dereferenced
   without a guard (`web/portal/app.js:59-61,108-109`).
   Fix: enum-validate + `escapeHtml` for status; `const votes = c.votes ||
   {}` + `Number()` coercion; prefer DOM/textContent row building.
+  DONE 2026-09-03 (in tree, commit pending): `VALID_STATUSES` enum +
+  escaped class/text; `votes = c.votes || {}` + `Number()` coercion.
+  Awaiting node --check when the harness shell is stable.
 - [ ] **URN/IRI/NAAN duplication** — `_annotation_uri()` copy-pasted
   (`sparql_updater.py`, `status_api/main.py`), gfen predicate IRIs hardcoded
   as literals in `_PREDICATE_KEYS` (drift risk vs
@@ -78,7 +97,7 @@ P3 = structural.
   (`tests/test_messages.py:66` only checks well-formedness).
   Fix: test regenerating each schema in memory and asserting equality with
   the committed file (or CI diff on `scripts/generate_schemas.py`).
-- [ ] **Five near-identical Dockerfiles + no `.dockerignore`** — same
+- [~] **Five near-identical Dockerfiles + no `.dockerignore`** — same
   `FROM python:3.11.9-slim-bookworm` + pip layer repeated; each image COPYs
   the whole `services/` tree; no `.dockerignore` (context ships `.git`,
   `__pycache__`, `.pytest_cache`, a local `.env` if present);
@@ -87,12 +106,16 @@ P3 = structural.
   Fix: shared base stage + thin per-service final stages (or ARG-driven
   Dockerfile), root `.dockerignore`, single-source requirements,
   aligned pins.
+  PARTIAL 2026-09-03 (in tree, commit pending): root `.dockerignore`
+  added (.git/__pycache__/.pytest_cache/.env/docs/tests/.vendor excluded).
+  OPEN: base-stage consolidation, requirements single-sourcing, pin
+  alignment (needs image builds).
 - [ ] **Virtuoso image floating** — `openlink/virtuoso-opensource-7`
   unpinned while CI e2e boots it on every push
   (`docker-compose.yml:218`); a breaking upstream tag changes the e2e
   baseline.
   Fix: pin tag or digest in one place used by compose + dialect check.
-- [ ] **Compose healthcheck gaps** — fuseki (no healthcheck) while
+- [~] **Compose healthcheck gaps** — fuseki (no healthcheck) while
   status-api/validation-consumer `depends_on` it with `service_started`;
   outbound/validation-consumer (each serves /metrics on 9101/9102) and
   zookeeper have no healthchecks; compose status-api lacks
@@ -100,6 +123,11 @@ P3 = structural.
   Fix: add healthchecks (fuseki `/$/ping`, consumers `/metrics`, zookeeper),
   switch depends_on to `service_healthy`, set `SPARQL_PING_ENDPOINT:
   http://fuseki:3030/$/ping`, probe `/readyz` in the compose healthcheck.
+  PARTIAL 2026-09-03 (in tree, commit pending): outbound + validation-consumer
+  healthchecks on /metrics (python probe, ports 9101/9102);
+  `SPARQL_PING_ENDPOINT` set for status-api (readyz no longer degraded).
+  OPEN: fuseki/zookeeper healthchecks (need image-content check), switching
+  depends_on to `service_healthy`, probing `/readyz` in compose.
 
 ## P2 — quality / maintenance
 

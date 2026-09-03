@@ -2,6 +2,42 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT P0/P1 fixes (delivery of the 2026-09-02 audit plan)
+
+- **P0 outbound commit semantics** (`services/fen_bridge/outbound.py`,
+  `tests/test_fen_bridge.py`): whole-consumer `consumer.commit()` replaced
+  with the shared per-record `commit_offsets(consumer, batch)` (offset+1 per
+  message) — a future change to poll caps/batch truncation can no longer
+  silently downgrade at-least-once to at-most-once. Test asserts the
+  per-record offsets.
+- **P0 k8s fail-open → fail-closed** (`k8s/`): `secret.yaml` webhook token
+  is now intentionally INVALID base64 so `kubectl apply` refuses the
+  manifest until a real token is set; empty SPARQL credentials removed from
+  `configmap.yaml` (documented `kubectl create secret generic
+  fen-sparql-credentials` + secretRef hook in the consumer Deployment);
+  `fen-bridge-outbound`/`validation-consumer` gained containerPort +
+  readiness/liveness probes on their /metrics servers (9101/9102); stale
+  "no HTTP port" comments corrected; Kafka-listener and FEN_API_BASE_URL
+  (external per ADR-002) comments clarified.
+- **P0 Vercel ignoreCommand** (`vercel.json`): `HEAD^` replaced by
+  `${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}` with a build-on-error guard — the
+  skip guard no longer degrades on shallow clones/first deploys and is
+  merge-commit safe.
+- **P1 compose healthchecks + readyz** (`docker-compose.yml`):
+  `fen-bridge-outbound` and `validation-consumer` now have healthchecks
+  against their /metrics endpoints (python probe, ports 9101/9102);
+  status-api gets `SPARQL_PING_ENDPOINT` so `/readyz` stops reporting
+  "degraded" in the compose stack.
+- **P1 build hygiene**: new root `.dockerignore` (.git, bytecode, caches,
+  .env, docs/tests/examples) — Docker build contexts stop shipping junk
+  and secrets.
+- **P1 XSS hardening** (`web/portal/app.js`): the last unescaped
+  server-controlled surface — `statusBadge()` — is now enum-validated
+  (`VALID_STATUSES`) and HTML-escaped in both class and text;
+  `renderCandidates` guards `c.votes` (absent → `{}`) and coerces the
+  vote/quorum counters with `Number()` before innerHTML.
+- Tests: 111 (unchanged — one test strengthened).
+
 ## 2026-09-02 — IPL 2026 event docs (rewritten from Jules PR #6)
 
 - Added `docs/IPL-READINESS-AUDIT.md`, `docs/IPL-DEMO.md` and
