@@ -13,41 +13,27 @@ function escapeHtml(s) {
 
 const $ = (id) => document.getElementById(id);
 
-let sse = null;            // EventSource for live updates (SSE)
-let sseOk = false;         // has the stream ever opened
-let fallbackTimer = null;  // slow polling while the stream is down
-
-function stopFallback() {
-  if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; }
-}
-
-function startFallback() {
-  if (!fallbackTimer) fallbackTimer = setInterval(loadCandidates, 15000);
-}
+// Live updates via the shared SSE helper (web/shared/live.js, TECH-DEBT
+// P1): unified semantics — fallback ticker while the stream is down,
+// catch-up reload on every (re)open. The "Live updates" toggle starts and
+// stops it; manual Refresh always stays available.
+let liveUpdates = null;
 
 function stopLiveUpdates() {
-  stopFallback();
-  if (sse) { sse.close(); sse = null; }
-  sseOk = false;
+  if (liveUpdates) { liveUpdates.stop(); liveUpdates = null; }
 }
 
 function startLiveUpdates() {
   stopLiveUpdates();  // idempotent (re)connect
   const base = $("mock_base").value.replace(/\/+$/, "");
-  try {
-    sse = new EventSource(base + "/events");
-  } catch (e) {
-    startFallback();  // EventSource unavailable -> poll instead
-    return;
-  }
-  const refresh = () => { sseOk = true; stopFallback(); loadCandidates(); };
-  sse.addEventListener("vote", refresh);
-  sse.addEventListener("decision", refresh);
-  sse.addEventListener("candidates", refresh);
-  sse.onopen = () => { sseOk = true; stopFallback(); loadCandidates(); };
-  // While the stream is down (EventSource auto-reconnects) poll slowly so no
-  // update is lost; the next onopen stops the ticker and catches up.
-  sse.onerror = startFallback;
+  liveUpdates = fenLive({
+    url: base + "/events",
+    events: ["vote", "decision", "candidates"],
+    onEvent: () => loadCandidates(),
+    onOpen: () => loadCandidates(),   // catch-up after any gap
+    fallback: () => loadCandidates(), // 15s ticker while the stream is down
+  });
+  liveUpdates.start();
 }
 
 let currentFilter = "all";
@@ -233,7 +219,7 @@ function bindEvents() {
   $("submit").onclick = submitCandidate;
   $("refresh").onclick = loadCandidates;
   $("auto_toggle").onclick = function () {
-    if (sse) { stopLiveUpdates(); this.textContent = "Live updates: OFF"; }
+    if (liveUpdates) { stopLiveUpdates(); this.textContent = "Live updates: OFF"; }
     else { startLiveUpdates(); this.textContent = "Live updates: ON"; }
   };
   document.addEventListener("click", (e) => {

@@ -8,6 +8,10 @@ Plain HTML/JS/CSS, no build step. Talks to the FEN HTTP APIs (contract in
 - `portal/` — classic DAO portal (`index.html`, `app.js`) and the Triadic view
   Scaffold → Consensus → Registry (`triadic.html`, `triadic.js`, vendored
   Cytoscape in `portal/vendor/`).
+- `shared/` — `live.js` (`fenLive`): the single SSE live-updates helper
+  (EventSource + 15s polling fallback + catch-up on reopen) used by both
+  portal views; the Flow-2 widget mirrors its semantics but stays
+  self-contained for third-party embedding.
 - `widget/` — embeddable `<fen-status>` widget (Flow 2) + `demo.html` +
   `embed-example.html` (dataset-owner embedding example).
 

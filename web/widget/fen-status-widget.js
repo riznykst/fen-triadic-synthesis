@@ -103,6 +103,10 @@
     }
 
     // ------------------------------------------------------------- live (SSE)
+    // Self-contained on purpose (third-party embedding loads only this file),
+    // but mirrors the canonical shared helper web/shared/live.js semantics
+    // (TECH-DEBT P1): fallback ticker while the stream is down, catch-up
+    // reload on every (re)open.
     _startLive() {
       if (!this.live) return;
       this._stopLive();  // idempotent (re)connect

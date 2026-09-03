@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Validation Commons — Triadic view (zero-build).
  * Talks to the mock FEN API only (web/api.md): /scaffold, /candidates,
  * /candidates/{id}/vote. Generic framework framing — any dataset type.
@@ -456,24 +456,21 @@ function init() {
     renderConsensus();
   });
   // Real-time updates (SSE): instant Consensus/Registry refresh on
-  // candidates/vote/decision events; EventSource auto-reconnects, so the
-  // 3s polling is gone (recommendation #1). A slow fallback ticker covers
-  // the case where the event stream is unreachable.
-  const events = new EventSource(MOCK + "/events");
-  let sseOk = false;
-  let fallbackTimer = null;
-  const stopFallback = () => { if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; } };
-  const startFallback = () => { if (!fallbackTimer) fallbackTimer = setInterval(load, 15000); };
+  // candidates/vote/decision events. Shared helper web/shared/live.js
+  // (TECH-DEBT P1): unified semantics — fallback ticker runs while the
+  // stream is DOWN (transport error), every (re)open stops it and catches
+  // up, so a mid-session drop never leaves the views silently stale.
   const banner = (msg) => { const b = $("modeBanner"); if (b) { b.textContent = msg; b.style.display = "block"; } };
-  events.addEventListener("vote", () => { sseOk = true; stopFallback(); load(); });
-  events.addEventListener("decision", () => {
-    sseOk = true; stopFallback();
-    banner("New decision received — Registry updated in real time");
-    load();
-  });
-  events.addEventListener("candidates", () => { sseOk = true; stopFallback(); load(); });
-  events.onopen = () => { sseOk = true; stopFallback(); };
-  events.onerror = () => { if (!sseOk) startFallback(); };
+  fenLive({
+    url: MOCK + "/events",
+    events: ["vote", "decision", "candidates"],
+    onEvent: (name) => {
+      if (name === "decision") banner("New decision received — Registry updated in real time");
+      load();
+    },
+    onOpen: () => load(),
+    fallback: () => load(),
+  }).start();
   load();
 }
 
