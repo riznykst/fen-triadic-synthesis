@@ -2,6 +2,43 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT P1 wave 2-4: URI centralization, schema guard, shared SSE helper, dead-code removal, FenClient tests
+
+- **Single source for the `urn:graphia:` scheme** (new
+  `services/common/graph_uris.py`): `annotation_uri()`,
+  `document_graph_uri()`, `annotation_graph_uri()` — sparql_updater,
+  validation-consumer (`named_graph_uri`) and status-api all import it
+  instead of copy-pasting fragment strings.
+- **`_PREDICATE_KEYS`** (status-api) now derives from
+  `services/common/gfen_ontology` PROP_* constants — the hardcoded IRI
+  literals (drift hazard vs the ontology module/.ttl) are gone.
+- **Dead config removed**: unused `fen_naan` fields dropped from
+  `FenBridgeConfig` and `ValidationConsumerConfig` (PID minting reads
+  `FEN_NAAN` via `pid.default_naan()` itself).
+- **JSON-schema freshness guard** (`tests/test_messages.py`): new test
+  regenerates `model_json_schema()` in memory and asserts equality with the
+  committed `schemas/kafka-events/*.schema.json` — model drift now fails the
+  suite with a "run generate_schemas.py" hint. Tests: 112 (was 111).
+- **Shared SSE helper** (new `web/shared/live.js`, `fenLive`): one
+  EventSource + 15s-fallback + catch-up-on-reopen implementation with
+  unified semantics, now used by BOTH portal views (`app.js` via
+  `startLiveUpdates`, `triadic.js` via `fenLive(...)`); the triadic.js
+  drift is fixed (fallback now runs while the stream is down and every
+  reopen reloads — no more silently stale Consensus/Registry). The Flow-2
+  widget keeps its self-contained copy for third-party embedding but
+  documents that it mirrors the helper's semantics.
+- **Dead code removed (P2)**: values-only `poll_batch` deleted from
+  `services/common/kafka_io.py` + the fen_bridge shim + its compat test
+  (superseded by `poll_batch_with_offsets`); the orphaned mid-function
+  docstring in `webhook.py` merged into the real one; `_broadcast` no longer
+  swallows `queue.Full` silently — it logs and evicts the stale SSE
+  subscriber (was an invisible black hole for slow consumers).
+- **Test blind spot closed**: new `tests/test_fen_client.py` (4 tests) —
+  FenClient's "never raise, log and drop" contract is now verified:
+  success returns True, transient failures retry with backoff, terminal
+  failure returns False, HTTP 4xx treated as failure. Tests: 112 (net: 111
+  +1 schema guard +4 FenClient −1 poll_batch compat).
+
 ## 2026-09-03 — TECH-DEBT P0/P1 fixes (delivery of the 2026-09-02 audit plan)
 
 - **P0 outbound commit semantics** (`services/fen_bridge/outbound.py`,

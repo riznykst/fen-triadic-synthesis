@@ -66,13 +66,19 @@ P3 = structural.
 
 ## P1 — consistency
 
-- [ ] **SSE live-update logic triplicated with three behaviors** — app.js,
+- [x] **SSE live-update logic triplicated with three behaviors** — app.js,
   triadic.js and the widget each re-implement EventSource + fallback.
   triadic.js drifted: `onerror` starts the fallback only when the stream
   never opened (`if (!sseOk)`), `onopen` never catches up — a mid-session
   drop leaves Consensus/Registry silently stale (`web/portal/triadic.js:475-476`).
   Fix: unify semantics (onerror → always fallback; onopen → stop ticker +
   reload), then extract one shared helper.
+  DONE 2026-09-03 (in tree, commit pending): new `web/shared/live.js`
+  (`fenLive`) with unified semantics — fallback ticker while the stream is
+  down, catch-up reload on every (re)open, named-frame dispatch; both
+  portal views now use it (`app.js` startLiveUpdates, `triadic.js`); widget
+  keeps its self-contained copy (embeddability) but documents mirroring the
+  helper. Awaiting node --check.
 - [x] **Last unescaped XSS surface in the portal** — `statusBadge()`
   interpolates the server `status` value unescaped into class + text;
   vote/quorum counters are interpolated raw and `c.votes` is dereferenced
@@ -82,7 +88,7 @@ P3 = structural.
   DONE 2026-09-03 (in tree, commit pending): `VALID_STATUSES` enum +
   escaped class/text; `votes = c.votes || {}` + `Number()` coercion.
   Awaiting node --check when the harness shell is stable.
-- [ ] **URN/IRI/NAAN duplication** — `_annotation_uri()` copy-pasted
+- [x] **URN/IRI/NAAN duplication** — `_annotation_uri()` copy-pasted
   (`sparql_updater.py`, `status_api/main.py`), gfen predicate IRIs hardcoded
   as literals in `_PREDICATE_KEYS` (drift risk vs
   `services/common/gfen_ontology.py`), `fen_naan` declared but never read in
@@ -91,12 +97,20 @@ P3 = structural.
   `services/common/pid.py`).
   Fix: centralize annotation-URI/named-graph helpers and predicate constants
   in `services/common`; drop dead `fen_naan` fields.
-- [ ] **Kafka JSON schemas not guarded against model drift** —
+  DONE 2026-09-03 (in tree, commit pending): new
+  `services/common/graph_uris.py` (annotation_uri/document_graph_uri/
+  annotation_graph_uri) used by sparql_updater, validation-consumer
+  (`named_graph_uri`) and status-api; `_PREDICATE_KEYS` built from
+  `gfen_ontology.PROP_*`; dead `fen_naan` fields removed from both configs.
+- [x] **Kafka JSON schemas not guarded against model drift** —
   `schemas/kafka-events/*.json` are generated from the Pydantic models and
   are in sync today, but nothing enforces freshness
   (`tests/test_messages.py:66` only checks well-formedness).
   Fix: test regenerating each schema in memory and asserting equality with
   the committed file (or CI diff on `scripts/generate_schemas.py`).
+  DONE 2026-09-03 (in tree, commit pending):
+  `test_committed_kafka_schemas_match_models` in tests/test_messages.py
+  (expect suite 111 → 112).
 - [~] **Five near-identical Dockerfiles + no `.dockerignore`** — same
   `FROM python:3.11.9-slim-bookworm` + pip layer repeated; each image COPYs
   the whole `services/` tree; no `.dockerignore` (context ships `.git`,
@@ -150,13 +164,17 @@ P3 = structural.
   without aria-labels.
   Fix: label/for everywhere, caption + scope, real `<button>` semantics +
   aria in widget, aria-labels on icon buttons.
-- [ ] **Dead code** — `poll_batch` (values-only) + its shim export and test
+- [~] **Dead code** — `poll_batch` (values-only) + its shim export and test
   (superseded by `poll_batch_with_offsets`); `renderGraphSvg`, `regGraph`
   refs and the graph dispatcher + unused `OUTCOME_BG` (`triadic.js`);
   write-only `_sseOk` flags (`app.js`, widget); duplicate SSE error binding
   in the widget (server `event: error` vs transport onerror conflated);
   orphaned mid-function docstring in `webhook.py`; `_broadcast` swallows
   `queue.Full` with `pass` (events silently dropped for slow subscribers).
+  PARTIAL 2026-09-03 (in tree, commit pending): `poll_batch` deleted
+  (module + shim + compat test); webhook.py docstrings merged; `_broadcast`
+  logs + evicts full subscribers. OPEN: triadic.js renderGraphSvg/regGraph/
+  OUTCOME_BG, widget _sseOk + duplicate error binding.
 - [ ] **Config hygiene** — `batch_size=10`/`poll_timeout_ms=1000`/group id
   hardcoded in `validation_consumer/main.py` (fen_bridge equivalents are
   env-driven); SPARQL timeouts hardcoded (`timeout=10.0/5.0`) in status-api
@@ -164,13 +182,17 @@ P3 = structural.
   error prose in `delegate_vote` (`mock_fen_api/main.py:539`).
   Fix: env knobs via `from_env()`; structured error result from
   `apply_delegation`.
-- [ ] **Test blind spots** — `FenClient` (designed to swallow errors and
+- [~] **Test blind spots** — `FenClient` (designed to swallow errors and
   retry — its whole failure mode is unverified) has no unit tests;
   `delegation.py` exercised only indirectly; no linting/formatting config
   anywhere; 1616 pytest warnings un-triaged.
   Fix: FenClient unit tests (success/retry/terminal-failure), direct
   delegation tests, add ruff/flake8 config, triage warnings (rdflib
   deprecations, datetime.utcnow).
+  PARTIAL 2026-09-03 (in tree, commit pending): new `tests/test_fen_client.py`
+  (4 tests: success / transient-retry-with-backoff / terminal-failure-returns-
+  False / HTTP-4xx-as-failure). OPEN: direct delegation tests, linter config,
+  warning triage (rdflib deprecations in test_qv_scaffold/test_sparql_updater).
 - [ ] **Metrics collision** — `fen_kafka_messages_processed_total` /
   `_failed` emitted by BOTH fen-bridge-outbound and validation-consumer
   with no distinguishing labels; the Grafana dashboard plots the two series
