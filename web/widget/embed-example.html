@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dataset portal — embedding example (fen-status widget, Flow 2)</title>
+<style>
+  :root { --bg:#f7f5f0; --panel:#fdfcfa; --fg:#1c1b1f; --muted:#6b6560; --accent:#2d5a8e; --border:#e3ded2; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.55 system-ui, sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-family:Georgia,serif; font-size:22px; font-weight:400; color:var(--fg); border-bottom:1px solid var(--border); padding-bottom:10px; }
+  h2 { font-family:Georgia,serif; font-weight:400; font-size:17px; margin:28px 0 6px; }
+  .note { color:var(--muted); font-size:12px; }
+  .card { background:var(--panel); border:1.5px solid var(--accent); border-radius:14px; padding:14px 16px; margin-top:12px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .record { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:10px 0; border-bottom:1px dashed var(--border); flex-wrap:wrap; }
+  .record:last-child { border-bottom:none; }
+  .record .meta { min-width:220px; }
+  .record .id { font-family:Consolas,monospace; font-size:12px; color:var(--accent); }
+  pre { background:#0f1420; color:#dde3f0; border-radius:8px; padding:12px 14px; overflow-x:auto; font-size:12px; line-height:1.5; }
+  code { font-family:Consolas,monospace; }
+  li { margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Dataset portal <span class="note">— example page simulating a third-party site with embedded
+    <code>&lt;fen-status&gt;</code> validation badges (Flow 2)</span></h1>
+
+  <p class="note">Each badge below reads the community-validation status of one entity from the FEN
+  Status API and updates itself over SSE. This page is a mock dataset portal: replace the record
+  cards with your own content and paste the snippet from <a href="#snippet">Embed</a>.</p>
+
+  <div class="card">
+    <h2 style="margin-top:0">Records in this dataset</h2>
+
+    <div class="record">
+      <div class="meta"><div class="id">annotation_a1</div>
+      <div class="note">Sokolowizna (regional dialect term) — validated by the community</div></div>
+      <fen-status annotation-id="annotation_a1" theme="light"></fen-status>
+    </div>
+
+    <div class="record">
+      <div class="meta"><div class="id">annotation_b07</div>
+      <div class="note">Record under dispute — reviewers disagree</div></div>
+      <fen-status annotation-id="annotation_b07" theme="light"></fen-status>
+    </div>
+
+    <div class="record">
+      <div class="meta"><div class="id">annotation_c12</div>
+      <div class="note">Fresh submission — still in the consensus phase</div></div>
+      <fen-status annotation-id="annotation_c12" theme="dark"></fen-status>
+    </div>
+
+    <div class="record">
+      <div class="meta"><div class="id">annotation_x99</div>
+      <div class="note">Not (yet) validated — the honest “unknown” state the pipeline has not seen</div></div>
+      <fen-status annotation-id="annotation_x99" theme="dark"></fen-status>
+    </div>
+  </div>
+
+  <h2 id="snippet">Embed</h2>
+  <p class="note">Copy this into your dataset portal (adjust <code>annotation-id</code> and, for remote
+  deployments, <code>api-base</code>):</p>
+  <pre>&lt;script src="https://cdn.jsdelivr.net/gh/riznykst/fen-triadic-synthesis@main/web/widget/fen-status-widget.js"&gt;&lt;/script&gt;
+&lt;fen-status annotation-id="annotation_a1" api-base="http://localhost:8082"&gt;&lt;/fen-status&gt;</pre>
+
+  <h2>Going live — notes</h2>
+  <div class="card">
+    <ul>
+      <li><b>HTTPS / mixed content:</b> your page must be served over HTTPS and the Status API must be
+      reachable over HTTPS too — browsers block <code>EventSource</code> and <code>fetch</code> to plain
+      HTTP from an HTTPS page.</li>
+      <li><b>CORS:</b> the Status API sends <code>Access-Control-Allow-Origin</code> per
+      <code>FEN_CORS_ORIGINS</code> (default <code>*</code>); narrow it to your portal origin when going
+      live.</li>
+      <li><b>Read-only (ADR-001):</b> the widget never writes anything — it only reads
+      <code>GET /api/v1/status/{id}</code> and subscribes to <code>GET /api/v1/events/{id}</code> (SSE,
+      contract in <code>web/api.md</code> §4b).</li>
+      <li><b>Live updates:</b> while the stream is down the widget falls back to 15s polling; embedders
+      whose CSP blocks EventSource can set <code>live="off"</code>.</li>
+      <li><b>challengeWindowEnd:</b> the countdown is deliberately NOT rendered — gated on ADR-006
+      acceptance (see <code>web/widget/README.md</code>).</li>
+      <li><b>Local demo:</b> to see live statuses here, run the stack
+      (<code>docker compose up --build status-api</code>) and seed a couple of records; otherwise the
+      badges show the “Status API unavailable” state.</li>
+    </ul>
+  </div>
+</div>
+
+<script src="fen-status-widget.js"></script>
+</body>
+</html>
