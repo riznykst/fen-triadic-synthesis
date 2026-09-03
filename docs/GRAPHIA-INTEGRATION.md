@@ -2,7 +2,7 @@
 
 **Target Architecture:** GRAPHIA Data Acquisition Platform (DAP) & GoTriple Knowledge Graph
 **Integration Strategy:** Autonomous External Federation Overlay Node ([ADR-002](adr/ADR-002-federation-node-not-embedded.md))
-**Document Status:** «IPL-Ready Specification»
+**Document Status:** integration specification for the IPL 2026 demo preparation
 
 ---
 
@@ -32,7 +32,7 @@ FEN (Federated Epistemic Node) connects to GRAPHIA without modifying core GRAPHI
 - **SHACL Shape Validation:** SHACL shapes in `docs/ontology/fen-shapes.ttl` validated via `pyshacl` (`scripts/shacl_check.py`).
 - **Kafka IO Consumer & Producer Wrappers:** At-least-once delivery semantics (`acks=all`, idempotent producer) in `services/common/kafka_io.py`.
 - **SPARQL 1.1 Update Builder:** `services/validation_consumer/sparql_updater.py` constructs idempotent `INSERT/DELETE` queries tested against OpenLink Virtuoso syntax.
-- **Webhook Callback Handler:** `services/fen_bridge/webhook.py` validates `GovernanceDecision` HMAC/signatures and republishes decisions to Kafka.
+- **Webhook Callback Handler:** `services/fen_bridge/webhook.py` enforces Bearer-token auth (`FEN_WEBHOOK_TOKEN`) and republishes decisions to Kafka.
 - **Read-Only Status API:** `services/status_api/main.py` provides REST endpoints and exports RDF (Turtle, JSON-LD, N-Triples) and RO-Crate metadata.
 - **Embeddable Status Widget:** Zero-build `<fen-status>` Web Component (`web/widget/`) resolving entity validation badges live via the Status API.
 

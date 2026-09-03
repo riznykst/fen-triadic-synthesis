@@ -1,8 +1,8 @@
 # IPL READINESS AUDIT
 
 **Target Event:** GRAPHIA × LUMEN Innovation Prototyping Lab 2026 (14–18 September 2026)
-**Target Status:** «Research Prototype v0.1 — IPL-ready»
-**Audit Date:** May 2026
+**Target Status:** research prototype — audit baseline for the IPL 2026 demo («IPL-ready» branding not adopted)
+**Audit Date:** 2026-09-02
 **Scope:** Phase A — Audit Only (Zero Code/Doc Modifications in Baseline Core)
 
 ---
@@ -18,7 +18,7 @@
 | **Testing Confidence** | **95%** | 111 unit & integration tests passing cleanly; SHACL self-check passing; JSON schemas valid. |
 | **Documentation** | **85%** | Thorough whitepaper, architecture diagrams, and ADRs; minor overstatements on production DAO/blockchain readiness. |
 | **GRAPHIA Integration** | **40%** | Microservice interfaces (Kafka topics, SPARQL endpoints, RDF ontologies) are interface-ready, but no live connection to DAP/GoTriple KG exists yet. |
-| **Overall IPL Readiness** | **78%** | **Strong IPL Research Prototype candidate.** Ready for interactive 3-minute demonstration once minor P0 setup instructions/dependencies are frozen. |
+| **Overall IPL Readiness** | **78%** | **Strong candidate for the interactive 3-minute demonstration.** No build freeze: improvements continue until the event. |
 
 ---
 

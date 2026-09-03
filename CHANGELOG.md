@@ -2,6 +2,24 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-02 — IPL 2026 event docs (rewritten from Jules PR #6)
+
+- Added `docs/IPL-READINESS-AUDIT.md`, `docs/IPL-DEMO.md` and
+  `docs/GRAPHIA-INTEGRATION.md` for the GRAPHIA × LUMEN Innovation
+  Prototyping Lab (14–18 September 2026). Rewritten from Jules PR #6
+  (branch `jules-10485388230883290649-f9361c20`, closed) with the owner's
+  decisions applied:
+  - **«IPL-Ready v0.1» branding REJECTED** — the README status badge and
+    the Status & Truth Matrix section stay as they were (the PR's README
+    edits were not taken);
+  - **build freeze REJECTED** — `docs/IPL-BUILD-FREEZE.md` removed;
+  - factual fixes: audit date `May 2026` → `2026-09-02`; webhook auth
+    described as Bearer token (`FEN_WEBHOOK_TOKEN`), not HMAC/signatures;
+    the "pre-seeded mock candidates" claim removed (the mock starts empty;
+    the demo submits candidates live).
+- Backlog: IPL 2026 event-prep items added to `docs/BACKLOG.md`.
+- Tests: 111 (unchanged — docs only).
+
 ## 2026-09-02 — Technical-debt audit plan (docs/TECH-DEBT.md)
 
 - Full-repo audit (5 parallel area reviews: backend, infra/CI, web, docs/

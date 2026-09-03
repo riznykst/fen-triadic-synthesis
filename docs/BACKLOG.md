@@ -27,6 +27,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-09-02 (kept cu
 - [x] P1 final bundle (2026-08-31, frontend-only commit): SSE real-time in the CLASSIC portal + export buttons in the classic table — **P1 exhausted**
 - [x] P2 (2026-08-31, frontend-only commits): reputation dashboard + history in the classic view; design unification — classic portal re-themed to the triadic view's light-card style — **P2 done**
 - [x] Vercel single-source config at the repo root (2026-09-02): `vercel.json` at the root deploys from the repository root (rewrites `/`, `/portal`, `/triadic`, `/widget`, `/embed` into `web/`; `/triadic` 404 fixed); `web/vercel.json` removed
+- [x] IPL 2026 event docs (2026-09-02, rewritten from Jules PR #6): `docs/IPL-READINESS-AUDIT.md`, `docs/IPL-DEMO.md`, `docs/GRAPHIA-INTEGRATION.md` for the GRAPHIA × LUMEN Innovation Prototyping Lab (14–18 September 2026) — factual fixes applied (audit date 2026-09-02, webhook auth = Bearer not HMAC, no pre-seeding); «IPL-Ready v0.1» branding REJECTED (README unchanged); build freeze REJECTED (`IPL-BUILD-FREEZE.md` removed)
 
 ## In progress / partial
 - [~] CI Python matrix on self-hosted: 3.10 only (setup-python toolchains get wiped); full 3.10/3.11/3.12 once back on hosted runners
@@ -56,6 +57,10 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-09-02 (kept cu
 - [x] Reputation dashboard + history in the classic view (currently triadic-only) — DONE (2026-08-31): accuracy line + leaderboard + history panel in the classic portal (frontend-only; `GET /candidates` already exposes reputation/history/llm_accuracy; panel refreshes via the existing SSE `decision` event)
 - [x] Widget embedding example page for dataset owners — DONE (2026-08-31): `web/widget/embed-example.html` (dataset-portal mockup with 4 embedded badges, light/dark themes, copy-paste snippet, going-live notes) + `/embed` Vercel rewrite
 - [x] Interface language: English-only (2026-09-02) — the RU/EN bilingual plan is dropped: the product UI stays English. Replaced the only non-English user-facing string (the Jules landing example, `web/index.html`); full `web/` audit clean (grep for non-ASCII/Cyrillic → 0 matches)
+
+**IPL 2026 event prep (14–18 September; specs in `docs/IPL-*.md`)**
+- [ ] IPL demo dry-run against the local stack (walkthrough in `docs/IPL-DEMO.md`) — schedule before the event
+- [ ] Decide the IPL demo environment (local stack on the laptop vs remote backends + Vercel static UI)
 
 **P3 — consortium/production**
 - [ ] Fix GitHub billing -> hosted runners, restore pull_request trigger + full matrix (3.10/3.11/3.12), remove the self-hosted runner (self-hosted-runner.md step 7)

@@ -26,7 +26,7 @@ Virtuoso graph        ark:{NAAN}/g#####           ledger anchor
 
 ## Pre-Demo Setup (30 Seconds Before Presentation)
 
-Start the local stack with pre-seeded mock candidates and zero-build web portal:
+Start the local stack (mock candidates are submitted live during the demo) and the zero-build web portal:
 
 ```bash
 # Terminal 1: Start local infrastructure and services
