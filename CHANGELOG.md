@@ -2,6 +2,27 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT wave 7: linter green, warning triage, delegation tests
+
+- **First `ruff check` run is green** (new `[tool.ruff]` preset from wave 5):
+  five unused imports removed (`services/common/llm.py`,
+  `services/fen_bridge/outbound.py`, `services/status_api/main.py`,
+  `services/validation_consumer/main.py`), three B904 `raise ... from exc`
+  fixes (status-api 503 paths ×2, mock intensity-422), per-file BLE001
+  ignore for the sync script.
+- **Warning triage: 1616 → 1** (`[tool.pytest.ini_options] filterwarnings`):
+  the wall was ~99% rdflib-INTERNAL deprecations (Dataset
+  default_context/identifier, ConjunctiveGraph) fired from library code +
+  one starlette/fastapi TestClient notice; all upstream, none called by this
+  repo (grep-verified), suppressed with a comment to revisit on the next
+  rdflib/starlette upgrade. One documented import-time starlette warning
+  remains.
+- **Direct delegation unit tests**: new `tests/test_delegation.py` (8 tests)
+  covers every branch of `apply_delegation` (register, required names,
+  self-delegation, unknown record, decided candidate, QV-only, voted-voter,
+  re-delegation replaces) — previously only exercised through HTTP.
+- Tests: 123 (was 115).
+
 ## 2026-09-03 — TECH-DEBT wave 6: metrics series split, triadic aria-labels
 
 - **Metrics collision fixed (P2)**: `fen_kafka_messages_processed_total` /
