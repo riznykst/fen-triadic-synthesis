@@ -1,7 +1,8 @@
 # FEN web layer — zero-build static frontend
 
 Plain HTML/JS/CSS, no build step. Talks to the FEN HTTP APIs (contract in
-[`api.md`](api.md)).
+[`api.md`](api.md)). Includes the Playwright UI e2e suite (`web/e2e/`,
+wired into the CI `e2e` job) — see below.
 
 ## Contents
 
