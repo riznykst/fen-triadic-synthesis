@@ -2,6 +2,23 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT wave 9: single service Dockerfile (consolidation)
+
+- **Five near-identical Dockerfiles → ONE** (`docker/service.Dockerfile`):
+  a single `deps` stage installs the union of service requirements in one
+  pip layer (`docker/requirements-service.txt`), then thin targets
+  (`outbound`, `webhook`, `consumer`, `mock`, `status-api`) add only the
+  source trees each process needs; compose selects the target via
+  `build.target`. Removed the five old Dockerfiles and the four per-service
+  `requirements.txt` (their pins had drifted, e.g. prometheus-client
+  >=0.19 vs >=0.20 — the union now pins >=0.20 once). fastapi/uvicorn are
+  inert in the consumer images (metrics.py imports fastapi lazily);
+  rdflib/pyshacl serve mock (scaffold) + status-api (export); pytest/httpx
+  stay out of images (host-venv only).
+- Verified live: all five targets build, full stack healthy, e2e smoke
+  test PASSED (auto mode).
+- Tests: 123 (unchanged — no runtime logic touched).
+
 ## 2026-09-03 — TECH-DEBT wave 8: compose healthchecks complete, Virtuoso pinned
 
 - **Compose healthcheck gaps closed (P1)** — every service now has a

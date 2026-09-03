@@ -1,0 +1,18 @@
+# Union of every FEN service's runtime needs — the single pip layer for
+# docker/service.Dockerfile (TECH-DEBT P1 consolidation; replaces the five
+# per-service requirements.txt that drifted apart, e.g. prometheus-client
+# >=0.19 vs >=0.20).
+# - fastapi/uvicorn are inert in the consumer images (services/common/
+#   metrics.py imports fastapi lazily) — accepted so one layer serves all.
+# - rdflib/pyshacl are used by mock_fen_api (scaffold) and status_api
+#   (export) only; harmless elsewhere.
+# - pytest/httpx intentionally NOT here (test-runner deps live in
+#   requirements-common.txt for the host venv).
+pydantic>=2,<3
+fastapi>=0.110
+uvicorn>=0.29
+kafka-python>=2.0,<3  # 3.x changed the serializer API (SerializeWrapper)
+requests>=2.31
+rdflib>=7.0
+prometheus-client>=0.20
+pyshacl>=0.25

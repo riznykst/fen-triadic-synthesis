@@ -62,7 +62,8 @@ services:
   mock-fen-api:
     build:
       context: .
-      dockerfile: mock_fen_api/Dockerfile
+      dockerfile: docker/service.Dockerfile
+      target: mock
     depends_on:
       fen-bridge-webhook:
         condition: service_healthy
@@ -82,7 +83,8 @@ services:
   fen-bridge-outbound:
     build:
       context: .
-      dockerfile: services/fen_bridge/Dockerfile.outbound
+      dockerfile: docker/service.Dockerfile
+      target: outbound
     depends_on:
       kafka:
         condition: service_healthy
@@ -105,7 +107,8 @@ services:
   fen-bridge-webhook:
     build:
       context: .
-      dockerfile: services/fen_bridge/Dockerfile.webhook
+      dockerfile: docker/service.Dockerfile
+      target: webhook
     depends_on:
       kafka:
         condition: service_healthy
@@ -125,7 +128,8 @@ services:
   status-api:
     build:
       context: .
-      dockerfile: services/status_api/Dockerfile
+      dockerfile: docker/service.Dockerfile
+      target: status-api
     depends_on:
       fuseki:
         condition: service_healthy
@@ -148,7 +152,8 @@ services:
   validation-consumer:
     build:
       context: .
-      dockerfile: services/validation_consumer/Dockerfile
+      dockerfile: docker/service.Dockerfile
+      target: consumer
     depends_on:
       kafka:
         condition: service_healthy

@@ -111,7 +111,7 @@ P3 = structural.
   DONE 2026-09-03 (in tree, commit pending):
   `test_committed_kafka_schemas_match_models` in tests/test_messages.py
   (expect suite 111 → 112).
-- [~] **Five near-identical Dockerfiles + no `.dockerignore`** — same
+- [x] **Five near-identical Dockerfiles + no `.dockerignore`** — same
   `FROM python:3.11.9-slim-bookworm` + pip layer repeated; each image COPYs
   the whole `services/` tree; no `.dockerignore` (context ships `.git`,
   `__pycache__`, `.pytest_cache`, a local `.env` if present);
@@ -120,10 +120,12 @@ P3 = structural.
   Fix: shared base stage + thin per-service final stages (or ARG-driven
   Dockerfile), root `.dockerignore`, single-source requirements,
   aligned pins.
-  PARTIAL 2026-09-03 (in tree, commit pending): root `.dockerignore`
-  added (.git/__pycache__/.pytest_cache/.env/docs/tests/.vendor excluded).
-  OPEN: base-stage consolidation, requirements single-sourcing, pin
-  alignment (needs image builds).
+  DONE 2026-09-03 (in tree, commit pending): single `docker/service.Dockerfile`
+  (deps stage + 5 targets) + `docker/requirements-service.txt` (union,
+  prometheus-client >=0.20 once, no pytest/httpx); five old Dockerfiles and
+  four per-service requirements.txt deleted; compose uses build.target;
+  .dockerignore already present (wave 1). Verified: builds + full stack
+  healthy + smoke auto PASSED.
 - [x] **Virtuoso image floating** — `openlink/virtuoso-opensource-7`
   unpinned while CI e2e boots it on every push
   (`docker-compose.yml:218`); a breaking upstream tag changes the e2e
