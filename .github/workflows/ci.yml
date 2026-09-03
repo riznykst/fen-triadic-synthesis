@@ -109,6 +109,17 @@ jobs:
       - name: Run Virtuoso dialect check
         if: steps.docker.outputs.available == 'true'
         run: python scripts/virtuoso_dialect_check.py
+      - name: Run UI e2e (Playwright, zero-build portal views)
+        if: steps.docker.outputs.available == 'true'
+        shell: powershell
+        run: |
+          # The voting steps above left the mock in qv mode; UI e2e expects
+          # the default auto mode (submit -> simulated DAO decides).
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml up -d mock-fen-api
+          cd web
+          npm install --no-save @playwright/test
+          npx playwright install chromium
+          npx playwright test
       - name: Tear down the stack
         if: always() && steps.docker.outputs.available == 'true'
         run: docker compose --profile virtuoso down

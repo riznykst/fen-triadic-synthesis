@@ -2,6 +2,22 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — BACKLOG P3: UI e2e test (Playwright) shipped
+
+- **UI e2e (BACKLOG item closed)**: `web/e2e/ui.spec.js` + `playwright.config.js`
+  run against the LIVE stack (status-api serves /web, mock DAO on :8100):
+  portal loads without page/console errors, submit → SSE flip to
+  `validated`, triadic view + scaffold run produce steps, Flow-2 widget demo
+  renders its three badges. Playwright pinned as a web devDependency
+  (`@playwright/test ^1.62.1`), chromium installed on first run, CI e2e job
+  runs it after the smoke tests (mock returned to auto mode first —
+  the voting steps leave it in qv).
+- Fixed en route: the portal script tags pointed at `shared/*.js`
+  (relative — 404 from `/web/portal/`); they now use the absolute
+  `/web/shared/*` paths (works under status-api AND the Vercel rewrites).
+- `.gitignore`: `node_modules/`, `test-results/`, `playwright-report/`.
+- Tests: 125 pytest + 18 Node + 5 Playwright UI.
+
 ## 2026-09-03 — TECH-DEBT: dead renderGraphSvg removed (frontend-only)
 
 - `web/portal/triadic.js`: the SVG fallback renderer `renderGraphSvg` and

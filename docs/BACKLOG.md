@@ -68,7 +68,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-09-02 (kept cu
 - [~] Real DAO/Quadratic Voting contract + on-chain anchoring: mock QV mode done; production contract pending (ADR-001/ADR-004)
 - [ ] Precision/recall evaluation before vs after community validation (consortium deliverable)
 - [ ] Challenge window (ADR-006, reputation-lock) in the mock — after ADR-006 is accepted
-- [ ] UI e2e test (revisit — Node.js is available now, see the P1/P2 note)
+- [x] UI e2e test — DONE (2026-09-03): Playwright suite `web/e2e/ui.spec.js` (portal load/no-JS-errors, submit → SSE validated flip, triadic scaffold, widget demo) against the live stack; wired into the CI `e2e` job; `@playwright/test` pinned as web devDependency
 - [ ] PID resolution as a CI step (once the NAAN is registered)
 ## Known environment quirks (dev machine — maintainer ops)
 - D: (SD card) FAILED 2026-09-02 — repo home moved to `C:\fen-triadic-synthesis`, runner to `C:\actions-runner`, work dir `C:\fen-runner-work`, sync tooling `C:\FEN-GRAPHIA\`, venv `C:\fen-venv`; salvage copy `C:\fen-salvage` (see docs/TECH-DEBT.md "Environment note")
