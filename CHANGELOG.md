@@ -2,6 +2,25 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — Vercel 404 fixed: cleanUrls broke rewrites; embed page restored
+
+- **Root cause of the long-standing 404 on "/"** (and /portal, /triadic,
+  /widget, /embed): `"cleanUrls": true` in the root `vercel.json` compiled
+  the rewrites to NO routes (deployment `routes: null`) — isolated proof:
+  the identical rewrites work without cleanUrls and fail with it. Removed
+  (`7f5b6ce`). Pretty URLs come from the rewrites themselves, so cleanUrls
+  added nothing.
+- **`web/widget/embed-example.html` restored** (`bfc152c`): the file was
+  committed EMPTY (0 bytes) in 297434f while BACKLOG/CHANGELOG claimed a
+  full "dataset-portal mockup" page — honesty-contract violation found
+  while probing /embed. Recreated per the promised spec: 4 embedded
+  fen-status badges (light/dark incl. the honest unknown state),
+  copy-paste embed snippet, going-live notes.
+- Verified live on the production deployment (vercel curl, protection
+  bypass): `/` landing, `/portal`, `/triadic`, `/widget`, `/embed` all 200.
+- Tests: 125 (unchanged) — config + static page only.
+
+
 ## 2026-09-03 — BACKLOG P3: UI e2e test (Playwright) shipped
 
 - **UI e2e (BACKLOG item closed)**: `web/e2e/ui.spec.js` + `playwright.config.js`
