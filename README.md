@@ -6,7 +6,7 @@
 [![Status](https://img.shields.io/badge/status-Research%20MVP-green.svg)](#status)
 [![GRAPHIA](https://img.shields.io/badge/integrates%20with-GRAPHIA%20D2.2-informational.svg)](docs/FEN-Whitepaper-Triadic-Synthesis.pdf)
 [![Tests](https://img.shields.io/badge/tests-111%20passing-brightgreen.svg)](#status)
-[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](#running-locally)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](#status)
 
 > **Status: Research MVP — runnable locally via `docker compose up`; live GRAPHIA integration pending.**
 
@@ -178,7 +178,7 @@ fen-triadic-synthesis/
 ├── CITATION.cff                     machine-readable citation metadata (research artifact)
 ├── SECURITY.md                      vulnerability reporting + current security posture
 ├── CONTRIBUTING.md                  how to contribute (roadmap + honesty contract)
-├── AGENT_PLAN.md                    step-by-step build plan for an AI coding agent
+├── CODE_OF_CONDUCT.md               community standards (Contributor Covenant 2.1)
 ├── LICENSE                          Apache 2.0
 ├── docker-compose.yml                full local dev stack (Kafka, Fuseki, all services; optional Virtuoso profile)
 ├── .env.example                      every configurable env var, with local-dev defaults
@@ -238,7 +238,7 @@ monitoring/                        Prometheus scrape config + Grafana provisioni
 ```
 
 Everything under `services/`, `mock_fen_api/`, `tests/`, and `scripts/` is implemented and
-tested — see [`AGENT_PLAN.md`](AGENT_PLAN.md) for the phase-by-phase build log and
+tested — see [`docs/AGENT_PLAN.md`](docs/AGENT_PLAN.md) for the phase-by-phase build log and
 `docker-compose.yml` to run it end to end.
 
 ## Key design decisions
@@ -429,6 +429,8 @@ docker compose up --build
 
 🟢 **CI: green on the self-hosted runner** (111 tests + a REAL end-to-end run in CI — the e2e job executes the full Docker stack incl. the Virtuoso dialect check and passes; runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
 
+- 🟡 **Python matrix temporarily 3.10 in CI** (self-hosted runner; the code supports 3.11/3.12 - the full matrix returns with hosted runners, see [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
+
 
 🟢 **MVP implemented, unit-tested, runnable via `docker compose up`.** All Kafka
 message contracts, the `gfen:` ontology extension, the FEN Bridge (outbound +
@@ -488,3 +490,5 @@ Apache 2.0 — see [`LICENSE`](LICENSE). Chosen for compatibility with GRAPHIA's
 ## Contact
 
 Vadym Riznyk — Independent Researcher — [riznykv@gmx.de](mailto:riznykv@gmx.de)
+
+Contributions follow the [Code of Conduct](CODE_OF_CONDUCT.md).

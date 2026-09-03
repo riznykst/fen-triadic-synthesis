@@ -1,5 +1,7 @@
 # Self-hosted GitHub Actions runner (billing-block workaround)
 
+> **Maintainer ops documentation** - machine-specific paths and run history; not part of the research artifact.
+
 **Purpose.** While the GitHub account's Actions jobs are blocked by the
 *"recent account payments have failed or your spending limit needs to be
 increased"* billing flag, a **self-hosted runner** lets CI (unit tests + the

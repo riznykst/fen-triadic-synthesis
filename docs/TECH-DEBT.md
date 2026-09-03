@@ -1,5 +1,7 @@
 # Technical Debt Plan — audit 2026-09-02
 
+> **Internal maintainer audit notes**; not part of the research artifact.
+
 _Status: plan approved for execution; items below are the backlog of
 maintenance work identified by the full-repo audit (5 parallel area reviews:
 backend, infra/CI, web layer, docs/ontology, tests). Verified against HEAD
