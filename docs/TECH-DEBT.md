@@ -7,7 +7,9 @@ maintenance work identified by the full-repo audit (5 parallel area reviews:
 backend, infra/CI, web layer, docs/ontology, tests). Verified against HEAD
 `d689ccd` (127 commits, 111 tests, CI green). Backend/infra/web findings were
 re-verified on this tree after the D:-drive failure forced the repo home to
-`C:\fen-triadic-synthesis`._
+`C:\fen-triadic-synthesis`. **Suite now: 125 pytest + 18 Node + 5 Playwright
+UI e2e (post-wave, 2026-09-03); historical "111/115" notes below describe
+the state at each wave's time.**_
 
 Legend: `[ ]` open · `[~]` partial · `[x]` done. Priorities:
 P0 = correctness/reliability · P1 = consistency · P2 = quality/maintenance ·

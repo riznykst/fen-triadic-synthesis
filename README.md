@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-Research%20MVP-green.svg)](#status)
 [![GRAPHIA](https://img.shields.io/badge/integrates%20with-GRAPHIA%20D2.2-informational.svg)](docs/FEN-Whitepaper-Triadic-Synthesis.pdf)
-[![Tests](https://img.shields.io/badge/tests-111%20passing-brightgreen.svg)](#status)
+[![Tests](https://img.shields.io/badge/tests-125%20pytest%20%2B%2018%20Node%20%2B%205%20UI-brightgreen.svg)](#status)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](#status)
 
 > **Status: Research MVP — runnable locally via `docker compose up`; live GRAPHIA integration pending.**
@@ -231,7 +231,7 @@ fen-triadic-synthesis/
 │   └── api.md                        REST contract (shared with the real FEN backend)
 ├── k8s/                              Kubernetes/OKD manifests: 4 Deployments + ConfigMap + Secret
 monitoring/                        Prometheus scrape config + Grafana provisioning (fen-overview dashboard)
-├── tests/                            111 tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF)
+├── tests/                            125 pytest tests, all offline (mocked Kafka/HTTP/LLM/SPARQL, in-memory RDF); plus 18 Node tests for web/shared (web/tests) and 5 Playwright UI e2e (web/e2e)
 └── examples/
     ├── sample-validation-flow.trig   RDF before/after a validation cycle (TriG, parser-checked)
     └── pid-redirects.tsv             N2T → w3id redirect configuration (ADR-003)
@@ -427,7 +427,7 @@ docker compose up --build
 
 ## Status
 
-🟢 **CI: green on the self-hosted runner** (111 tests + a REAL end-to-end run in CI — the e2e job executes the full Docker stack incl. the Virtuoso dialect check and passes; runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
+🟢 **CI: green on the self-hosted runner** (125 pytest + 18 Node tests + 5 Playwright UI e2e, plus a REAL end-to-end run in CI — the e2e job executes the full Docker stack incl. the Virtuoso dialect check and passes; runs are recorded in [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
 
 - 🟡 **Python matrix temporarily 3.10 in CI** (self-hosted runner; the code supports 3.11/3.12 - the full matrix returns with hosted runners, see [docs/self-hosted-runner.md](docs/self-hosted-runner.md)).
 

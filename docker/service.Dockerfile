@@ -28,6 +28,11 @@ CMD ["python", "-m", "services.validation_consumer.main"]
 FROM deps AS mock
 COPY mock_fen_api /app/mock_fen_api
 COPY services /app/services
+# scaffold.py SHACL-validates against fen-shapes.ttl at
+# /app/docs/ontology/fen-shapes.ttl (Path(__file__).parents[1]) — the shapes
+# must exist in the image or the SHACL gate silently degrades to
+# {valid: None} (review finding 2026-09-03).
+COPY docs/ontology /app/docs/ontology
 EXPOSE 8100
 CMD ["uvicorn", "mock_fen_api.main:app", "--host", "0.0.0.0", "--port", "8100"]
 

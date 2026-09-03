@@ -2,7 +2,7 @@
 
 **Target Event:** GRAPHIA × LUMEN Innovation Prototyping Lab 2026 (14–18 September 2026)
 **Target Status:** research prototype — audit baseline for the IPL 2026 demo («IPL-ready» branding not adopted)
-**Audit Date:** 2026-09-02
+**Audit Date:** 2026-09-02 (baseline) · **updated 2026-09-03** — reflects the post-audit state after the TECH-DEBT waves (Kafka per-record commit, shared web helpers, JS/UI e2e, consolidated Dockerfiles, healthchecks, k8s probes): suite 125 pytest + 18 Node + 5 Playwright UI e2e
 **Scope:** Phase A — Audit Only (Zero Code/Doc Modifications in Baseline Core)
 
 ---
@@ -15,7 +15,7 @@
 | **Implementation** | **70%** | Full local mock pipeline implemented (FastAPI, pydantic v2, Kafka IO, SPARQL Update builder, RDF/RO-Crate exporters). |
 | **Critical Path** | **85%** | Complete local flow works end-to-end (Human contribution → Scaffolding → Claim → Mock DAO → Webhook → SPARQL Update → RDF Registry). |
 | **Demo Readiness** | **80%** | Highly capable zero-build UI (`web/portal/triadic.html` + `<fen-status>` widget) showing live QV, delegation, SSE, and exports. |
-| **Testing Confidence** | **95%** | 111 unit & integration tests passing cleanly; SHACL self-check passing; JSON schemas valid. |
+| **Testing Confidence** | **95%** | 125 unit & integration tests passing cleanly (18 Node + 5 Playwright UI e2e on top); SHACL self-check passing; JSON schemas valid. |
 | **Documentation** | **85%** | Thorough whitepaper, architecture diagrams, and ADRs; minor overstatements on production DAO/blockchain readiness. |
 | **GRAPHIA Integration** | **40%** | Microservice interfaces (Kafka topics, SPARQL endpoints, RDF ontologies) are interface-ready, but no live connection to DAP/GoTriple KG exists yet. |
 | **Overall IPL Readiness** | **78%** | **Strong candidate for the interactive 3-minute demonstration.** No build freeze: improvements continue until the event. |
@@ -48,7 +48,7 @@
 
 ## Repository Execution Results (A3)
 
-- **pytest Test Suite:** 111 passed, 0 failed (3.07s). Coverage includes PID generation, SPARQL updates, Kafka IO, LLM provider fallback, status API exports, SSE streams, and QV voting logic.
+- **pytest Test Suite:** 125 passed, 0 failed. Coverage includes PID generation, SPARQL updates, Kafka IO, LLM provider fallback, status API exports, SSE streams, and QV voting logic. Node: 18 passed (`web/tests`). Playwright UI e2e: 5 tests against the live stack (`web/e2e`).
 - **SHACL Shapes Self-Check (`scripts/shacl_check.py`):** PASSED. Valid sample conforms; invalid sample correctly rejected with 9 violation messages.
 - **JSON Schemas Check (`scripts/generate_schemas.py --check`):** PASSED. Pydantic models in `services/common/messages.py` strictly match JSON Schemas under `schemas/kafka-events/`.
 - **Environment Limitation:** Running `docker compose up --build` inside the current AI sandbox container fails due to docker-in-docker `overlayfs` permissions when extracting the Fuseki base image layer. In a standard host environment (Ubuntu/Debian/macOS with standard Docker daemon), `docker compose up` executes fully as verified by CI logs in `docs/self-hosted-runner.md`.
@@ -106,7 +106,7 @@ RDF registry
 ## Documentation Truth Audit (A7)
 
 - **VERIFIED / IMPLEMENTED:**
-  - 111 unit tests passing offline.
+  - 125 unit tests passing offline (18 Node + 5 Playwright UI e2e on top).
   - Full Kafka + SPARQL Update + Status API + Zero-build UI pipeline.
   - ARK / w3id PID scheme formatting (`services/common/pid.py`).
   - SHACL shapes validation (`docs/ontology/fen-shapes.ttl`).

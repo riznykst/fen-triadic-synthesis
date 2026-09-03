@@ -13,7 +13,8 @@ feature surface.
 - **Keep the honesty contract:** README/CHANGELOG/BACKLOG must reflect the
   actual repo state (test counts, CI status, what is real vs. mock). Never
   claim something is verified that is not.
-- Run the full suite before pushing: `pytest -q` (111 tests, all offline).
+- Run the full suite before pushing: `pytest -q` (125 tests, all offline) +
+  `node --test "web/tests/*.test.js"` (18 tests).
 
 ## Getting started
 
@@ -39,7 +40,7 @@ compatibility.
 | `services/common/` | shared contracts, PID helpers, Kafka IO, metrics, logging |
 | `docs/adr/` | architecture decision records (read before changing behavior) |
 | `web/` | zero-build web interface (portal + widget) |
-| `tests/` | 104 offline tests |
+| `tests/` | 125 offline pytest tests (web: 18 Node + 5 Playwright UI e2e) |
 
 ## How to contribute
 
