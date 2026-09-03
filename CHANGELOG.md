@@ -2,6 +2,17 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT: dead renderGraphSvg removed (frontend-only)
+
+- `web/portal/triadic.js`: the SVG fallback renderer `renderGraphSvg` and
+  the legacy `regGraph` container refs are deleted — `vendor/cytoscape.min.js`
+  is always loaded by `triadic.html`, so the fallback branch was
+  unreachable. `renderGraph()` is now a thin wrapper over `renderGraphCy()`
+  (which already handles the empty state and a missing cytoscape). Net
+  −52/+10 lines; node --check clean; JS tests 18/18; pytest 125.
+- Tests: 125 (unchanged — dead-code removal).
+
+
 ## 2026-09-03 — TECH-DEBT wave 10: web consolidation into web/shared/, k8s env single source, JS tests in CI
 
 - **Web-layer consolidation (P2)**: the duplicated helpers are now ONE
