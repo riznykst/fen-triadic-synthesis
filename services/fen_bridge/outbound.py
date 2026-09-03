@@ -51,10 +51,10 @@ def run(config: FenBridgeConfig, client: FenClient, consumer) -> None:
         # forwarded (that would silently downgrade at-least-once to
         # at-most-once). Same contract as validation-consumer (TECH-DEBT P0).
         commit_offsets(consumer, batch)
-        KAFKA_MESSAGES_PROCESSED.inc(len(batch))
+        KAFKA_MESSAGES_PROCESSED.labels(process=config.consumer_group_id).inc(len(batch))
         logger.info("committed %d message(s) after successful forward", len(batch))
     else:
-        KAFKA_MESSAGES_FAILED.inc(len(batch))
+        KAFKA_MESSAGES_FAILED.labels(process=config.consumer_group_id).inc(len(batch))
         logger.warning(
             "FEN API did not accept the batch (%d message(s)); offsets NOT committed — "
             "the batch will be redelivered (at-least-once)",

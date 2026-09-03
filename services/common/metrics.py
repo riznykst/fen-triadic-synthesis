@@ -1,4 +1,4 @@
-﻿"""Prometheus metrics shared by the FEN services.
+"""Prometheus metrics shared by the FEN services.
 
 Every HTTP service exposes ``GET /metrics`` in the Prometheus text exposition
 format (``prometheus_client.generate_latest``). The consumer processes
@@ -52,13 +52,19 @@ MOCK_DELIVERY_SECONDS = Histogram(
 )
 
 # ---- Kafka consumers (metrics served on METRICS_PORT) ---------------------
+# Both consumer processes (fen-bridge-outbound, validation-consumer) emit
+# these names, so the series MUST carry a `process` label — otherwise the
+# Grafana dashboard plots two colliding series under one legend
+# (TECH-DEBT P2). The value is the consumer group id at inc() time.
 KAFKA_MESSAGES_PROCESSED = Counter(
     "fen_kafka_messages_processed_total",
     "Kafka messages fully processed and committed by the consumer processes",
+    ["process"],
 )
 KAFKA_MESSAGES_FAILED = Counter(
     "fen_kafka_messages_failed_total",
     "Kafka messages that failed processing and were left uncommitted (redelivered)",
+    ["process"],
 )
 
 

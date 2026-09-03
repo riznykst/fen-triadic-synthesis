@@ -91,7 +91,7 @@ def process_cycle(config: ValidationConsumerConfig, consumer, producer) -> None:
         try:
             handle_message(config, producer, record.value)
         except Exception:  # noqa: BLE001 - loud failure, no commit (at-least-once)
-            KAFKA_MESSAGES_FAILED.inc()
+            KAFKA_MESSAGES_FAILED.labels(process=config.consumer_group_id).inc()
             logger.exception(
                 "failed to process message topic=%s partition=%d offset=%d; "
                 "offset NOT committed — will be redelivered (at-least-once)",
@@ -100,7 +100,7 @@ def process_cycle(config: ValidationConsumerConfig, consumer, producer) -> None:
                 record.offset,
             )
             return
-        KAFKA_MESSAGES_PROCESSED.inc()
+        KAFKA_MESSAGES_PROCESSED.labels(process=config.consumer_group_id).inc()
         kafka_io.commit_offsets(consumer, [record])
 
 
