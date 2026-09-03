@@ -1,4 +1,4 @@
-﻿# ADR-005: Participation model and DAO applicability threshold
+# ADR-005: Participation model and DAO applicability threshold
 
 **Status:** accepted
 **Date:** 2026 (post-MVP formalization, whitepaper iteration input)
@@ -44,12 +44,12 @@ questions were not answered explicitly:
 4. **Real-time decisions are out of scope.** The pipeline is asynchronous
    batch enrichment only; nothing in this repo targets single decisions in
    real time.
-
-6. **Motivation stack: reputation as capital + intrinsic incentives;
+5. **Motivation stack: reputation as capital + intrinsic incentives;
    gamification is an optional UX layer, never a governance input.**
-   - Reputation is *capital with risk*: earned (validated rewards), lost
-     (ADR-006 challenge penalties), locked (ADR-006 challenge window) —
-     the QV cost curve (i²) is capture-resistance, not engagement bait.
+   - Reputation is *capital with risk*: earned (validated rewards), and —
+     IF ADR-006 is accepted — lost (challenge penalties) and locked
+     (challenge window); the QV cost curve (i²) is capture-resistance, not
+     engagement bait.
    - Intrinsic incentives: citable attribution (`triple:Profile`),
      cultural stewardship (CARE), portability across the federation.
    - Gamification (badges, streaks, quests, leaderboards) MAY be added as

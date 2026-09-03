@@ -2,6 +2,37 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT wave 5: docs drift fixed, a11y, config hygiene, lint config
+
+- **Docs drift fixed** (`docs/architecture.md`, `docs/self-hosted-runner.md`,
+  `docs/adr/ADR-005-*`): observability table now matches code — outbound and
+  validation-consumer expose /metrics on METRICS_PORT 9101/9102 (they always
+  did), status-api added to the table, readiness prose updated (probes use
+  /readyz for HTTP services and /metrics for consumers); k8s section lists
+  the FOUR deployments incl. status-api and documents the fail-closed Secret
+  (invalid base64) + fen-sparql-credentials; "the four ADRs" → ADR-001..006;
+  duplicated sentence fragment removed; self-hosted-runner step 5 describes
+  the actual self-hosted state, step 7 is the FULL revert list (shell
+  idioms, matrix + setup-python, web.yml merge); test counts 111→115;
+  corrupted 0xFF characters in run-history sections replaced; ADR-005
+  decision list renumbered 1..5 (was 1-4,6) and ADR-006 references softened
+  to "IF accepted".
+- **a11y (P2)** (`web/portal/index.html`, `triadic.html`,
+  `fen-status-widget.js`): all labels paired with `for`/`id`; candidates
+  table gained a `<caption>` and `scope="col"` headers; the widget's
+  expand control is a real `<button type="button">` with `aria-expanded`
+  and focus-visible styling (was a clickable `<div>` — unreachable for
+  keyboard users), and "retry" is a button, not an `<a href="#">`.
+- **Config hygiene (P2)**: `ValidationConsumerConfig` gained env-driven
+  `FEN_CONSUMER_GROUP_ID` / `FEN_CONSUMER_BATCH_SIZE` /
+  `FEN_CONSUMER_POLL_TIMEOUT_MS` (batch/group were hardcoded in main.py,
+  unlike FenBridgeConfig); `StatusApiConfig` gained `SPARQL_TIMEOUT_S` /
+  `SPARQL_PING_TIMEOUT_S` (timeouts were hardcoded literals).
+- **Lint config (P2)**: new `pyproject.toml` with a conservative `[tool.ruff]`
+  preset (F/E9/B/BLE, per-file ignores for deliberate broad handlers) — no
+  linter config existed anywhere.
+- Tests: 115 (unchanged — no test-affecting logic changes).
+
 ## 2026-09-03 — TECH-DEBT P1 wave 2-4: URI centralization, schema guard, shared SSE helper, dead-code removal, FenClient tests
 
 - **Single source for the `urn:graphia:` scheme** (new

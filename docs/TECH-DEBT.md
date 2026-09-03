@@ -157,13 +157,17 @@ P3 = structural.
   Fix: one shared zero-dependency `web/shared/` module (escape, tokens CSS,
   status→color map, apiBase convention); align widget default with the light
   portal.
-- [ ] **Accessibility (a11y)** — form controls without `for`/`id` pairing,
+- [~] **Accessibility (a11y)** — form controls without `for`/`id` pairing,
   table without `<caption>`/`scope="col"` (`web/portal/index.html`,
   `triadic.html`); widget expand control is a `<div>` (not focusable, no
   role/aria-expanded/keydown); triadic ± / delegate buttons are symbol-only
   without aria-labels.
   Fix: label/for everywhere, caption + scope, real `<button>` semantics +
   aria in widget, aria-labels on icon buttons.
+  PARTIAL 2026-09-03 (in tree, commit pending): labels paired with for/id in
+  both portal pages; table caption + scope="col"; widget expand control is a
+  real button with aria-expanded + focus-visible, "retry" is a button.
+  OPEN: aria-labels on the triadic ± / delegate symbol buttons.
 - [~] **Dead code** — `poll_batch` (values-only) + its shim export and test
   (superseded by `poll_batch_with_offsets`); `renderGraphSvg`, `regGraph`
   refs and the graph dispatcher + unused `OUTCOME_BG` (`triadic.js`);
@@ -175,13 +179,17 @@ P3 = structural.
   (module + shim + compat test); webhook.py docstrings merged; `_broadcast`
   logs + evicts full subscribers. OPEN: triadic.js renderGraphSvg/regGraph/
   OUTCOME_BG, widget _sseOk + duplicate error binding.
-- [ ] **Config hygiene** — `batch_size=10`/`poll_timeout_ms=1000`/group id
+- [~] **Config hygiene** — `batch_size=10`/`poll_timeout_ms=1000`/group id
   hardcoded in `validation_consumer/main.py` (fen_bridge equivalents are
   env-driven); SPARQL timeouts hardcoded (`timeout=10.0/5.0`) in status-api
   despite an env config dataclass; HTTP status derived by substring-matching
   error prose in `delegate_vote` (`mock_fen_api/main.py:539`).
   Fix: env knobs via `from_env()`; structured error result from
   `apply_delegation`.
+  PARTIAL 2026-09-03 (in tree, commit pending):
+  `FEN_CONSUMER_GROUP_ID/BATCH_SIZE/POLL_TIMEOUT_MS` env knobs;
+  `SPARQL_TIMEOUT_S`/`SPARQL_PING_TIMEOUT_S` env knobs. OPEN:
+  `apply_delegation` structured error result.
 - [~] **Test blind spots** — `FenClient` (designed to swallow errors and
   retry — its whole failure mode is unverified) has no unit tests;
   `delegation.py` exercised only indirectly; no linting/formatting config
@@ -193,12 +201,15 @@ P3 = structural.
   (4 tests: success / transient-retry-with-backoff / terminal-failure-returns-
   False / HTTP-4xx-as-failure). OPEN: direct delegation tests, linter config,
   warning triage (rdflib deprecations in test_qv_scaffold/test_sparql_updater).
+  LATER 2026-09-03 (in tree, commit pending): `pyproject.toml` with a
+  conservative [tool.ruff] preset added (F/E9/B/BLE + per-file ignores) —
+  first `ruff check` run still pending.
 - [ ] **Metrics collision** — `fen_kafka_messages_processed_total` /
   `_failed` emitted by BOTH fen-bridge-outbound and validation-consumer
   with no distinguishing labels; the Grafana dashboard plots the two series
   under one legend.
   Fix: add a `process`/`service` label (or per-process metric names).
-- [ ] **Docs drift (architecture/status)** — `docs/architecture.md`:
+- [x] **Docs drift (architecture/status)** — `docs/architecture.md`:
   observability table claims consumers expose no /metrics (they serve
   9101/9102), k8s section lists 3 Deployments (status-api exists), "four
   ADRs" (six exist), duplicated sentence fragment; `docs/self-hosted-runner.md`:
@@ -211,6 +222,13 @@ P3 = structural.
   self-hosted-runner step 7 with the concrete ci.yml edits; reconcile
   counts/visibility/Node; renumber ADR-005 decisions and soften ADR-006
   references to "if accepted".
+  DONE 2026-09-03 (in tree, commit pending): architecture.md observability +
+  k8s sections rewritten (5 processes with /metrics ports, 4 Deployments,
+  fail-closed Secret docs, ADR-001..006, dup fragment removed);
+  self-hosted-runner step 5/7 rewritten + counts 111→115 + 0xFF chars
+  fixed; ADR-005 renumbered 1..5 with "IF ADR-006 is accepted". (The
+  PUBLIC banner was left as-is: the repo is PUBLIC again as of 2026-09-03;
+  BACKLOG counts/visibility were already reconciled 2026-09-02.)
 
 ## P3 — structural
 

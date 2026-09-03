@@ -209,7 +209,10 @@
       return `
         :host { display: inline-block; font: 13px/1.5 "Segoe UI", system-ui, sans-serif; }
         .card { background: ${bg}; color: ${fg}; border: 1px solid ${border}; border-radius: 10px; padding: 8px 12px; min-width: 200px; }
-        .badge { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; background: transparent; border: none; padding: 0; color: inherit; font: inherit; text-align: left; }
+        .badge:focus-visible { outline: 2px solid #4da3ff; outline-offset: 2px; border-radius: 4px; }
+        .linklike { background: none; border: none; padding: 0; color: #4da3ff; text-decoration: underline; cursor: pointer; font: inherit; }
+        .linklike:focus-visible { outline: 2px solid #4da3ff; outline-offset: 2px; }
         .dot { width: 9px; height: 9px; border-radius: 50%; }
         .label { font-weight: 600; }
         .hint { color: ${muted}; font-size: 11px; margin-top: 4px; }
@@ -226,7 +229,8 @@
       const color = COLORS[status] || COLORS.unknown;
       let body;
       if (this._error) {
-        body = `<div class="hint err">${escapeHtml(this._error)} <a href="#" id="retry">retry</a></div>`;
+        body = `<div class="hint err">${escapeHtml(this._error)}
+          <button type="button" id="retry" class="linklike">retry</button></div>`;
       } else if (this._loading) {
         body = `<div class="hint">checking validation status…</div>`;
       } else if (!this._data || !this._data.found) {
@@ -250,12 +254,15 @@
                 status-api must expose it first (_PREDICATE_KEYS) — gated,
                 never faked. */ ""}
           </div>` : "";
+        // A11y (TECH-DEBT P2): a real <button> with aria-expanded, not a
+        // clickable <div> — keyboard users can open the decision details.
         body = `
-          <div class="badge" id="toggle" title="click for decision details">
+          <button type="button" class="badge" id="toggle" aria-expanded="${this._expanded ? "true" : "false"}"
+                  title="click for decision details">
             <span class="dot" style="background:${color}"></span>
             <span class="label">${escapeHtml(status)}</span>
-            <span class="hint">${this._expanded ? "▲" : "▼"}</span>
-          </div>
+            <span class="hint" aria-hidden="true">${this._expanded ? "▲" : "▼"}</span>
+          </button>
           ${details}`;
       }
       this.shadowRoot.innerHTML = `
@@ -264,7 +271,7 @@
       const toggle = this.shadowRoot.getElementById("toggle");
       if (toggle) toggle.onclick = () => { this._expanded = !this._expanded; this._render(); };
       const retry = this.shadowRoot.getElementById("retry");
-      if (retry) retry.onclick = (e) => { e.preventDefault(); this._load(); };
+      if (retry) retry.onclick = () => this._load();
     }
   }
 

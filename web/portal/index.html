@@ -74,13 +74,13 @@
   <div class="grid">
     <div class="card">
       <h2 style="margin-top:0;color:var(--accent);font-size:16px">Submit a candidate</h2>
-      <label>entity_label *</label>
+      <label for="entity_label">entity_label *</label>
       <input id="entity_label" placeholder="e.g. Sokolowizna (regional dialect term)" value="Sokolowizna (regional dialect term)">
-      <label>entity_type</label>
+      <label for="entity_type">entity_type</label>
       <input id="entity_type" placeholder="e.g. schema:DefinedTerm" value="schema:DefinedTerm">
-      <label>document_id</label>
+      <label for="document_id">document_id</label>
       <input id="document_id" placeholder="e.g. d2026_014" value="d2026_014">
-      <label>annotation_id (auto-generated if empty)</label>
+      <label for="annotation_id">annotation_id (auto-generated if empty)</label>
       <input id="annotation_id" placeholder="annotation_...">
       <div style="margin-top:12px">
         <button class="primary" id="submit">Submit candidate → dap.entities.pending_validation.v1</button>
@@ -94,9 +94,9 @@
 
     <div class="card">
       <h2 style="margin-top:0;color:var(--accent);font-size:16px">Configuration</h2>
-      <label>Mock FEN API base</label>
+      <label for="mock_base">Mock FEN API base</label>
       <input id="mock_base" value="http://localhost:8100">
-      <label>Status API base (widget data)</label>
+      <label for="status_base">Status API base (widget data)</label>
       <input id="status_base" value="http://localhost:8082">
       <div style="margin-top:12px">
         <button id="refresh">Refresh</button>
@@ -117,8 +117,9 @@
       <button data-filter="rejected">rejected</button>
     </div>
     <div class="table-scroll"><table id="table">
+      <caption class="note" style="text-align:left;caption-side:top">Community candidates and their governance status</caption>
       <thead>
-        <tr><th>annotation_id</th><th>entity_label</th><th>status</th><th>LLM rec.</th><th>votes</th><th>quorum</th><th>vote (community mode)</th><th>export</th></tr>
+        <tr><th scope="col">annotation_id</th><th scope="col">entity_label</th><th scope="col">status</th><th scope="col">LLM rec.</th><th scope="col">votes</th><th scope="col">quorum</th><th scope="col">vote (community mode)</th><th scope="col">export</th></tr>
       </thead>
       <tbody id="rows"><tr><td colspan="8" class="note">no candidates yet — submit one above</td></tr></tbody>
     </table></div>

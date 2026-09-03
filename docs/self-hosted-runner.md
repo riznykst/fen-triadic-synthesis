@@ -67,15 +67,15 @@ Autostart as a Windows service (elevated PowerShell):
 
 ### 5. Point the workflow at the runner
 
-`.github/workflows/ci.yml` currently uses `runs-on: ubuntu-latest`
-(GitHub-hosted only). While the billing block is active, change **both jobs**
-to:
+`.github/workflows/ci.yml` already runs on `runs-on: self-hosted` (both jobs,
+with a TEMPORARY comment) — this step documents WHY and how to restore
+hosted runners later. While the billing block is active, both jobs are:
 
 ```yaml
 runs-on: self-hosted
 ```
 
-and restrict the triggers to pushes only (security, see warning above):
+and the triggers are restricted to pushes only (security, see warning above):
 
 ```yaml
 on:
@@ -83,8 +83,9 @@ on:
     branches: [main]
 ```
 
-(drop `pull_request:` during the self-hosted period). Add a comment that this
-edit is **temporary** and must be reverted with the billing fix.
+(`pull_request:` is dropped during the self-hosted period; `web.yml` covers
+web-only pushes via `paths-ignore` on `ci.yml`). The ci.yml header comment
+marks every TEMPORARY edit that step 7 must revert.
 
 ### 6. Verify
 
@@ -128,10 +129,24 @@ red — the error message names the conflicting port.
 
 ### 7. Revert when billing is fixed
 
-1. Restore `runs-on: ubuntu-latest` in both jobs.
+The self-hosted mode touches MORE than `runs-on` — the full revert list
+(mirrors the TEMPORARY comments in `.github/workflows/ci.yml`):
+
+1. Restore `runs-on: ubuntu-latest` in both jobs of `ci.yml`.
 2. Restore the `pull_request:` trigger.
-3. Remove the runner: **Settings → Actions → Runners → ⚙ → Remove**.
-4. Re-run the failed workflows: `gh run rerun` or a fresh push.
+3. Rewrite the Windows-only step idioms for ubuntu-latest: the "Check Docker
+   availability" step uses `shell: powershell` + `cmd /c` + `$env:GITHUB_OUTPUT`
+   — replace with a shell-agnostic guard (or drop it: on hosted runners the
+   e2e job always has Docker and should FAIL, not skip, without it); remove
+   the other `shell: powershell` overrides.
+4. Restore the full Python matrix `["3.10", "3.11", "3.12"]` together with
+   `actions/setup-python@v5` (self-hosted runs on the system Python 3.10
+   only because setup-python toolchains get wiped in this environment).
+5. Merge `.github/workflows/web.yml` back into `ci.yml` and drop
+   `paths-ignore: ['web/**']` (the split exists only to keep web-only pushes
+   off the self-hosted Docker e2e).
+6. Remove the runner: **Settings → Actions → Runners → ⚙ → Remove**.
+7. Re-run the failed workflows: `gh run rerun` or a fresh push.
 
 ## Operational state (2026-08-28)
 
@@ -175,29 +190,29 @@ once Docker runs, the e2e job automatically switches to the full stack
 
 | Run | Result | Note |
 |---|---|---|
-| 08:52�08:54 UTC | success | test + e2e green (auto smoke, SHACL CI step, Loki stack up) |
-| 10:17 UTC + | running | commit 3a7f43f � community/QV voting e2e + SHACL + Loki + mobile portal |
+| 08:52-08:54 UTC | success | test + e2e green (auto smoke, SHACL CI step, Loki stack up) |
+| 10:17 UTC + | running | commit 3a7f43f - community/QV voting e2e + SHACL + Loki + mobile portal |
 
 ## Environment notes (2026-08-30)
 
-- **Docker Desktop file sharing is broken for D:** � the repo lives on an SD
+- **Docker Desktop file sharing is broken for D:** - the repo lives on an SD
   card (Realtek PCIE Card Reader, exFAT, DriveType=Removable). WSL automounts
   fixed drives only, so `/mnt/d` never exists and Docker Desktop never
-  registers D: in `/run/desktop/mnt/host` � bind mounts from D: show files
+  registers D: in `/run/desktop/mnt/host` - bind mounts from D: show files
   as empty directories (`drwxr-xr-x ... prometheus.yml`). C: mounts work.
   Workaround: **observability configs are baked into images**
-  (`monitoring/docker/*.Dockerfile`) � no host bind mounts in the stack,
+  (`monitoring/docker/*.Dockerfile`) - no host bind mounts in the stack,
   CI and local dev behave identically.
 - `settings-store.json` (`%APPDATA%\Docker`) was edited to add
   `"UseGrpcFuse": false` (falls back to the plan9 file-sharing daemon).
-  Write the file WITHOUT a UTF-8 BOM � Docker's JSON parser crashes on BOM
+  Write the file WITHOUT a UTF-8 BOM - Docker's JSON parser crashes on BOM
   (`invalid character '\u00c3\u00af'`) and the backend exits with status 2.
 - A `wsl --shutdown` + Docker Desktop restart does NOT fix the missing D:
   share; a manual `mount -t drvfs D: /mnt/d` inside WSL works, but Docker
   Desktop's own share table is separate and still misses D:.
 - Re-running `docker compose up -d` recreates the whole stack (fresh
-  Fuseki in-memory/TDB2 state) � expected; smoke tests tolerate it.
-- promtail healthcheck reports "starting" until its first scrape batch �
+  Fuseki in-memory/TDB2 state) - expected; smoke tests tolerate it.
+- promtail healthcheck reports "starting" until its first scrape batch -
   Loki ingestion verified by querying `/loki/api/v1/labels`.
 ## Working protocol (all chats, 2026-09-02)
 
@@ -205,8 +220,9 @@ Operating model agreed across the AI working chats (this repo has several
 parallel AI sessions plus the Google Jules bot, which opens PRs) and the owner.
 
 1. **Offline development loop (no Docker).** Most business logic is fully
-   mocked and covered offline: `pytest -q` (111 tests - Kafka schemas, SPARQL
-   UPDATE generator, QV logic, PID helpers, FastAPI handlers, SSE), plus
+   mocked and covered offline: `pytest -q` (115 tests - Kafka schemas, SPARQL
+   UPDATE generator, QV logic, PID helpers, FastAPI handlers, SSE, FenClient),
+   plus
    `python scripts/generate_schemas.py` and `python scripts/shacl_check.py`.
    `node --check` for web-layer JS. ~90% of bugs are caught here.
 2. **E2E is automatic, not manual.** Every push to `main` runs CI on the
@@ -227,7 +243,7 @@ parallel AI sessions plus the Google Jules bot, which opens PRs) and the owner.
 5. **Honesty contract.** An offline-green suite is NOT "done" for backend
    changes: a green CI run with the real e2e is required before
    CHANGELOG/BACKLOG/FEN-SYNC claims. Test counts must be the actual `pytest`
-   number (currently 111). Never claim browser-verified or e2e-verified what
+   number (currently 115). Never claim browser-verified or e2e-verified what
    was only unit-tested.
 6. **Git hygiene with parallel sessions.** Always `git status -s` before
    committing and before pushing; push only from a clean tree. After any
