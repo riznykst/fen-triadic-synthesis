@@ -167,7 +167,8 @@ P3 = structural.
   PARTIAL 2026-09-03 (in tree, commit pending): labels paired with for/id in
   both portal pages; table caption + scope="col"; widget expand control is a
   real button with aria-expanded + focus-visible, "retry" is a button.
-  OPEN: aria-labels on the triadic ± / delegate symbol buttons.
+  LATER 2026-09-03 (in tree, commit pending): triadic ± / delegate buttons
+  gained aria-labels — a11y item fully closed.
 - [~] **Dead code** — `poll_batch` (values-only) + its shim export and test
   (superseded by `poll_batch_with_offsets`); `renderGraphSvg`, `regGraph`
   refs and the graph dispatcher + unused `OUTCOME_BG` (`triadic.js`);
@@ -204,11 +205,14 @@ P3 = structural.
   LATER 2026-09-03 (in tree, commit pending): `pyproject.toml` with a
   conservative [tool.ruff] preset added (F/E9/B/BLE + per-file ignores) —
   first `ruff check` run still pending.
-- [ ] **Metrics collision** — `fen_kafka_messages_processed_total` /
+- [x] **Metrics collision** — `fen_kafka_messages_processed_total` /
   `_failed` emitted by BOTH fen-bridge-outbound and validation-consumer
   with no distinguishing labels; the Grafana dashboard plots the two series
   under one legend.
   Fix: add a `process`/`service` label (or per-process metric names).
+  DONE 2026-09-03 (in tree, commit pending): counters carry a `process`
+  label (consumer group id at inc() time) in `services/common/metrics.py`
+  + both call sites (outbound.py, validation_consumer/main.py).
 - [x] **Docs drift (architecture/status)** — `docs/architecture.md`:
   observability table claims consumers expose no /metrics (they serve
   9101/9102), k8s section lists 3 Deployments (status-api exists), "four

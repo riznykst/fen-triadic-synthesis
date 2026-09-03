@@ -2,6 +2,18 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT wave 6: metrics series split, triadic aria-labels
+
+- **Metrics collision fixed (P2)**: `fen_kafka_messages_processed_total` /
+  `fen_kafka_messages_failed_total` are emitted by BOTH consumer processes
+  (fen-bridge-outbound, validation-consumer) — they now carry a `process`
+  label (the consumer group id at inc() time:
+  `services/common/metrics.py` + both call sites), so Grafana panels no
+  longer plot two colliding series under one legend.
+- **a11y (P2)**: triadic ± intensity buttons and the delegate (→) button
+  gained `aria-label`s (`web/portal/triadic.js`).
+- Tests: 115 (unchanged).
+
 ## 2026-09-03 — TECH-DEBT wave 5: docs drift fixed, a11y, config hygiene, lint config
 
 - **Docs drift fixed** (`docs/architecture.md`, `docs/self-hosted-runner.md`,

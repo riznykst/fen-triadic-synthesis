@@ -188,15 +188,15 @@ function renderConsensus() {
           '<textarea style="width:100%;border:1px solid #e3ded2;border-radius:6px;padding:6px 8px;font-size:12px;resize:none;min-height:44px;box-sizing:border-box" placeholder="Share your assessment…" onchange="comments[\'' + jsAttr(c.annotation_id) + '\']=this.value"></textarea>' +
           '<div class="lbl" style="margin-bottom:4px;margin-top:6px">② Cast QV vote</div>' +
           '<div class="vote-row">' +
-          '<button class="step-btn" onclick="adjIntensity(\'' + jsAttr(c.annotation_id) + '\',-1)">−</button>' +
+          '<button class="step-btn" aria-label="decrease intensity" onclick="adjIntensity(\'' + jsAttr(c.annotation_id) + '\',-1)">−</button>' +
           '<span style="font-size:10px;color:' + C.mu + ';min-width:22px;text-align:center">×' + intens + "</span>" +
-          '<button class="step-btn" onclick="adjIntensity(\'' + jsAttr(c.annotation_id) + '\',1)">+</button>' +
+          '<button class="step-btn" aria-label="increase intensity" onclick="adjIntensity(\'' + jsAttr(c.annotation_id) + '\',1)">+</button>' +
           Object.keys(OUTCOME_STYLE).map((o) =>
             '<button class="vote-btn" style="background:' + OUTCOME_STYLE[o] + '" onclick="vote(\'' + jsAttr(c.annotation_id) + '\',\'' + jsAttr(o) + '\')">' + o + "</button>").join("") +
           "</div>" +
           '<div class="cost">Cost: ' + intens + "² = <b>" + (intens * intens) + "</b> credits · Your Rep: " + (state.reputation[$("voter").value.trim()] || 0) + "</div>" +
       (c.status === "pending"
-        ? '<div style="margin-top:6px;font-size:11px;display:flex;gap:6px;align-items:center">Delegate: <input id="del_' + jsAttr(c.annotation_id) + '" placeholder="voter" style="flex:1;min-width:60px;border:1px solid #e3ded2;border-radius:6px;padding:3px 6px;font-size:11px"/> <button class="step-btn" onclick="delegateVote(\' + jsAttr(c.annotation_id) + \')">→</button></div>'
+        ? '<div style="margin-top:6px;font-size:11px;display:flex;gap:6px;align-items:center">Delegate: <input id="del_' + jsAttr(c.annotation_id) + '" placeholder="voter" style="flex:1;min-width:60px;border:1px solid #e3ded2;border-radius:6px;padding:3px 6px;font-size:11px"/> <button class="step-btn" aria-label="delegate vote" onclick="delegateVote(\' + jsAttr(c.annotation_id) + \')">→</button></div>'
         : "") +
       (c.delegations && c.delegations[$("voter").value.trim()]
         ? '<div style="font-size:10.5px;color:' + C.mu + '">delegated to ' + esc(c.delegations[$("voter").value.trim()]) + "</div>"
