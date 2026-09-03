@@ -300,50 +300,12 @@ function renderReputation() {
   el.innerHTML = '<div style="margin-bottom:4px">' + accTxt + "</div>" + rows;
 }
 
-function renderGraphSvg() {
-  const decided = state.candidates.filter((c) => c.decision);
-  const box = $("graphBox");
-  if (!decided.length) {
-    box.innerHTML = '<div class="note">no decided records yet</div>';
-    return;
-  }
-  const nodes = [];
-  const edges = [];
-  decided.forEach((c) => {
-    const tr = c.triple || {};
-    const subj = tr.subject || c.entity_label || c.annotation_id;
-    const obj = tr.object || c.annotation_id;
-    const pred = tr.predicate || "mentions";
-    nodes.push(subj, obj);
-    edges.push({ s: subj, o: obj, p: pred });
-  });
-  const unique = [...new Set(nodes)];
-  const W = 640, H = 210, pad = 40;
-  const x = (i) => pad + (i * (W - 2 * pad)) / Math.max(1, unique.length - 1);
-  const y = H / 2;
-  let svg = '<svg width="100%" viewBox="0 0 ' + W + " " + H + '" style="background:#fff;border-radius:8px">' +
-    '<defs><marker id="fenArr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">' +
-    '<path d="M0,0 L6,3 L0,6 Z" fill="#2d5a8e"/></marker></defs>';
-  edges.forEach((e) => {
-    const ix = unique.indexOf(e.s), iy = unique.indexOf(e.o);
-    svg += '<line x1="' + x(ix) + '" y1="' + y + '" x2="' + x(iy) + '" y2="' + y +
-      '" stroke="#2d5a8e" stroke-width="1.2" marker-end="url(#fenArr)"/>' +
-      '<text x="' + ((x(ix) + x(iy)) / 2) + '" y="' + (y - 8) + '" text-anchor="middle" font-size="9" fill="#6b6560">' + esc(e.p) + "</text>";
-  });
-  unique.forEach((name, i) => {
-    svg += '<circle cx="' + x(i) + '" cy="' + y + '" r="15" fill="#e6f4ee" stroke="#2e7d5b" stroke-width="1.2"/>' +
-      '<text x="' + x(i) + '" y="' + (y + 3) + '" text-anchor="middle" font-size="8.5" fill="#1c1b1f" font-weight="600">' +
-      esc(String(name).slice(0, 14)) + "</text>";
-  });
-  svg += "</svg>";
-  box.innerHTML = svg;
-}
-
 // -------------------------------------------------------------- registry graph
 let cy = null;
 
 function renderGraphCy() {
-  const el = $("regGraph") || $("graphBox");
+  const el = $("graphBox");
+  if (!el) return;
   const decided = state.candidates.filter((c) => c.decision);
   if (!decided.length) {
     if (cy) { cy.destroy(); cy = null; }
@@ -385,19 +347,15 @@ function renderGraphCy() {
   });
 }
 
-// Dispatcher: Cytoscape when vendored (regGraph/graphBox), else the SVG
-// fallback renderer. Fixes the duplicate-declaration conflict between the
-// SVG graph and the Cytoscape integration.
+// Registry graph: Cytoscape only — triadic.html always loads
+// vendor/cytoscape.min.js, so the old SVG fallback renderer was dead code
+// and has been removed (TECH-DEBT P2). renderGraphCy handles the
+// no-decisions and missing-cytoscape cases itself.
 function renderGraph() {
-  if (typeof cytoscape !== "undefined" && ($("regGraph") || $("graphBox"))) {
-    const box = $("regGraph") || $("graphBox");
-    box.style.display = "block";
-    renderGraphCy();
-  } else {
-    const box = $("graphBox");
-    if (box) box.style.display = "block";
-    renderGraphSvg();
-  }
+  const box = $("graphBox");
+  if (!box) return;
+  box.style.display = "block";
+  renderGraphCy();
 }
 
 // ------------------------------------------------------------------- load
