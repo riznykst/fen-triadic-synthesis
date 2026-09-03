@@ -37,6 +37,7 @@ class _FakeConsumer:
         self._records = records
         self.poll_calls = 0
         self.commit_calls = 0
+        self.last_commit_offsets = None
 
     def poll(self, timeout_ms=None, max_records=None):
         self.poll_calls += 1
@@ -44,6 +45,7 @@ class _FakeConsumer:
 
     def commit(self, offsets=None):
         self.commit_calls += 1
+        self.last_commit_offsets = offsets
 
 
 class _FakeClient:
@@ -87,6 +89,10 @@ def test_outbound_empty_batch_is_noop():
 
 
 def test_outbound_commits_offsets_after_successful_forward():
+    """Per-record commit semantics (TECH-DEBT P0): after a successful forward
+    the batch's offsets are committed as offset+1 per message — NOT the
+    whole-consumer position — so partially processed polls never commit
+    records that were fetched but not forwarded."""
     config = FenBridgeConfig.from_env()
     records = {None: [_FakeMessage({"annotation_id": "a1"}, offset=7), _FakeMessage({"annotation_id": "a2"}, offset=8)]}
     consumer = _FakeConsumer(records)
@@ -96,6 +102,12 @@ def test_outbound_commits_offsets_after_successful_forward():
 
     assert client.submitted == [[{"annotation_id": "a1"}, {"annotation_id": "a2"}]]
     assert consumer.commit_calls == 1
+    assert consumer.last_commit_offsets is not None
+    # both messages share topic "t"/partition 0 -> one entry committing past
+    # the LAST message of the batch (offset 8 -> commit 9).
+    (tp, om), = consumer.last_commit_offsets.items()
+    assert (tp.topic, tp.partition) == ("t", 0)
+    assert om.offset == 9
 
 
 def test_outbound_does_not_commit_on_failed_forward():

@@ -27,7 +27,7 @@ from services.fen_bridge.config import FenBridgeConfig
 from services.fen_bridge.fen_client import FenClient
 from prometheus_client import start_http_server
 
-from services.fen_bridge.kafka_io import make_consumer, poll_batch_with_offsets
+from services.fen_bridge.kafka_io import commit_offsets, make_consumer, poll_batch_with_offsets
 
 setup_logging("fen-bridge-outbound", level=log_level_from_env())
 logger = logging.getLogger(__name__)
@@ -45,7 +45,12 @@ def run(config: FenBridgeConfig, client: FenClient, consumer) -> None:
     if not batch:
         return
     if client.submit_candidates([record.value for record in batch]):
-        consumer.commit()
+        # Per-record commit (offset+1 for every record in the batch), NOT the
+        # whole-consumer position: a future change to poll caps or batch
+        # truncation must never commit records that were fetched but not
+        # forwarded (that would silently downgrade at-least-once to
+        # at-most-once). Same contract as validation-consumer (TECH-DEBT P0).
+        commit_offsets(consumer, batch)
         KAFKA_MESSAGES_PROCESSED.inc(len(batch))
         logger.info("committed %d message(s) after successful forward", len(batch))
     else:
