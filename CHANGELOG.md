@@ -2,6 +2,26 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-03 — TECH-DEBT wave 8: compose healthchecks complete, Virtuoso pinned
+
+- **Compose healthcheck gaps closed (P1)** — every service now has a
+  healthcheck (`docker-compose.yml`):
+  - `fuseki`: wget probe of `/$/ping` (image ships wget, verified);
+    status-api and validation-consumer now `depends_on` it with
+    `service_healthy` instead of racing a cold start;
+  - `zookeeper`: bash `/dev/tcp` probe using `srvr` → "Zookeeper version"
+    (`ruok`/`imok` no longer works on ZooKeeper 3.5+, it echoes `ruok`);
+  - `virtuoso`: curl probe of the SPARQL endpoint (image ships curl, NOT
+    wget — verified on 7.2.17; the old wget probe was silently failing);
+  - `status-api` healthcheck now probes `/readyz` (SPARQL reachability),
+    not just `/healthz`.
+- **Virtuoso image pinned to `7.2.17`** (was floating `latest` — upstream
+  releases silently changed the CI e2e dialect baseline); tag verified in
+  the registry.
+- Verified live: full stack (incl. virtuoso profile) all `healthy`, e2e
+  smoke test PASSED (auto mode).
+- Tests: 123 (unchanged).
+
 ## 2026-09-03 — TECH-DEBT wave 7: linter green, warning triage, delegation tests
 
 - **First `ruff check` run is green** (new `[tool.ruff]` preset from wave 5):

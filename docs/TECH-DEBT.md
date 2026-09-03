@@ -124,12 +124,14 @@ P3 = structural.
   added (.git/__pycache__/.pytest_cache/.env/docs/tests/.vendor excluded).
   OPEN: base-stage consolidation, requirements single-sourcing, pin
   alignment (needs image builds).
-- [ ] **Virtuoso image floating** — `openlink/virtuoso-opensource-7`
+- [x] **Virtuoso image floating** — `openlink/virtuoso-opensource-7`
   unpinned while CI e2e boots it on every push
   (`docker-compose.yml:218`); a breaking upstream tag changes the e2e
   baseline.
   Fix: pin tag or digest in one place used by compose + dialect check.
-- [~] **Compose healthcheck gaps** — fuseki (no healthcheck) while
+  DONE 2026-09-03 (in tree, commit pending): pinned to
+  `openlink/virtuoso-opensource-7:7.2.17` (tag verified in the registry).
+- [x] **Compose healthcheck gaps** — fuseki (no healthcheck) while
   status-api/validation-consumer `depends_on` it with `service_started`;
   outbound/validation-consumer (each serves /metrics on 9101/9102) and
   zookeeper have no healthchecks; compose status-api lacks
@@ -137,11 +139,12 @@ P3 = structural.
   Fix: add healthchecks (fuseki `/$/ping`, consumers `/metrics`, zookeeper),
   switch depends_on to `service_healthy`, set `SPARQL_PING_ENDPOINT:
   http://fuseki:3030/$/ping`, probe `/readyz` in the compose healthcheck.
-  PARTIAL 2026-09-03 (in tree, commit pending): outbound + validation-consumer
-  healthchecks on /metrics (python probe, ports 9101/9102);
-  `SPARQL_PING_ENDPOINT` set for status-api (readyz no longer degraded).
-  OPEN: fuseki/zookeeper healthchecks (need image-content check), switching
-  depends_on to `service_healthy`, probing `/readyz` in compose.
+  DONE 2026-09-03 (in tree, commit pending): ALL services now healthy —
+  consumers /metrics (python), fuseki `/$/ping` (wget), zookeeper
+  `srvr`-over-/dev/tcp (ruok/imok is dead on ZK 3.5+), virtuoso curl probe
+  (no wget in the image — old probe silently failed), status-api probes
+  /readyz; depends_on switched to service_healthy; verified live: full
+  stack healthy + smoke auto PASSED.
 
 ## P2 — quality / maintenance
 
