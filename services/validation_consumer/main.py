@@ -20,6 +20,7 @@ import threading
 import time
 
 from services.common import kafka_io
+from services.common.graph_uris import annotation_graph_uri, document_graph_uri
 from services.common.logging_config import log_level_from_env, setup_logging
 from services.common.messages import EntityValidated, GovernanceDecision
 from services.common.metrics import KAFKA_MESSAGES_FAILED, KAFKA_MESSAGES_PROCESSED
@@ -34,11 +35,11 @@ logger = logging.getLogger(__name__)
 
 def named_graph_uri(decision: GovernanceDecision) -> str:
     """The named graph the update is scoped to (D2.2 section 3.5: named
-    graphs are the unit of update/replace/remove).
-    """
+    graphs are the unit of update/replace/remove). URI scheme lives in
+    services.common.graph_uris (TECH-DEBT P1 — single source)."""
     if decision.document_id:
-        return f"urn:graphia:document:{decision.document_id}:graph"
-    return f"urn:graphia:annotation:{decision.annotation_id}:graph"
+        return document_graph_uri(decision.document_id)
+    return annotation_graph_uri(decision.annotation_id)
 
 
 def handle_decision(config: ValidationConsumerConfig, payload: dict) -> GovernanceDecision:

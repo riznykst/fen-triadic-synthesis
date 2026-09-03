@@ -1,4 +1,4 @@
-﻿"""Env-driven settings for both FEN Bridge processes. No hardcoded hosts
+"""Env-driven settings for both FEN Bridge processes. No hardcoded hosts
 (AGENT_PLAN.md, Phase 2, task 1).
 """
 from __future__ import annotations
@@ -16,9 +16,7 @@ class FenBridgeConfig:
     consumer_group_id: str
     batch_size: int
     poll_timeout_ms: int
-    fen_naan: str
     webhook_token: str
-
 
     @classmethod
     def from_env(cls) -> "FenBridgeConfig":
@@ -31,6 +29,5 @@ class FenBridgeConfig:
             consumer_group_id=os.getenv("FEN_BRIDGE_GROUP_ID", "fen-bridge-outbound"),
             batch_size=int(os.getenv("FEN_BRIDGE_BATCH_SIZE", "10")),
             poll_timeout_ms=int(os.getenv("FEN_BRIDGE_POLL_TIMEOUT_MS", "1000")),
-            fen_naan=os.getenv("FEN_NAAN", "99999"),
             webhook_token=os.getenv("FEN_WEBHOOK_TOKEN", ""),
         )

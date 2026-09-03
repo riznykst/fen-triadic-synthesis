@@ -34,6 +34,8 @@ from rdflib import Graph, Literal, URIRef
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from services.status_api.config import StatusApiConfig  # noqa: E402
+from services.common import gfen_ontology as ns  # noqa: E402
+from services.common.graph_uris import annotation_uri  # noqa: E402
 from services.common.metrics import metrics_response  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
@@ -51,23 +53,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# gfen: predicate IRI -> response key (short, stable contract).
+# gfen: predicate IRI -> response key (short, stable contract). IRIs come
+# from services.common.gfen_ontology (TECH-DEBT P1 — single source, no
+# copy-pasted literals that can drift from the ontology module).
 # TODO(ADR-006): add gfen:challengeWindowEnd -> "challenge_window_end" ONLY
 # once ADR-006 is accepted — the ontology predicate is "proposed, not yet
 # applied" and nothing writes it today; exposing it now would fake data.
 _PREDICATE_KEYS = {
-    "https://w3id.org/got/fen/ontology#validationStatus": "validation_status",
-    "https://w3id.org/got/fen/ontology#validationMethod": "validation_method",
-    "https://w3id.org/got/fen/ontology#governanceDecisionId": "governance_decision_id",
-    "https://w3id.org/got/fen/ontology#reputationSnapshot": "reputation_snapshot",
-    "https://w3id.org/got/fen/ontology#ledgerAnchor": "ledger_anchor",
+    ns.PROP_VALIDATION_STATUS: "validation_status",
+    ns.PROP_VALIDATION_METHOD: "validation_method",
+    ns.PROP_GOVERNANCE_DECISION_ID: "governance_decision_id",
+    ns.PROP_REPUTATION_SNAPSHOT: "reputation_snapshot",
+    ns.PROP_LEDGER_ANCHOR: "ledger_anchor",
 }
-
-
-def _annotation_uri(annotation_id: str) -> str:
-    # Same fragment pattern as sparql_updater._annotation_uri (MVP);
-    # production resolves via the GoTriple KG URI scheme (D2.2 section 4.5).
-    return f"urn:graphia:annotation:{annotation_id}"
 
 
 def _fragment(uri: str) -> str:
@@ -86,7 +84,7 @@ def _sparql_to_graph(data: dict, annotation_id: str) -> Graph:
     """Turn SPARQL SELECT bindings into an rdflib Graph (annotation subject,
     predicate URIs, URI/literal objects as reported by the store)."""
     graph = Graph()
-    subject = URIRef(_annotation_uri(annotation_id))
+    subject = URIRef(annotation_uri(annotation_id))
     for binding in data.get("results", {}).get("bindings", []):
         predicate = binding.get("p", {}).get("value", "")
         value = binding.get("o", {}).get("value", "")
@@ -111,7 +109,7 @@ def _ro_crate(annotation_id: str, data: dict) -> dict:
         value = binding.get("o", {}).get("value", "")
         kind = binding.get("o", {}).get("type", "literal")
         props[key] = _fragment(value) if kind == "uri" and key == "validation_status" else value
-    annotation = _annotation_uri(annotation_id)
+    annotation = annotation_uri(annotation_id)
     return {
         "@context": "https://w3id.org/ro/crate/1.1/context",
         "@graph": [
@@ -135,7 +133,7 @@ def _query_sparql(annotation_id: str) -> dict:
     """
     query = (
         "SELECT ?p ?o WHERE { GRAPH ?g { "
-        f"<{_annotation_uri(annotation_id)}> ?p ?o "
+        f"<{annotation_uri(annotation_id)}> ?p ?o "
         "} }"
     )
     resp = requests.post(

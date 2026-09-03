@@ -68,3 +68,28 @@ def test_json_schemas_generate_for_all_models():
         schema = model.model_json_schema()
         assert "properties" in schema
         assert schema["type"] == "object"
+
+
+def test_committed_kafka_schemas_match_models():
+    """TECH-DEBT P1: schemas/kafka-events/*.schema.json are generated from
+    the Pydantic models (scripts/generate_schemas.py). A field added or
+    renamed in messages.py must never silently leave the published schemas
+    stale — regenerate in memory and compare with the committed files."""
+    import json
+    from pathlib import Path
+
+    out_dir = Path(__file__).resolve().parents[1] / "schemas" / "kafka-events"
+    expected = {
+        "entity-candidate": EntityCandidate,
+        "governance-decision": GovernanceDecision,
+        "entity-validated": EntityValidated,
+    }
+    for name, model in expected.items():
+        path = out_dir / f"{name}.schema.json"
+        assert path.exists(), f"missing committed schema {path}"
+        committed = json.loads(path.read_text(encoding="utf-8"))
+        fresh = model.model_json_schema()
+        assert committed == fresh, (
+            f"schemas/kafka-events/{name}.schema.json is STALE — "
+            "run `python scripts/generate_schemas.py` and commit the result"
+        )

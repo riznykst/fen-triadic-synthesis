@@ -2,8 +2,9 @@ from datetime import datetime, timezone
 
 from rdflib import Dataset, Namespace, URIRef
 
+from services.common.graph_uris import annotation_uri
 from services.common.messages import GovernanceDecision, ValidationMethod, ValidationStatus
-from services.validation_consumer.sparql_updater import _annotation_uri, build_update_query
+from services.validation_consumer.sparql_updater import build_update_query
 
 GFEN = Namespace("https://w3id.org/got/fen/ontology#")
 NAMED_GRAPH = "urn:graphia:document:d12345:graph"
@@ -32,7 +33,7 @@ def _graph_with_seed_annotation() -> Dataset:
     the 'before' state in examples/sample-validation-flow.ttl.
     """
     ds = Dataset()
-    annotation = URIRef(_annotation_uri("annotation_a1"))
+    annotation = URIRef(annotation_uri("annotation_a1"))
     ds.add((annotation, GFEN.validationStatus, GFEN.pending, URIRef(NAMED_GRAPH)))
     return ds
 
@@ -50,7 +51,7 @@ def test_build_update_query_is_valid_sparql_and_applies_cleanly():
 
     ds.update(query)  # raises on malformed SPARQL — this IS the syntax check
 
-    annotation = URIRef(_annotation_uri("annotation_a1"))
+    annotation = URIRef(annotation_uri("annotation_a1"))
     g = _named(ds)
 
     statuses = list(g.triples((annotation, GFEN.validationStatus, None)))
@@ -76,7 +77,7 @@ def test_build_update_query_is_idempotent_on_reapply():
     ds.update(query)
     ds.update(query)  # apply twice — must not duplicate triples
 
-    annotation = URIRef(_annotation_uri("annotation_a1"))
+    annotation = URIRef(annotation_uri("annotation_a1"))
     statuses = list(_named(ds).triples((annotation, GFEN.validationStatus, None)))
     assert len(statuses) == 1, "re-applying the same decision must not create duplicate triples"
 
@@ -88,7 +89,7 @@ def test_build_update_query_without_ledger_anchor_omits_the_triple():
 
     ds.update(query)
 
-    annotation = URIRef(_annotation_uri("annotation_a1"))
+    annotation = URIRef(annotation_uri("annotation_a1"))
     anchors = list(_named(ds).triples((annotation, GFEN.ledgerAnchor, None)))
     assert anchors == []
 
@@ -100,6 +101,6 @@ def test_build_update_query_reflects_rejected_outcome():
 
     ds.update(query)
 
-    annotation = URIRef(_annotation_uri("annotation_a1"))
+    annotation = URIRef(annotation_uri("annotation_a1"))
     statuses = list(_named(ds).triples((annotation, GFEN.validationStatus, None)))
     assert statuses == [(annotation, GFEN.validationStatus, GFEN.rejected)]

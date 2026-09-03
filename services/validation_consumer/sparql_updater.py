@@ -14,17 +14,11 @@ import logging
 import requests
 
 from services.common import gfen_ontology as ns
+from services.common.graph_uris import annotation_uri
 from services.common.messages import GovernanceDecision
 from services.common.pid import w3id_uri
 
 logger = logging.getLogger(__name__)
-
-
-def _annotation_uri(annotation_id: str) -> str:
-    # In production this resolves via the same {domain}/{type}/{concept}/{reference}
-    # pattern GoTriple KG uses (D2.2 §4.5); kept as a local fragment here for
-    # the MVP so tests don't depend on a specific deployment domain.
-    return f"urn:graphia:annotation:{annotation_id}"
 
 
 def build_update_query(decision: GovernanceDecision, named_graph_uri: str) -> str:
@@ -38,7 +32,7 @@ def build_update_query(decision: GovernanceDecision, named_graph_uri: str) -> st
     Everything is scoped to `named_graph_uri`, matching D2.2 §3.5's use of
     named graphs as the unit of update/replace/remove.
     """
-    annotation = _annotation_uri(decision.annotation_id)
+    annotation = annotation_uri(decision.annotation_id)
     status_uri = ns.STATUS_MAP[decision.outcome.value]
     method_uri = ns.METHOD_MAP[decision.method.value]
     decision_uri = w3id_uri("g", int(decision.decision_id.lstrip("g")))
