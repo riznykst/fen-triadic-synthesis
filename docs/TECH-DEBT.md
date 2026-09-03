@@ -187,10 +187,11 @@ P3 = structural.
   in the widget (server `event: error` vs transport onerror conflated);
   orphaned mid-function docstring in `webhook.py`; `_broadcast` swallows
   `queue.Full` with `pass` (events silently dropped for slow subscribers).
-  PARTIAL 2026-09-03 (in tree, commit pending): `poll_batch` deleted
-  (module + shim + compat test); webhook.py docstrings merged; `_broadcast`
-  logs + evicts full subscribers. OPEN: triadic.js renderGraphSvg/regGraph/
-  OUTCOME_BG, widget _sseOk + duplicate error binding.
+  PARTIAL 2026-09-03: `poll_batch` deleted (module + shim + compat test);
+  webhook.py docstrings merged; `_broadcast` logs + evicts full subscribers;
+  `renderGraphSvg` + `regGraph` refs removed (6e1aa57 — Cytoscape-only
+  graph, renderGraph() is a thin wrapper over renderGraphCy(); OUTCOME_BG
+  already gone). OPEN: widget `_sseOk` + duplicate SSE error binding.
 - [~] **Config hygiene** — `batch_size=10`/`poll_timeout_ms=1000`/group id
   hardcoded in `validation_consumer/main.py` (fen_bridge equivalents are
   env-driven); SPARQL timeouts hardcoded (`timeout=10.0/5.0`) in status-api
