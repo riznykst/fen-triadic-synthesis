@@ -1,9 +1,12 @@
-{
-  "name": "fen-web",
-  "version": "1.0.0",
-  "private": true,
-  "description": "FEN zero-build static frontend (classic portal, triadic view, widget) - Vercel detection marker only",
-  "scripts": {
-    "build": "echo static"
-  }
+﻿{
+    "name":  "fen-web",
+    "version":  "1.0.0",
+    "private":  true,
+    "description":  "FEN zero-build static frontend (classic portal, triadic view, widget) - Vercel detection marker only",
+    "scripts":  {
+                    "build":  "echo static"
+                },
+    "devDependencies":  {
+                            "@playwright/test":  "^1.62.1"
+                        }
 }

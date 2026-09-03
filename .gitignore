@@ -16,3 +16,8 @@ Thumbs.db
 
 # Local git config (safe.directory override)
 .gitconfig
+
+# Web (zero-build) test tooling
+node_modules/
+test-results/
+playwright-report/

@@ -23,6 +23,12 @@ Plain HTML/JS/CSS, no build step. Talks to the FEN HTTP APIs (contract in
   semantics but stays self-contained for third-party embedding.
 - `tests/` — Node tests for `web/shared/*` (`node --test "web/tests/*.test.js"`;
   wired into the CI `test` job).
+- `e2e/` — Playwright UI tests against a LIVE stack (`docker compose up
+  -d`, then `npx playwright test` from `web/`; wired into the CI `e2e`
+  job after the smoke tests): portal loads clean (no console/page errors),
+  submit → SSE flip to validated, triadic view + scaffold run, widget demo
+  renders. Chromium is downloaded on first run (`npx playwright install
+  chromium`); `node_modules/` and `test-results/` are gitignored.
 - `widget/` — embeddable `<fen-status>` widget (Flow 2) + `demo.html` +
   `embed-example.html` (dataset-owner embedding example).
 
