@@ -139,7 +139,7 @@ def _query_sparql(annotation_id: str) -> dict:
     resp = requests.post(
         _config.sparql_query_endpoint,
         data={"query": query},
-        timeout=10.0,
+        timeout=_config.sparql_timeout_s,
     )
     resp.raise_for_status()
     return resp.json()
@@ -328,7 +328,7 @@ def metrics():
 @app.get("/readyz")
 def readyz():
     try:
-        resp = requests.get(_config.sparql_ping_endpoint, timeout=5.0)
+        resp = requests.get(_config.sparql_ping_endpoint, timeout=_config.sparql_ping_timeout_s)
         resp.raise_for_status()
         return {"status": "ok", "sparql": "reachable"}
     except Exception:  # noqa: BLE001 - any probe failure -> degraded

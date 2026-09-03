@@ -1,0 +1,23 @@
+# Project-level tool config (TECH-DEBT P2: no linter config existed).
+# Zero-build Python services — no build-system section on purpose (pip
+# installs from requirements-*.txt), this file only configures tooling.
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["web/", "schemas/", "examples/", "docs/"]
+
+[tool.ruff.lint]
+# Conservative start: catch unused imports/vars, undefined names, bare
+# excepts, debug leftovers — NOT style nits that would flood existing code.
+select = ["F", "E9", "B", "BLE"]
+ignore = [
+  # E9/B are deliberate in specific spots; keep the initial run green.
+  "B008",  # function calls in default args (FastAPI Depends-style)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["BLE001"]  # tests deliberately exercise failure paths
+"mock_fen_api/main.py" = ["BLE001"]  # demo-wide handlers log, not raise
+"services/*/main.py" = ["BLE001"]    # long-running loops must survive blips
+"services/common/kafka_io.py" = ["BLE001"]
+"services/fen_bridge/fen_client.py" = ["BLE001"]

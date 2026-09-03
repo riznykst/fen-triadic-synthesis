@@ -13,6 +13,8 @@ class StatusApiConfig:
     web_dir: str
     sse_poll_interval_s: float
     sse_heartbeat_s: float
+    sparql_timeout_s: float
+    sparql_ping_timeout_s: float
 
     @classmethod
     def from_env(cls) -> "StatusApiConfig":
@@ -29,4 +31,8 @@ class StatusApiConfig:
             # comment keeps idle connections alive through proxies.
             sse_poll_interval_s=float(os.getenv("STATUS_POLL_INTERVAL_S", "5.0")),
             sse_heartbeat_s=float(os.getenv("STATUS_SSE_HEARTBEAT_S", "15.0")),
+            # Request timeouts for slow Virtuoso deployments (TECH-DEBT P2
+            # config hygiene) — were hardcoded literals.
+            sparql_timeout_s=float(os.getenv("SPARQL_TIMEOUT_S", "10.0")),
+            sparql_ping_timeout_s=float(os.getenv("SPARQL_PING_TIMEOUT_S", "5.0")),
         )

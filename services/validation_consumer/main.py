@@ -84,7 +84,9 @@ def process_cycle(config: ValidationConsumerConfig, consumer, producer) -> None:
     batch, stays uncommitted and is redelivered. This is the pattern that
     gives the pipeline its at-least-once guarantee.
     """
-    records = kafka_io.poll_batch_with_offsets(consumer, batch_size=10, poll_timeout_ms=1000)
+    records = kafka_io.poll_batch_with_offsets(
+        consumer, batch_size=config.batch_size, poll_timeout_ms=config.poll_timeout_ms
+    )
     for record in records:
         try:
             handle_message(config, producer, record.value)
@@ -125,7 +127,7 @@ def main() -> None:
     consumer = kafka_io.make_consumer(
         config.kafka_bootstrap_servers,
         config.topic_governance_decisions,
-        "validation-consumer",
+        config.consumer_group_id,
     )
     producer = kafka_io.make_producer(config.kafka_bootstrap_servers)
     logger.info("validation-consumer started, watching %s", config.topic_governance_decisions)
