@@ -130,14 +130,17 @@ _event_lock = threading.Lock()
 
 def _broadcast(event: str, data: dict) -> None:
     """Fan out an event to all /events subscribers (best-effort, never
-    raises — a slow consumer just misses events, the UI re-polls/refreshes)."""
+    raises — a slow consumer just misses events, the UI re-polls/refreshes).
+    A full per-subscriber queue is logged and the stale subscriber evicted so
+    it stops being a silent black hole for other clients (TECH-DEBT P2)."""
     payload = f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
     with _event_lock:
         for subscriber in list(_event_subscribers):
             try:
                 subscriber.put_nowait(payload)
             except queue.Full:
-                pass
+                logger.warning("dropping SSE event %r for a slow subscriber (queue full); evicting it", event)
+                _event_subscribers.discard(subscriber)
 
 
 def _subscribe():

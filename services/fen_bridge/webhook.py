@@ -42,10 +42,17 @@ def get_producer():
 
 @app.post("/webhook/decision", status_code=status.HTTP_202_ACCEPTED)
 def receive_decision(request: Request, payload: dict):
-    """Bearer-token check when FEN_WEBHOOK_TOKEN is configured. Open when
-    unset (local dev) — in any non-local deployment a token MUST be set,
-    otherwise anyone could forge a DAO decision and overwrite
-    gfen:validationStatus.
+    """Accept a raw decision dict and publish it to Kafka.
+
+    - Bearer-token check first when FEN_WEBHOOK_TOKEN is configured; open
+      when unset (local dev) — in any non-local deployment a token MUST be
+      set, otherwise anyone could forge a DAO decision and overwrite
+      gfen:validationStatus.
+    - The payload is validated as a GovernanceDecision: returns 422 on a
+      malformed payload rather than silently dropping it — this is the one
+      point in the pipeline where we DO want a loud failure, since a decision
+      that fails to reach Kafka would silently strand an entity in
+      gfen:pending forever.
     """
     token = getattr(app.state, "webhook_token", None) or _config.webhook_token
     if token:
@@ -54,12 +61,6 @@ def receive_decision(request: Request, payload: dict):
             WEBHOOK_AUTH_REJECTIONS.inc()
             raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
-    """Accepts a raw dict, validates it as a GovernanceDecision, and
-    publishes it. Returns 422 on a malformed payload rather than silently
-    dropping it — this is the one point in the pipeline where we DO want a
-    loud failure, since a decision that fails to reach Kafka would silently
-    strand an entity in gfen:pending forever.
-    """
     try:
         decision = GovernanceDecision.model_validate(payload)
     except ValidationError as exc:

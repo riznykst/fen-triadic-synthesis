@@ -11,9 +11,8 @@ Consumer side (``make_consumer``): ``enable_auto_commit=False`` — offsets are
 committed ONLY *after* a batch/message has been fully processed
 (commit-after-processing). A crash or failure between processing and commit
 therefore redelivers the message: exactly-once is out of scope, at-least-once
-is guaranteed. Consumers that need delivery coordinates use
-``poll_batch_with_offsets`` + ``commit_offsets``; ``poll_batch`` remains for
-callers that only need values.
+is guaranteed. Consumers use ``poll_batch_with_offsets`` +
+``commit_offsets`` (per-record offsets, never the whole-consumer position).
 
 Kept in ``services.common`` so neither service package imports from the other
 (guardrail: fen_bridge and validation_consumer stay fully independent).
@@ -66,15 +65,6 @@ def make_consumer(
         enable_auto_commit=enable_auto_commit,
         auto_offset_reset=auto_offset_reset,
     )
-
-
-def poll_batch(consumer: KafkaConsumer, batch_size: int, poll_timeout_ms: int) -> List[dict]:
-    """Poll up to ``batch_size`` decoded message *values*. Backward-compatible
-    with the original contract used by services/fen_bridge/outbound.py; prefer
-    ``poll_batch_with_offsets`` when you need delivery coordinates for manual
-    offset commits.
-    """
-    return [record.value for record in poll_batch_with_offsets(consumer, batch_size, poll_timeout_ms)]
 
 
 def poll_batch_with_offsets(

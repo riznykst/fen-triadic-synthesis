@@ -7,7 +7,6 @@ from services.common.kafka_io import (  # noqa: F401
     commit_offsets,
     make_consumer,
     make_producer,
-    poll_batch,
     poll_batch_with_offsets,
     send,
 )
@@ -17,7 +16,6 @@ __all__ = [
     "commit_offsets",
     "make_consumer",
     "make_producer",
-    "poll_batch",
     "poll_batch_with_offsets",
     "send",
 ]

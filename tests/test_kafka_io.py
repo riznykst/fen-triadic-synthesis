@@ -14,7 +14,6 @@ from services.common import kafka_io
 from services.common.kafka_io import (
     MessageRecord,
     commit_offsets,
-    poll_batch,
     poll_batch_with_offsets,
     send,
 )
@@ -89,13 +88,6 @@ def test_poll_batch_with_offsets_returns_delivery_coordinates():
         MessageRecord(value={"a": 1}, topic="t1", partition=0, offset=41),
         MessageRecord(value={"a": 2}, topic="t1", partition=0, offset=42),
     ]
-
-
-def test_poll_batch_returns_values_only_compat():
-    """poll_batch keeps its original values-only contract (outbound.py)."""
-    consumer = _FakeConsumer({None: [_FakeMsg({"a": 1}, "t1", 0, 41)]})
-
-    assert poll_batch(consumer, batch_size=10, poll_timeout_ms=1000) == [{"a": 1}]
 
 
 def test_poll_batch_caps_at_batch_size():
