@@ -77,6 +77,13 @@ services:
       FEN_API_BASE_URL: http://mock-fen-api:8100
       FEN_BRIDGE_GROUP_ID: fen-bridge-outbound
       METRICS_PORT: "9101"
+    healthcheck:
+      # /metrics server on METRICS_PORT (services/fen_bridge/outbound.py)
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9101/metrics')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   fen-bridge-webhook:
     build:
@@ -109,6 +116,7 @@ services:
       - "8082:8082"
     environment:
       SPARQL_QUERY_ENDPOINT: http://fuseki:3030/fen/query
+      SPARQL_PING_ENDPOINT: http://fuseki:3030/$/ping
       FEN_CORS_ORIGINS: "*"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8082/healthz')"]
@@ -136,6 +144,13 @@ services:
       SPARQL_UPDATE_PASSWORD: admin
       FEN_NAAN: "99999"
       METRICS_PORT: "9102"
+    healthcheck:
+      # /metrics server on METRICS_PORT (services/validation_consumer/main.py)
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9102/metrics')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # ---- Observability (local dev: Prometheus + Grafana) -------------------
   # Configs are baked into images (monitoring/docker/*.Dockerfile) instead of

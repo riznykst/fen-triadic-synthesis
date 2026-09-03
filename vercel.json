@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- web/",
+  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- web/ 2>/dev/null || exit 1",
   "rewrites": [
     { "source": "/",        "destination": "/web/index.html" },
     { "source": "/portal",  "destination": "/web/portal/index.html" },

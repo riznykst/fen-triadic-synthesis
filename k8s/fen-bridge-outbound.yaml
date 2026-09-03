@@ -28,6 +28,24 @@ spec:
           env:
             - name: FEN_BRIDGE_GROUP_ID
               value: "fen-bridge-outbound"
+          ports:
+            - name: metrics
+              containerPort: 9101
+          # Prometheus metrics on METRICS_PORT (default 9101,
+          # services/fen_bridge/outbound.py) — probed so a crashed/wedged
+          # forwarder is restarted instead of silently stalling candidates.
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 20
           resources:
             requests:
               cpu: 100m
@@ -37,7 +55,8 @@ spec:
               memory: 512Mi
 ---
 # Headless Service kept for uniform service discovery; the outbound process
-# exposes no HTTP port (it only consumes Kafka + calls the FEN API).
+# exposes no application HTTP API (it only consumes Kafka + calls the FEN
+# API) — /metrics on 9101 is the only HTTP port (scraped by Prometheus).
 apiVersion: v1
 kind: Service
 metadata:

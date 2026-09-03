@@ -26,6 +26,29 @@ spec:
           envFrom:
             - configMapRef:
                 name: fen-config
+            # SPARQL_UPDATE_USER/PASSWORD — create the Secret first (see
+            # configmap.yaml); uncomment once it exists:
+            # - secretRef:
+            #     name: fen-sparql-credentials
+          ports:
+            - name: metrics
+              containerPort: 9102
+          # The process serves Prometheus metrics on METRICS_PORT (default
+          # 9102, services/validation_consumer/main.py) — probe it so a
+          # crashed/wedged consumer is restarted and never silently stalls
+          # candidates at gfen:pending.
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 20
           resources:
             requests:
               cpu: 100m
@@ -35,7 +58,8 @@ spec:
               memory: 512Mi
 ---
 # Headless Service kept for uniform service discovery; the consumer process
-# exposes no HTTP port (it only consumes Kafka + issues SPARQL updates).
+# exposes no application HTTP API (it only consumes Kafka + issues SPARQL
+# updates) — /metrics on 9102 is the only HTTP port (scraped by Prometheus).
 apiVersion: v1
 kind: Service
 metadata:

@@ -1,0 +1,17 @@
+# Build-context hygiene (TECH-DEBT P1): the app Dockerfiles COPY from the
+# repo root context — keep .git, bytecode, caches and local secrets out of
+# the context sent to the Docker daemon.
+.git
+.gitconfig
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.env.*
+!.env.example
+docs/
+examples/
+tests/
+.vendor/
+*.md
+!README.md

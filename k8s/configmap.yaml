@@ -1,4 +1,4 @@
-﻿# Shared environment for the four FEN application deployments. Kafka and
+# Shared environment for the four FEN application deployments. Kafka and
 # the RDF store (Virtuoso in production, Fuseki in local dev) are EXTERNAL
 # to this deployment — see docs/architecture.md, "Kubernetes / OKD
 # deployment". Values below are placeholders; replace before deploying.
@@ -10,13 +10,29 @@ metadata:
     app.kubernetes.io/part-of: fen-triadic-synthesis
 data:
   # --- Kafka (DAP's real broker in production) ---------------------------
+  # In-cluster Kafka Service name:port. NOTE: docker-compose's container
+  # listener is kafka:29092 (9092 advertises localhost for host clients) —
+  # the k8s value must match THIS cluster's broker, not the compose one.
   KAFKA_BOOTSTRAP_SERVERS: "kafka:9092" # TODO: point at the DAP/GRAPHIA broker
   # --- Topics (same names as docker-compose.yml) --------------------------
   TOPIC_PENDING_VALIDATION: "dap.entities.pending_validation.v1"
   TOPIC_GOVERNANCE_DECISIONS: "fen.governance.decisions.v1"
   TOPIC_VALIDATED: "dap.entities.validated.v1"
   # --- External services --------------------------------------------------
+  # The real Agentic Scaffolding + DAO backend is EXTERNAL (ADR-002) and has
+  # no in-cluster Service; local dev uses the mock at mock-fen-api:8100.
+  # Deployment without a reachable FEN API strands candidates at
+  # gfen:pending (FenClient retries silently — it never raises).
   FEN_API_BASE_URL: "http://fen-api:8080" # TODO: real Agentic Scaffolding + DAO endpoint
+  # --- SPARQL credentials -------------------------------------------------
+  # The Validation Result Consumer authenticates on the UPDATE endpoint
+  # (Fuseki requires basic auth; a real Virtuoso does too). NO credentials
+  # are shipped here on purpose: without them the update is rejected (401)
+  # and the message is redelivered forever (at-least-once loop) — deploy
+  # this Secret first and add it to the consumer Deployment:
+  #   kubectl create secret generic fen-sparql-credentials \
+  #     --from-literal=SPARQL_UPDATE_USER=... --from-literal=SPARQL_UPDATE_PASSWORD=...
+  # (validation-consumer.yaml: envFrom secretRef name: fen-sparql-credentials)
   SPARQL_UPDATE_ENDPOINT: "http://virtuoso:8890/sparql" # TODO: GRAPHIA Virtuoso update endpoint
   # --- PIDs (ADR-003) -----------------------------------------------------
   FEN_NAAN: "99999" # TODO: FEN's registered NAAN
