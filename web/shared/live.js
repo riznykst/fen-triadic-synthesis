@@ -83,5 +83,9 @@
     return { start: start, stop: stop };
   }
 
-  global.fenLive = fenLive;
-})(window);
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = fenLive;
+  } else {
+    global.fenLive = fenLive;
+  }
+})(typeof window !== "undefined" ? window : globalThis);

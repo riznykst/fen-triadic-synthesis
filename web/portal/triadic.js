@@ -6,13 +6,10 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-function apiBase(key, fallback) {
-  const fromQuery = new URLSearchParams(location.search).get(key);
-  if (fromQuery) localStorage.setItem(key, fromQuery);
-  return (localStorage.getItem(key) || fallback).replace(/\/+$/, "");
-}
-const MOCK = apiBase("fen_mock_base", "http://localhost:8100");
-const STATUS = apiBase("fen_status_base", "http://localhost:8082");
+// API bases + escaping + palette live in web/shared/*.js (TECH-DEBT P2
+// consolidation) — one implementation, aliases here.
+const MOCK = window.fenApiBase("fen_mock_base", "http://localhost:8100");
+const STATUS = window.fenApiBase("fen_status_base", "http://localhost:8082");
 
 const THRESHOLD_DEFAULT = 10;
 const EXAMPLES = [
@@ -21,9 +18,8 @@ const EXAMPLES = [
   { label: "Fact · community", text: "The biennial fair of St. Michael's was held on the first Sunday after Michaelmas" },
 ];
 
-const C = { bl: "#2d5a8e", gr: "#2e7d5b", rd: "#b23a3a", gd: "#8b6914", hs: "#5b4e8a", ink: "#1c1b1f", mu: "#6b6560" };
+const C = window.fenTheme.FEN_LIGHT;
 const OUTCOME_STYLE = { validated: C.gr, disputed: C.gd, rejected: C.rd };
-const OUTCOME_BG = { validated: "#e6f4ee", disputed: "#faf3e0", rejected: "#fae8e8" };
 
 let state = { candidates: [], reputation: {}, mode: "auto", qv_threshold: THRESHOLD_DEFAULT };
 let intensities = {};
@@ -43,8 +39,7 @@ async function api(path, opts) {
 }
 
 function esc(s) {
-  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return window.fenEscapeHtml(s);
 }
 
 // Escaping for values embedded in INLINE JS handlers inside double-quoted
@@ -52,7 +47,7 @@ function esc(s) {
 // entity escaping for the attribute. (HTML entity decoding happens before JS
 // parsing, so esc() alone would NOT stop quote breakout in that context.)
 function jsAttr(s) {
-  return esc(String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'"));
+  return window.fenJsAttr(s);
 }
 
 // ---------------------------------------------------------------- scaffold

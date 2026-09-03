@@ -8,10 +8,21 @@ Plain HTML/JS/CSS, no build step. Talks to the FEN HTTP APIs (contract in
 - `portal/` — classic DAO portal (`index.html`, `app.js`) and the Triadic view
   Scaffold → Consensus → Registry (`triadic.html`, `triadic.js`, vendored
   Cytoscape in `portal/vendor/`).
-- `shared/` — `live.js` (`fenLive`): the single SSE live-updates helper
-  (EventSource + 15s polling fallback + catch-up on reopen) used by both
-  portal views; the Flow-2 widget mirrors its semantics but stays
-  self-contained for third-party embedding.
+- `shared/` — the single implementations shared by the portal views
+  (TECH-DEBT P2 consolidation):
+  - `live.js` (`fenLive`): SSE live-updates helper (EventSource + 15s
+    polling fallback + catch-up on reopen);
+  - `escape.js` (`fenEscapeHtml`/`fenJsAttr`/`fenSafeHref`): one escaping
+    implementation;
+  - `api-base.js` (`fenApiBase`): the query → localStorage → default base-URL
+    convention;
+  - `theme.js` (`fenTheme`): the light palette + status→color map for
+    JS-rendered UI (keep in sync with the portal CSS variables).
+  All four are UMD (window + module.exports) so `node --test web/tests/`
+  can exercise them (see `web/tests/`). The Flow-2 widget mirrors the
+  semantics but stays self-contained for third-party embedding.
+- `tests/` — Node tests for `web/shared/*` (`node --test "web/tests/*.test.js"`;
+  wired into the CI `test` job).
 - `widget/` — embeddable `<fen-status>` widget (Flow 2) + `demo.html` +
   `embed-example.html` (dataset-owner embedding example).
 
