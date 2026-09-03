@@ -56,8 +56,13 @@ let reputation = {};            // actor -> points (current totals)
 let reputationHistory = [];      // newest first, last 50, validated only
 let llmAccuracy = {};           // { agreements, total, accuracy }
 
+const VALID_STATUSES = ["pending", "deciding", "validated", "disputed", "rejected", "unknown"];
+
 function statusBadge(status) {
-  return '<span class="badge b-' + (status || "unknown") + '">' + (status || "unknown") + "</span>";
+  // Enum-validate + escape (TECH-DEBT P1): status is server-controlled and
+  // lands in the class attribute AND the text — never interpolate it raw.
+  const safe = VALID_STATUSES.indexOf(status) !== -1 ? status : "unknown";
+  return '<span class="badge b-' + escapeHtml(safe) + '">' + escapeHtml(safe) + "</span>";
 }
 
 function renderCandidates(data) {
@@ -84,6 +89,10 @@ function renderCandidates(data) {
   rows.innerHTML = list.map((c) => {
     const q = c.quorum || { votes: 0, required: 0 };
     const pct = q.required ? Math.min(100, Math.round((q.votes / q.required) * 100)) : 0;
+    // TECH-DEBT P1: c.votes is server-controlled and may be absent — guard
+    // and coerce before interpolating into innerHTML.
+    const votes = c.votes || {};
+    const nv = Number(votes.validated) || 0, dv = Number(votes.disputed) || 0, rv = Number(votes.rejected) || 0;
     const rec = c.llm_recommendation
       ? '<span class="note" style="color:var(--amber)">' + escapeHtml(c.llm_recommendation) + " (support)</span>"
       : "—";
@@ -105,8 +114,8 @@ function renderCandidates(data) {
       "<td>" + escapeHtml(c.entity_label || "—") + "</td>" +
       "<td>" + statusBadge(c.status) + "</td>" +
       "<td>" + rec + "</td>" +
-      "<td>v:" + (c.votes.validated || 0) + " d:" + (c.votes.disputed || 0) + " r:" + (c.votes.rejected || 0) + "</td>" +
-      '<td><div class="bar"><div style="width:' + pct + '%"></div></div><span class="note">' + q.votes + "/" + q.required + "</span></td>" +
+      "<td>v:" + nv + " d:" + dv + " r:" + rv + "</td>" +
+      '<td><div class="bar"><div style="width:' + pct + '%"></div></div><span class="note">' + Number(q.votes) + "/" + Number(q.required) + "</span></td>" +
       "<td>" + voteBtns + "</td>" +
       '<td class="exports">' + exportLinks + "</td>" +
       "</tr>"
