@@ -447,6 +447,40 @@ resistance, identity and on-chain anchoring), and registering a real NAAN for FE
 Consortium" section of the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) for what's needed
 to start that.
 
+## Implementation status (evidence markers)
+
+Every capability claim below is marked with what it actually is, so a reader
+never has to guess whether something was run, coded, simulated, or is still
+awaiting the consortium:
+
+- ✅ **VERIFIED** — executed for real in this repo: unit tests, the CI e2e
+  pipeline (Docker stack + Kafka + Fuseki/Virtuoso), or a live check.
+- 🟦 **IMPLEMENTED** — the code exists and is covered by tests, but the
+  external counterpart (real GRAPHIA/KG service) is not involved yet.
+- 🟧 **MOCK** — deliberately simulated inside this repository (demo DAO,
+  LLM recommendations, ledger anchors); the production component is external
+  by design (ADR-002).
+- ⬜ **PENDING CONSORTIUM** — needs GRAPHIA/consortium input: live Kafka
+  topics, the official ontology IRI, a registered NAAN, real identity.
+
+| Capability | Marker | Evidence |
+|---|---|---|
+| Event pipeline (Kafka at-least-once, FEN Bridge, Validation Result Consumer) | ✅ VERIFIED | 125 pytest + CI e2e (smoke auto/community/QV, real Docker stack) |
+| SPARQL UPDATE dialect vs Virtuoso | ✅ VERIFIED | `scripts/virtuoso_dialect_check.py` green in CI (OpenLink Virtuoso) |
+| SHACL structural gate at Scaffold | ✅ VERIFIED | `scripts/shacl_check.py` in CI; shapes shipped into the mock image |
+| gfen: ontology extension (additive, no GRAPHIA modification) | ✅ VERIFIED | ontology parse tests; `owl:imports` stub documented |
+| Status API + RDF/RO-Crate export | ✅ VERIFIED | unit tests + UI e2e hits `/api/v1/status`, `/export` |
+| Web layer (portal classic/triadic, widget) | ✅ VERIFIED | 18 Node tests + 5 Playwright UI e2e in CI |
+| Agentic Scaffolding (extractor/matcher/disambiguator, LLM pluggable) | 🟦 IMPLEMENTED (demo) | `mock_fen_api/scaffold.py`; production scaffolding is external (ADR-002) |
+| Governance — QV, delegation, reputation | 🟧 MOCK | `mock_fen_api/{qv_voting,delegation}.py`; real DAO external (ADR-002) |
+| Identity / sybil resistance | 🟧 MOCK | free-text voter names; production identity external (ADR-005) |
+| Ledger anchoring | 🟧 MOCK | `0xMOCK` anchors until real ledger (ADR-001) |
+| PID scheme (ARK/w3id, g/v/r/s) | 🟦 IMPLEMENTED | `services/common/pid.py`; dev NAAN `99999` |
+| NAAN registration + N2T/w3id redirects | ⬜ PENDING CONSORTIUM | drafts ready; ADR-003 |
+| Official GRAPHIA Ontology IRI (`owl:imports`) | ⬜ PENDING CONSORTIUM | stub IRI today |
+| Live GRAPHIA: Kafka topics, WP4 schema, Virtuoso, named graphs | ⬜ PENDING CONSORTIUM | `docs/GRAPHIA-INTEGRATION.md`, integration-verification-plan |
+| Empirical precision/recall (before/after validation) | ⬜ PENDING CONSORTIUM | next research phase (whitepaper "Next steps") |
+
 ## Roadmap
 
 - [x] FEN Bridge, Validation Result Consumer, and mock DAO implemented and unit-tested (this repo)
