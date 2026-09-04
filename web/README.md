@@ -52,7 +52,7 @@ Default API endpoints are `http://localhost:8100` (mock FEN) and
 
 ## CI scope
 
-Frontend-only pushes (touching only `web/`) run the 111 unit tests via
+Frontend-only pushes (touching only `web/`) run the 125 unit tests via
 `.github/workflows/web.yml` and never touch Docker: `ci.yml` ignores
 web-only pushes (`paths-ignore: ['web/**']`), because the CI stack cannot
 share the published host ports with a locally running dev stack and a
