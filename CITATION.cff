@@ -7,7 +7,8 @@ abstract: >-
   the community decides, the knowledge graph records. Runnable companion
   implementation of "Decentralised Agentic Governance: A Methodology for
   Community-Owned Linguistic Datasets and Knowledge Synthesis" (Riznyk, 2026,
-  DOI pending).
+  accepted for publication in the CERN IdeaSquare Journal of Experimental
+  Innovation, DOI 10.23726/cij.2026.1829).
 authors:
   - family-names: Riznyk
     given-names: Vadym
@@ -27,5 +28,5 @@ license: Apache-2.0
 version: 0.1.0
 date-released: "2026-08-30"
 url: "https://github.com/riznykst/fen-triadic-synthesis"
-# Set once the companion paper's DOI is active:
-# doi: "10.xxxx/xxxxx"
+# Companion paper (accepted for publication, CERN IdeaSquare J. Exp. Innovation):
+doi: "10.23726/cij.2026.1829"

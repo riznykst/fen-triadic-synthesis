@@ -24,9 +24,10 @@ community-governed without transferring epistemic authority to the AI system?*
 This repository is the runnable companion implementation of:
 
 > Riznyk, V. (2026). *Decentralised Agentic Governance: A Methodology for
-> Community-Owned Linguistic Datasets and Knowledge Synthesis* (submitted for
-> journal publication; DOI pending — will be linked here and in
-> [`CITATION.cff`](CITATION.cff) once active).
+> Community-Owned Linguistic Datasets and Knowledge Synthesis*. Accepted for
+> publication in the CERN IdeaSquare Journal of Experimental Innovation
+> (in press; DOI 10.23726/cij.2026.1829 — will be linked here and in
+> [`CITATION.cff`](CITATION.cff) once published).
 
 **The architecture answers the question with a hard boundary** — the same
 boundary the paper argues for (epistemic assistance ≠ epistemic authority):
@@ -48,7 +49,8 @@ nothing more ([ADR-001](docs/adr/ADR-001-rdf-anchoring-not-full-onchain.md)).
 ### Research lineage
 
 ```text
-PAPER         Decentralised Agentic Governance (2026, DOI pending)
+PAPER         Decentralised Agentic Governance (2026, accepted — CERN
+              IdeaSquare J. Exp. Innovation, in press, DOI 10.23726/cij.2026.1829)
    │
    ▼
 FRAMEWORK     Triadic Synthesis — Scaffold → Consensus → Registry
@@ -81,7 +83,7 @@ FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 
 > Current industrial paradigms largely treat language as a raw resource, harvested at scale with limited regard for cultural context or community agency.
 
-This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), which is submitted separately for journal publication and is not included in this repository. The consortium-facing [`docs/FEN-Whitepaper-Triadic-Synthesis.pdf`](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
+This project is the applied counterpart to the academic paper *"Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"* (Riznyk, 2026), accepted for publication in the CERN IdeaSquare Journal of Experimental Innovation (in press; DOI 10.23726/cij.2026.1829) and not included in this repository. The consortium-facing [`docs/FEN-Whitepaper-Triadic-Synthesis.pdf`](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) summarises that framework specifically for the GRAPHIA integration proposal — read it first if you're evaluating this repo on behalf of the consortium.
 
 ## User stories
 
@@ -496,7 +498,7 @@ awaiting the consortium:
 
 ## Related work
 
-- **Companion paper:** *Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis* (Riznyk, 2026)
+- **Companion paper:** *Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis* (Riznyk, 2026) — accepted for publication in the CERN IdeaSquare Journal of Experimental Innovation, in press (DOI 10.23726/cij.2026.1829)
 - **Integrates with:** [GRAPHIA](https://graphia-ssh.eu/) — D2.2 Technical Architecture (SSH Knowledge Graph, Data Acquisition Platform)
 - **Research source:** [`docs/research/graphia-tech-stack-2026-08.pdf`](docs/research/graphia-tech-stack-2026-08.pdf) — GRAPHIA technology-stack research (English edition; RDF/LPG, Ontology, DAP, OKD/HPC, LLM services), the basis for the integration audit
 
@@ -511,7 +513,8 @@ awaiting the consortium:
   url     = {https://github.com/riznykst/fen-triadic-synthesis},
   version = {0.1.0},
   note    = {Research prototype; companion implementation of
-             "Decentralised Agentic Governance" (DOI pending)}
+             "Decentralised Agentic Governance" (CERN IdeaSquare J. Exp.
+             Innovation, in press, DOI 10.23726/cij.2026.1829)}
 }
 ```
 
