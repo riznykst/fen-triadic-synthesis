@@ -2,6 +2,28 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-04 — TECH-DEBT: final executable items closed (~100%)
+
+- **Widget cleanup** (`web/widget/fen-status-widget.js`): write-only `_sseOk`
+  removed; server-sent `event: error` frames and transport-level `onerror`
+  are explicitly separated (comments) — no write-only state remains.
+- **Delegation errors structured** (`mock_fen_api/delegation.py` +
+  `main.py`): `apply_delegation` raises `DelegationError(status_code,
+  message)` instead of returning prose; `delegate_vote` maps it directly —
+  no substring-matching of error text; unknown annotation now returns 404
+  (was incorrectly 409). `tests/test_delegation.py` rewritten for the
+  exception contract (8 tests).
+- **k8s status-api aligned** (`k8s/status-api.yaml`): labels/selectors use
+  `app.kubernetes.io/name` like the other manifests; per-deployment env
+  duplicates of SPARQL_*/FEN_WEB_DIR removed (they already come from
+  fen-config / env-shared.yaml).
+- TECH-DEBT.md statuses updated: a11y, dead code, config hygiene, test
+  blind spots and the k8s env single-source item all `[x]`; the only open
+  plan items left are the owner/external gates (CI-mode retirement on
+  billing fix; pinned k8s image tags until a registry/build pipeline
+  exists).
+- Tests: 125 (unchanged — delegation tests rewritten, same count).
+
 ## 2026-09-03 — Vercel 404 fixed: cleanUrls broke rewrites; embed page restored
 
 - **Root cause of the long-standing 404 on "/"** (and /portal, /triadic,

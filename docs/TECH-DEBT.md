@@ -41,14 +41,14 @@ P3 = structural.
   imagePullPolicy; add probes/metrics port to consumer deployments
   (`k8s/fen-bridge-outbound.yaml`, `k8s/validation-consumer.yaml`); align
   status-api labels (`app.kubernetes.io/name`).
-  PARTIAL 2026-09-03 (in tree, commit pending): secret.yaml now carries
-  intentionally INVALID base64 (kubectl apply refuses it — fail-closed);
-  empty SPARQL creds removed from configmap (documented
-  `kubectl create secret generic fen-sparql-credentials`); Kafka-listener
-  and FEN_API_BASE_URL comments clarified; readiness/liveness probes +
-  containerPort 9101/9102 on both consumer Deployments; stale "no HTTP
-  port" comments fixed. OPEN: single env source, pinned image tags,
-  status-api label alignment.
+  PARTIAL 2026-09-03/04: secret.yaml fail-closed (invalid base64), empty
+  SPARQL creds removed from configmap (documented Secret), listener/URL
+  comments clarified, probes + containerPort on consumers, stale comments
+  fixed; env single source landed (env-shared.yaml generator, wave 10);
+  status-api labels aligned + duplicate env removed (2026-09-04).
+  OPEN ONLY: pinned image tags (placeholders `:latest` until a real
+  registry/build pipeline exists — mirrors the compose state before the
+  Virtuoso pin).
 - [x] **Stale test counts (honesty contract)** — README `104 tests` in three
   places (badge line 8, layout line 234, CI section line 430), plus
   CONTRIBUTING and BACKLOG delivered items; the suite is **111**.
@@ -170,55 +170,54 @@ P3 = structural.
   party embedding) and documents mirroring; portal CSS variables documented
   to stay in sync with theme.js; demo.html/dark-leftovers and
   prefers-color-scheme kept as deliberate visual choices (noted, not debt).
-- [~] **Accessibility (a11y)** — form controls without `for`/`id` pairing,
+- [x] **Accessibility (a11y)** — form controls without `for`/`id` pairing,
   table without `<caption>`/`scope="col"` (`web/portal/index.html`,
   `triadic.html`); widget expand control is a `<div>` (not focusable, no
   role/aria-expanded/keydown); triadic ± / delegate buttons are symbol-only
   without aria-labels.
   Fix: label/for everywhere, caption + scope, real `<button>` semantics +
   aria in widget, aria-labels on icon buttons.
-  PARTIAL 2026-09-03 (in tree, commit pending): labels paired with for/id in
-  both portal pages; table caption + scope="col"; widget expand control is a
-  real button with aria-expanded + focus-visible, "retry" is a button.
-  LATER 2026-09-03 (in tree, commit pending): triadic ± / delegate buttons
-  gained aria-labels — a11y item fully closed.
-- [~] **Dead code** — `poll_batch` (values-only) + its shim export and test
+  DONE 2026-09-03/04: labels paired with for/id in both portal pages; table
+  caption + scope="col"; widget expand control is a real button with
+  aria-expanded + focus-visible, "retry" is a button; triadic ± / delegate
+  buttons carry aria-labels.
+- [x] **Dead code** — `poll_batch` (values-only) + its shim export and test
   (superseded by `poll_batch_with_offsets`); `renderGraphSvg`, `regGraph`
   refs and the graph dispatcher + unused `OUTCOME_BG` (`triadic.js`);
   write-only `_sseOk` flags (`app.js`, widget); duplicate SSE error binding
   in the widget (server `event: error` vs transport onerror conflated);
   orphaned mid-function docstring in `webhook.py`; `_broadcast` swallows
   `queue.Full` with `pass` (events silently dropped for slow subscribers).
-  PARTIAL 2026-09-03: `poll_batch` deleted (module + shim + compat test);
+  DONE 2026-09-03/04: `poll_batch` deleted (module + shim + compat test);
   webhook.py docstrings merged; `_broadcast` logs + evicts full subscribers;
   `renderGraphSvg` + `regGraph` refs removed (6e1aa57 — Cytoscape-only
-  graph, renderGraph() is a thin wrapper over renderGraphCy(); OUTCOME_BG
-  already gone). OPEN: widget `_sseOk` + duplicate SSE error binding.
-- [~] **Config hygiene** — `batch_size=10`/`poll_timeout_ms=1000`/group id
+  graph); OUTCOME_BG removed; widget `_sseOk` removed and the server-frame
+  vs transport-error handlers are explicitly separated (comments in
+  fen-status-widget.js) — no write-only state remains (app.js sseOk went
+  with the fenLive refactor).
+- [x] **Config hygiene** — `batch_size=10`/`poll_timeout_ms=1000`/group id
   hardcoded in `validation_consumer/main.py` (fen_bridge equivalents are
   env-driven); SPARQL timeouts hardcoded (`timeout=10.0/5.0`) in status-api
   despite an env config dataclass; HTTP status derived by substring-matching
   error prose in `delegate_vote` (`mock_fen_api/main.py:539`).
   Fix: env knobs via `from_env()`; structured error result from
   `apply_delegation`.
-  PARTIAL 2026-09-03 (in tree, commit pending):
-  `FEN_CONSUMER_GROUP_ID/BATCH_SIZE/POLL_TIMEOUT_MS` env knobs;
-  `SPARQL_TIMEOUT_S`/`SPARQL_PING_TIMEOUT_S` env knobs. OPEN:
-  `apply_delegation` structured error result.
-- [~] **Test blind spots** — `FenClient` (designed to swallow errors and
+  DONE 2026-09-03/04: `FEN_CONSUMER_GROUP_ID/BATCH_SIZE/POLL_TIMEOUT_MS`
+  env knobs; `SPARQL_TIMEOUT_S`/`SPARQL_PING_TIMEOUT_S` env knobs;
+  `apply_delegation` now raises `DelegationError(status_code, message)`
+  (mock_fen_api/delegation.py) and `delegate_vote` maps it directly — no
+  prose substring-matching; unknown annotation correctly 404 (was 409).
+- [x] **Test blind spots** — `FenClient` (designed to swallow errors and
   retry — its whole failure mode is unverified) has no unit tests;
   `delegation.py` exercised only indirectly; no linting/formatting config
   anywhere; 1616 pytest warnings un-triaged.
   Fix: FenClient unit tests (success/retry/terminal-failure), direct
   delegation tests, add ruff/flake8 config, triage warnings (rdflib
   deprecations, datetime.utcnow).
-  PARTIAL 2026-09-03 (in tree, commit pending): new `tests/test_fen_client.py`
-  (4 tests: success / transient-retry-with-backoff / terminal-failure-returns-
-  False / HTTP-4xx-as-failure). OPEN: direct delegation tests, linter config,
-  warning triage (rdflib deprecations in test_qv_scaffold/test_sparql_updater).
-  LATER 2026-09-03 (in tree, commit pending): `pyproject.toml` with a
-  conservative [tool.ruff] preset added (F/E9/B/BLE + per-file ignores) —
-  first `ruff check` run still pending.
+  DONE 2026-09-03/04: tests/test_fen_client.py (4 tests) +
+  tests/test_delegation.py (8 tests, rewritten for DelegationError);
+  pyproject.toml [tool.ruff] — first run green (2026-09-03, wave 7);
+  warnings 1616 → 1 (filterwarnings for upstream rdflib/starlette).
 - [x] **Metrics collision** — `fen_kafka_messages_processed_total` /
   `_failed` emitted by BOTH fen-bridge-outbound and validation-consumer
   with no distinguishing labels; the Grafana dashboard plots the two series
@@ -259,12 +258,13 @@ P3 = structural.
   `pull_request` + matrix 3.10/3.11/3.12 + setup-python; remove the
   powershell overrides; make e2e fail (not skip) without Docker; merge
   web.yml back.
-- [ ] **Single env source for compose + k8s** — generate `k8s/configmap.yaml`
+- [x] **Single env source for compose + k8s** — generate `k8s/configmap.yaml`
   from the same definitions docker-compose uses (see P0 k8s item).
-  DONE (k8s side) 2026-09-03 (in tree, commit pending):
-  `k8s/env-shared.yaml` is the single hand-edited k8s env map;
-  `scripts/generate_k8s_configmap.py` renders configmap.yaml;
-  `tests/test_k8s_configmap.py` enforces freshness. Compose remains its own
+  DONE (k8s side) 2026-09-03/04: `k8s/env-shared.yaml` is the single
+  hand-edited k8s env map; `scripts/generate_k8s_configmap.py` renders
+  configmap.yaml; `tests/test_k8s_configmap.py` enforces freshness;
+  status-api duplicates removed (envFrom only, wave-11 label/dup cleanup).
+  Compose remains its own
   source for listener/dev-specific values; the shared TOPIC_* names are
   asserted end to end by the CI e2e — a full compose-driven generation is
   intentionally not attempted (listener/credential values legitimately
