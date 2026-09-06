@@ -4,8 +4,17 @@
   "rewrites": [
     { "source": "/",        "destination": "/web/index.html" },
     { "source": "/portal",  "destination": "/web/portal/index.html" },
+    { "source": "/portal/", "destination": "/web/portal/index.html" },
     { "source": "/triadic", "destination": "/web/portal/triadic.html" },
+    { "source": "/triadic/", "destination": "/web/portal/triadic.html" },
     { "source": "/widget",  "destination": "/web/widget/demo.html" },
-    { "source": "/embed",   "destination": "/web/widget/embed-example.html" }
+    { "source": "/widget/", "destination": "/web/widget/demo.html" },
+    { "source": "/embed",   "destination": "/web/widget/embed-example.html" },
+    { "source": "/embed/",  "destination": "/web/widget/embed-example.html" }
+  ],
+  "redirects": [
+    { "source": "/index.html",    "destination": "/",         "permanent": true },
+    { "source": "/triadic.html",  "destination": "/triadic",  "permanent": true },
+    { "source": "/portal.html",   "destination": "/portal",   "permanent": true }
   ]
 }
