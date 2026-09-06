@@ -72,6 +72,7 @@ services:
     environment:
       FEN_BRIDGE_WEBHOOK_URL: http://fen-bridge-webhook:8101/webhook/decision
       MOCK_FEN_DECISION_DELAY_S: "3"
+      FEN_MOCK_VOTING: auto
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/readyz')"]
       interval: 5s
