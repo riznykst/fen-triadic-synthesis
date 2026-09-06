@@ -2,6 +2,16 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-06 — fix(infra): .dockerignore excluded docs/ while the mock image COPYs docs/ontology
+
+- The merge-readiness cleanup (3c43c12) added `COPY docs/ontology` to the
+  mock target of docker/service.Dockerfile (scaffold SHACL gate), but the
+  root `.dockerignore` excluded `docs/` — CI e2e "Start the stack" failed
+  with `/docs/ontology: not found` whenever Docker was actually available.
+  `.dockerignore` now excludes `docs/*` but re-includes `docs/ontology/`
+  (the two small .ttl files the image needs). Verified: mock build OK,
+  POST /scaffold in the container reports `shacl.valid: true`.
+
 ## 2026-09-04 — TECH-DEBT: final executable items closed (~100%)
 
 - **Widget cleanup** (`web/widget/fen-status-widget.js`): write-only `_sseOk`

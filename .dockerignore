@@ -9,7 +9,11 @@
 .env
 .env.*
 !.env.example
-docs/
+# docs/ is excluded EXCEPT docs/ontology — the mock image COPYs the SHACL
+# shapes (mock_fen_api/scaffold.py validates against them at runtime).
+docs/*
+!docs/ontology/
+!docs/ontology/*
 examples/
 tests/
 .vendor/
