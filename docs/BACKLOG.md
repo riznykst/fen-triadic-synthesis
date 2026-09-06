@@ -59,7 +59,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-09-02 (kept cu
 - [x] Interface language: English-only (2026-09-02) — the RU/EN bilingual plan is dropped: the product UI stays English. Replaced the only non-English user-facing string (the Jules landing example, `web/index.html`); full `web/` audit clean (grep for non-ASCII/Cyrillic → 0 matches)
 
 **IPL 2026 event prep (14–18 September; specs in `docs/IPL-*.md`)**
-- [ ] IPL demo dry-run against the local stack (walkthrough in `docs/IPL-DEMO.md`) — schedule before the event
+- [x] IPL demo dry-run against the local stack — DONE (2026-09-06): `C:\FEN-GRAPHIA\ipl-dry-run.py`, 13/13 checkpoints PASS (scaffold UTF-8 + SHACL, pending → QV votes + delegation → validated, PID/anchor, 4 export formats); UI paths covered by the Playwright suite (5/5). Live scheduling for 14–18 Sept stays with the owner
 - [ ] Decide the IPL demo environment (local stack on the laptop vs remote backends + Vercel static UI)
 
 **P3 — consortium/production**
