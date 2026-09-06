@@ -47,7 +47,7 @@ docker compose up --build
 2. **Submit a Low-Resource Linguistic Entry:**
    - In the input field, enter a culturally specific or low-resource linguistic claim, e.g.:
      > *"Pokuttya dialect term 'ґазда' refers to a household master or traditional landowner in Western Ukrainian agrarian ethnography."*
-   - Click **"Scaffold with AI Agent"**.
+   - Click **"Run Scaffolding Agent →"** (the button label in the live UI).
 3. **Observe the Hard Human–AI Boundary (ADR-004):**
    - The Agentic Scaffolding service parses the input and extracts:
      - **Triple:** Subject: `ґазда`, Predicate: `hasMeaning`, Object: `traditional landowner`.
