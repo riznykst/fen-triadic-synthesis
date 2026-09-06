@@ -66,7 +66,7 @@ from services.common.metrics import (
     metrics_response,
 )
 
-from mock_fen_api.delegation import apply_delegation
+from mock_fen_api.delegation import DelegationError, apply_delegation
 from mock_fen_api.qv_voting import (
     MAX_INTENSITY,
     OUTCOMES,
@@ -537,10 +537,10 @@ def delegate_vote(annotation_id: str, payload: dict):
     delegate = (payload.get("delegate") or "").strip()
     with _state_lock:
         record = _candidates.get(annotation_id)
-        error = apply_delegation(record, voter, delegate, VOTING_MODE)
-        if error is not None:
-            status = 422 if "required" in error or "yourself" in error else 409
-            raise HTTPException(status_code=status, detail=error)
+        try:
+            apply_delegation(record, voter, delegate, VOTING_MODE)
+        except DelegationError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
     _broadcast("vote", {"annotation_id": annotation_id, "delegation": True, "voter": voter})
     return {
         "annotation_id": annotation_id,

@@ -13,26 +13,37 @@ from __future__ import annotations
 from typing import Optional
 
 
+class DelegationError(Exception):
+    """Rejected delegation with the HTTP status the caller should return.
+
+    Structured result (TECH-DEBT P2 config hygiene): the HTTP layer must not
+    derive status codes by substring-matching error prose.
+    """
+
+    def __init__(self, status_code: int, message: str):
+        super().__init__(message)
+        self.status_code = status_code
+        self.message = message
+
+
 def apply_delegation(
     record: Optional[dict], voter: str, delegate: str, voting_mode: str
-) -> Optional[str]:
+) -> None:
     """Register ``voter -> delegate`` on one proposal's record.
 
-    Returns ``None`` on success, or an error message describing the rejected
-    delegation (caller maps it to an HTTP status). Mutates ``record`` in
-    place when accepted.
+    Raises ``DelegationError`` (carrying the HTTP status code) on rejection;
+    mutates ``record`` in place when accepted. Never returns a value.
     """
     if not voter or not delegate:
-        return "voter and delegate are required"
+        raise DelegationError(422, "voter and delegate are required")
     if voter == delegate:
-        return "cannot delegate to yourself"
+        raise DelegationError(422, "cannot delegate to yourself")
     if record is None:
-        return "unknown annotation_id"
+        raise DelegationError(404, "unknown annotation_id")
     if record["status"] != "pending":
-        return f"candidate already decided: {record['status']}"
+        raise DelegationError(409, f"candidate already decided: {record['status']}")
     if voting_mode != "qv":
-        return "delegation is a QV-mode feature (FEN_MOCK_VOTING=qv)"
+        raise DelegationError(409, "delegation is a QV-mode feature (FEN_MOCK_VOTING=qv)")
     if voter in {v.get("voter") for v in record["qv_votes"]}:
-        return f"voter {voter} has already voted — no delegation"
+        raise DelegationError(409, f"voter {voter} has already voted — no delegation")
     record["delegations"][voter] = delegate
-    return None
