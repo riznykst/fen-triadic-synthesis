@@ -8,7 +8,7 @@ ADR-003.
 
 ## A. Real GRAPHIA (DAP Kafka + Virtuoso)
 
-**Entry criteria** — the consortium grants (whitepaper §7):
+**Entry criteria** — the consortium grants (whitepaper §8):
 1. a test-environment Kafka topic mirroring `dap.entities.pending_validation.v1`
    scoped to one low-resource-language WP4 test corpus;
 2. read/update access to a test Virtuoso (or the OKD namespace for the
@@ -23,7 +23,7 @@ ADR-003.
       (field names, types, optionality, nesting).
       → If mismatch: align `services/common/messages.py` (single source of
       truth) and regenerate schemas — the bridge must consume **without
-      transformation** (whitepaper §7).
+      transformation** (whitepaper §8).
 - [ ] Confirm security protocol: PLAINTEXT → SASL_SSL/TLS + client certs.
       → `kafka_io.make_consumer/producer` must gain config for
       `security_protocol`, `sasl_*` (env-driven, like other settings).
@@ -63,7 +63,7 @@ ADR-003.
 
 - [ ] **Choose the NAAN path**: request FEN's own NAAN from N2T (ARK
       registration via California Digital Library) OR a sub-range under an
-      existing consortium NAAN (whitepaper §7 offers both options).
+      existing consortium NAAN (whitepaper §8 offers both options).
 - [ ] Register the `w3id.org/fen/` namespace (perma-id/w3id.org repo):
       redirect rules for `/id/decision/*`, `/id/validation/*`,
       `/id/reputation-snapshot/*`, `/id/session/*` with content
@@ -97,7 +97,7 @@ ADR-003.
 
 | Item | Owner |
 |---|---|
-| Test-instance access (topics, corpus, Virtuoso, OKD ns) | consortium (whitepaper §7 request) |
+| Test-instance access (topics, corpus, Virtuoso, OKD ns) | consortium (whitepaper §8 request) |
 | NAAN/w3id/N2T registration | FEN (us) + consortium sign-off |
 | Code alignment (messages, kafka auth, pid, shapes) | us |
 | Dialect / SASL pre-checks (**NOW**) | us |

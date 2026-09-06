@@ -1,6 +1,10 @@
 # Technical Debt Plan — audit 2026-09-02
 
 > **Internal maintainer audit notes**; not part of the research artifact.
+>
+> Historical audit record — each status line reflects the state at the time
+> of its wave (older "in tree, commit pending" lines mean the fix was not
+> yet committed *then*); for the current repository state see CHANGELOG.md.
 
 _Status: plan approved for execution; items below are the backlog of
 maintenance work identified by the full-repo audit (5 parallel area reviews:

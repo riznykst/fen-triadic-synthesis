@@ -2,6 +2,32 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-06 — release-readiness: docs aligned with Whitepaper v3; deterministic mock voting default
+
+- README "What this is" now mirrors the Whitepaper v3 epistemic framing: the
+  DAP *describes an automated path* (WP4 AI/NLP extraction → GoTriple KG with
+  no human-review step) instead of asserting it as GRAPHIA's operating
+  procedure.
+- Whitepaper citations corrected §7 → **§8 ("Request to the Consortium")**
+  wherever the reference is a consortium request: README (ontology IRI,
+  integration contract), ADR-002 (stub owl:imports IRI), architecture.md
+  (PID NAAN), integration-verification-plan.md (entry criteria, the
+  no-transformation bridge, NAAN options, test-instance access). §7 is
+  "Positioning Relative to GRAPHIA's Own AI Services" — the renumbering was
+  checked against the v3 PDF text.
+- README ADR table: "ADR002" → "ADR-002" (uniform spelling).
+- BACKLOG delivered item: repository visibility corrected — public since
+  2026-09-03, 173 commits by 2026-09-06 (was "private").
+- TECH-DEBT.md: header note marks the file as a historical audit record
+  (older "in tree, commit pending" lines reflect wave-time state).
+- `web/README.md` Vercel section matches the root `vercel.json`: no
+  `cleanUrls` (the 2026-09-03 routes regression) and the current
+  `ignoreCommand` (`VERCEL_GIT_PREVIOUS_SHA` with `HEAD^` fallback).
+- `docker-compose.yml`: explicit `FEN_MOCK_VOTING: auto` on the mock (the
+  code default — makes the base stack deterministic after qv-mode runs
+  recreate the service).
+- Tests: unchanged (docs/config only).
+
 ## 2026-09-06 — fix(infra): .dockerignore excluded docs/ while the mock image COPYs docs/ontology
 
 - The merge-readiness cleanup (3c43c12) added `COPY docs/ontology` to the

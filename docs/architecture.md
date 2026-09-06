@@ -96,7 +96,7 @@ See [`adr/ADR-003-fen-pid-scheme.md`](adr/ADR-003-fen-pid-scheme.md).
 | DAO / governance | `mock_fen_api/` (random/rule-based outcome) | Real Agentic Scaffolding + Quadratic Voting DAO |
 | On-chain anchor | Stubbed string (`0xMOCK...`) | Real transaction hash |
 | Kafka | Single-broker `docker-compose.yml` | GRAPHIA's production Kafka cluster (PCSS) |
-| PID NAAN | `FEN_NAAN=99999` (local dev) | FEN's registered NAAN (consortium, whitepaper §7) |
+| PID NAAN | `FEN_NAAN=99999` (local dev) | FEN's registered NAAN (consortium, whitepaper §8) |
 
 Swapping any row on the right only requires changing environment variables
 (`SPARQL_UPDATE_ENDPOINT`, `FEN_API_BASE_URL`, `KAFKA_BOOTSTRAP_SERVERS`,

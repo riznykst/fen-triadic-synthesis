@@ -69,7 +69,7 @@ EVALUATION    GRAPHIA integration + community validation study (next phase)
 
 ## What this is
 
-WP4 of the GRAPHIA project extracts entities and relations from full-text SSH documents automatically, via AI/NLP services, and commits them directly into the GoTriple Knowledge Graph — with no step for human review, cultural verification, or contributor attribution. That's fine for well-resourced content. It systematically underserves low-resource languages, minority dialects, and culturally specific material.
+In the GRAPHIA D2.2 architecture, the Data Acquisition Platform (DAP) describes an automated path in which entities and relations extracted from full-text documents by WP4 AI/NLP services are committed directly into the GoTriple Knowledge Graph, with no step for human review, cultural verification, or contributor attribution. That is adequate for high-resource, well-represented content, but it systematically underserves low-resource languages, minority dialects, and culturally specific material.
 
 FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 
@@ -247,7 +247,7 @@ tested — see [`docs/AGENT_PLAN.md`](docs/AGENT_PLAN.md) for the phase-by-phase
 
 | ADR | Decision |
 |---|---|
-| [ADR-001](docs/adr/ADR-001-rdf-anchoring-not-full-onchain.md) | Blockchain anchors only a hash of each governance decision. All content stays in GRAPHIA's Virtuoso store — no conflict with ADR002, no GDPR right-to-erasure issue. |
+| [ADR-001](docs/adr/ADR-001-rdf-anchoring-not-full-onchain.md) | Blockchain anchors only a hash of each governance decision. All content stays in GRAPHIA's Virtuoso store — no conflict with ADR-002, no GDPR right-to-erasure issue. |
 | [ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md) | FEN integrates as an autonomous federation node, not as a component embedded in GoTriple KG or the DAP core. No GRAPHIA partner needs to operate or govern DAO infrastructure. |
 | [ADR-003](docs/adr/ADR-003-fen-pid-scheme.md) | Governance records get ARK + w3id.org PIDs under FEN's own NAAN (`g` decision / `v` validation record / `r` reputation snapshot / `s` scaffolding session). A PID is never bound to a blockchain explorer; the tx hash is only the `gfen:ledgerAnchor` attribute. |
 | [ADR-004](docs/adr/ADR-004-llm-judge-decision-support-only.md) | The LLM judge is decision-support only — it recommends, the community DAO decides. The LLM never votes and never writes `gfen:validationStatus`; within this repo it is used only by the demo mock. |
@@ -271,7 +271,7 @@ gfen:contributorProfile    a rdf:Property .  # -> triple:Profile (reused, not du
 
 The namespace declares `owl:imports` to the GRAPHIA/TRIPLE Ontology — currently
 a **stub IRI** (`https://w3id.org/gotriple/ontology`), to be replaced with the
-official GRAPHIA Ontology IRI once confirmed with the consortium (whitepaper §7).
+official GRAPHIA Ontology IRI once confirmed with the consortium (whitepaper §8).
 The import is declarative only: nothing in the imported ontology is modified
 (ADR-002).
 
@@ -376,7 +376,7 @@ entry/exit criteria — is in
 
 The following assumptions come from D2.2/whitepaper and **must be confirmed
 against a live GRAPHIA test instance** before production integration (see
-whitepaper §7 "Request to the Consortium"):
+whitepaper §8 "Request to the Consortium"):
 
 | Contract | Current assumption | Verification needed |
 |---|---|---|
