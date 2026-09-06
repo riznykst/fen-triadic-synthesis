@@ -64,7 +64,6 @@
       this._loading = false;
       this._expanded = false;
       this._sse = null;            // EventSource for live status
-      this._sseOk = false;         // has the stream ever opened
       this._fallbackTimer = null;  // 15s polling while the stream is down
       this.attachShadow({ mode: "open" });
     }
@@ -118,31 +117,28 @@
         this._startFallback();  // EventSource unavailable -> poll instead
         return;
       }
-      this._sseOk = false;
       this._sse.addEventListener("status", (ev) => this._onSseStatus(ev));
       this._sse.addEventListener("error", (ev) => this._onSseError(ev));
       this._sse.onopen = () => {
         // Stream (re)opened: stop the fallback ticker and catch up — the
         // gap while disconnected must not lose a status flip.
-        this._sseOk = true;
         this._stopFallback();
         this._load();
       };
       // Transport-level failure: EventSource auto-reconnects; while it is
       // down the fallback ticker keeps the badge fresh (no lost updates).
+      // Server-sent `event: error` frames are handled separately above.
       this._sse.onerror = () => this._startFallback();
     }
 
     _stopLive() {
       this._stopFallback();
       if (this._sse) { this._sse.close(); this._sse = null; }
-      this._sseOk = false;
     }
 
     _onSseStatus(ev) {
       // Server pushed a CHANGED record — same payload shape as the REST
       // endpoint, so it renders through the exact same path (no flicker).
-      this._sseOk = true;
       this._stopFallback();
       try {
         this._data = JSON.parse(ev.data);
