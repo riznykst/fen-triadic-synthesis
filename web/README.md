@@ -68,10 +68,13 @@ at the repo root is the single source of truth (there is intentionally no
 - zero-build static: no `framework` preset in the config (the current Vercel
   schema has no "other" value — plain static is the default when `framework`
   is omitted; "Other" is chosen in the dashboard);
-- `cleanUrls: true` — extension-less pretty URLs;
-- `ignoreCommand` — `git diff --quiet HEAD^ HEAD -- web/` exits with 0 when
-  the `web/` layer did not change since `HEAD^`, so backend/docs-only pushes
-  skip the deploy entirely;
+- no `cleanUrls` — extension-less pretty URLs come from the `rewrites`
+  themselves (`cleanUrls: true` broke the routes — 2026-09-03 fix);
+- `ignoreCommand` —
+  `git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- web/ 2>/dev/null || exit 1`
+  exits 0 when the `web/` layer did not change since the previous commit, so
+  backend/docs-only pushes skip the deploy entirely (`VERCEL_GIT_PREVIOUS_SHA`
+  is Vercel-provided; `HEAD^` is the fallback);
 - `rewrites` — `/` → landing (`web/index.html`), `/portal` → classic DAO
   portal, `/triadic` → triadic view, `/widget` → widget demo, `/embed` →
   dataset-owner embedding example (all pages live under `web/`).
