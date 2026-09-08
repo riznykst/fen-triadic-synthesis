@@ -88,6 +88,8 @@ In the named graph, `gfen:governanceDecisionId` and `gfen:reputationSnapshot`
 are IRIs (not literals); `gfen:ledgerAnchor` is the only literal tx reference.
 See [`adr/ADR-003-fen-pid-scheme.md`](adr/ADR-003-fen-pid-scheme.md).
 
+> **Disclaimer on `ledger_anchor`:** `ledger_anchor` is part of the architectural provenance model. In the reference MVP it is represented by a `"0xMOCK..."` stub; no real blockchain transaction is executed.
+
 ## Local dev vs. production
 
 | | Local dev (this repo, `docker-compose.yml`) | Production |

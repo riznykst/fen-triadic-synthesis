@@ -18,9 +18,14 @@ Human contribution  →  Agentic scaffolding  →  Structured claim  →  Commun
    dialect input          SHACL validates        annotation          + delegation
                                                                            ↓
 RDF registry        ←      Provenance       ←  Governance decision  ←  Quorum reached
-gfen:validated        dereferenceable PID        on-chain hash         outcome emitted
-Virtuoso graph        ark:{NAAN}/g#####           ledger anchor
+gfen:validated        dereferenceable PID        ledger anchor hash    outcome emitted
+Fuseki/Virtuoso       ark:{NAAN}/g#####           (0xMOCK stub)
 ```
+
+> **RDF Environment Note (Fuseki vs Virtuoso):**
+> - **Fuseki** is the RDF store used by the local reference demo stack (`docker compose up`).
+> - **Virtuoso** is the generic target RDF store used in production GRAPHIA environments and has been used for dialect/idempotency verification.
+> - Note: `local reference implementation ≠ GRAPHIA production environment`. FEN is not currently connected to a live GRAPHIA deployment or GRAPHIA's production Kafka topics/named graphs.
 
 ---
 
@@ -80,7 +85,7 @@ docker compose up --build
    - Click on the decision record to view the provenance details:
      - **Governance Decision PID:** `ark:99999/g00042` -> `https://w3id.org/fen/id/decision/g00042`
      - **Reputation Snapshot PID:** `ark:99999/r00042`
-     - **Ledger Anchor Hash:** `0x7f8a9b...` (On-chain hash notarization only — no full content stored on-chain, preserving GDPR right-to-erasure).
+     - **Ledger Anchor:** `"0xMOCK0000002a"` — MOCK; no blockchain transaction is executed in the reference MVP.
 3. **Inspect SPARQL 1.1 Update Query:**
    - Show the generated SPARQL query updating the RDF named graph in Virtuoso (`urn:graphia:document:{id}:graph`).
 4. **Demonstrate Embeddable Validation Widget (Flow 2):**
@@ -91,6 +96,8 @@ docker compose up --build
 
 ## Evaluator Q&A Reference
 
+- **Q: Is an actual blockchain transaction executed when anchoring decisions?**
+  - **A:** Real blockchain transaction is not executed in the reference MVP. The ledger anchor uses a `"0xMOCK..."` stub string as part of the architectural provenance model.
 - **Q: Does FEN replace GRAPHIA's Virtuoso knowledge graph?**
   - **A:** No. FEN is an external federation overlay node (ADR-002). All primary entities and graphs stay in Virtuoso; FEN only appends `gfen:validationStatus` and provenance annotations.
 - **Q: What happens if the LLM hallucinated during scaffolding?**

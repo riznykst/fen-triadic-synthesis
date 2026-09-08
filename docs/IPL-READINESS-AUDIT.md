@@ -98,7 +98,7 @@ RDF registry
 | **Delegation Concentration** | **WORKING (MOCK)** | Liquid democracy delegation is implemented in `delegation.py` with 1-level depth prevention. |
 | **Newcomer Disadvantage** | **PROPOSED** | Tokenless participation model documented in ADR-005; initial weight allocation in mock is uniform. |
 | **AI Hallucination & Automation Bias** | **MITIGATED BY DESIGN** | LLM suggestions are explicitly flagged as `source: "llm"` and validated via SHACL before reaching community voters. |
-| **Provenance Integrity** | **VERIFIED** | Every decision attaches an immutable PID URI and on-chain ledger anchor hash. |
+| **Provenance Integrity** | **SPLIT (VERIFIED / SIMULATED)** | VERIFIED — Every decision attaches a PID URI. SIMULATED — The ledger anchor field is represented by a "0xMOCK..." stub in the reference MVP; no real blockchain transaction is executed. |
 | **Right to Erasure (GDPR)** | **VERIFIED** | ADR-001 design strictly followed: content stays in Virtuoso; only immutable decision hashes land on-chain. |
 
 ---

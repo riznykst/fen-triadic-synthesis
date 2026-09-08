@@ -443,11 +443,14 @@ producer, commit-after-processing — see [`docs/architecture.md`](docs/architec
 and an end-to-end smoke test (`scripts/smoke_test.py`) validates the full loop
 against the docker-compose stack (CI `e2e` job).
 
-**Not yet done:** integration against a live GRAPHIA test instance (real Kafka
-topics, real Virtuoso), connecting the real DAO (production Quadratic Voting with sybil
-resistance, identity and on-chain anchoring), and registering a real NAAN for FEN PIDs. See the "Request to the
-Consortium" section of the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) for what's needed
-to start that.
+**Not yet done:**
+- Real DAO / production Quadratic Voting integration
+- Production identity / Sybil-resistance mechanisms
+- Real blockchain / ledger anchoring (currently represented by `"0xMOCK..."` stub)
+- GRAPHIA production integration (real Kafka topics, real Virtuoso)
+- Registering a real NAAN for FEN PIDs
+
+See the "Request to the Consortium" section of the [whitepaper](docs/FEN-Whitepaper-Triadic-Synthesis.pdf) for what's needed to start that.
 
 ## Implementation status (evidence markers)
 
