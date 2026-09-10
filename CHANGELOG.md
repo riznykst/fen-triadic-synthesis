@@ -2,6 +2,23 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-06 — docs consistency after PR #7 (Vercel trailing slashes; Fuseki wording)
+
+- `vercel.json` (PR #7) gained explicit trailing-slash rewrites (`/portal/`,
+  `/triadic/`, `/widget/`, `/embed/`) and legacy `.html` 301 redirects;
+  `web/README.md` now documents both (it listed only the slash-less routes).
+  Verified live on the production deployment: `/portal/` and `/triadic/`
+  both return 200.
+- `docs/IPL-DEMO.md` minute-3 step no longer implies the local demo writes to
+  Virtuoso: the local stack uses Fuseki — consistent with the Fuseki-vs-
+  Virtuoso note merged in the same PR — while Virtuoso is the production/
+  generic target verified by the dialect check.
+- Cross-checked the merged honesty edits against the code: the mock ledger
+  anchor is exactly `f"0xMOCK{decision_seq:08x}"`
+  (`mock_fen_api/main.py:342`), so the new `"0xMOCK0000002a"` example in
+  IPL-DEMO.md matches reality.
+- Tests: unchanged (docs/config only).
+
 ## 2026-09-06 — release-readiness: docs aligned with Whitepaper v3; deterministic mock voting default
 
 - README "What this is" now mirrors the Whitepaper v3 epistemic framing: the

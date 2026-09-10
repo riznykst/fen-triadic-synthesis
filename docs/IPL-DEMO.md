@@ -87,7 +87,7 @@ docker compose up --build
      - **Reputation Snapshot PID:** `ark:99999/r00042`
      - **Ledger Anchor:** `"0xMOCK0000002a"` — MOCK; no blockchain transaction is executed in the reference MVP.
 3. **Inspect SPARQL 1.1 Update Query:**
-   - Show the generated SPARQL query updating the RDF named graph in Virtuoso (`urn:graphia:document:{id}:graph`).
+   - Show the generated SPARQL query updating the RDF named graph in the local store (Fuseki; Virtuoso in production) (`urn:graphia:document:{id}:graph`).
 4. **Demonstrate Embeddable Validation Widget (Flow 2):**
    - Open `http://localhost:8082/web/widget/demo.html`.
    - View the embeddable `<fen-status>` Web Component displaying a live `gfen:validated` badge next to the entity label.
