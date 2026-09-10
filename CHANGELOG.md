@@ -2,6 +2,20 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-10 — Vercel: `ignoreCommand` removed (every push deploys)
+
+- The Ignored Build Step is gone from the root `vercel.json`. Two reasons:
+  its pathspec watched only `web/`, so root-level `vercel.json` changes — the
+  routing itself — never auto-deployed (`ce2220e` had to be shipped with a
+  manual `vercel --prod`); and Vercel surfaces intentional skips as **failed**
+  deployments in GitHub, so docs-only pushes showed red badges (4 of the 30
+  recorded deployments; 16 more were real failures from the 2026-08-31 /
+  09-01 project-setup era, which this change does not resurrect).
+- Docs updated accordingly: `web/README.md` (config list + "every push to
+  `main` auto-deploys") and `docs/TECH-DEBT.md` (the fragile-`ignoreCommand`
+  item marked superseded by removal).
+- Tests: unchanged (config/docs only).
+
 ## 2026-09-10 — docs consistency after PR #7 (Vercel trailing slashes; Fuseki wording)
 
 - `vercel.json` (PR #7) gained explicit trailing-slash rewrites (`/portal/`,

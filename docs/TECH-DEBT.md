@@ -69,6 +69,12 @@ P3 = structural.
   DONE 2026-09-03 (in tree, commit pending): ignoreCommand =
   `git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- web/ 2>/dev/null || exit 1`
   — any diff error → deploy; clean diff → skip.
+  SUPERSEDED 2026-09-10 (owner decision): the `ignoreCommand` was removed
+  from `vercel.json` entirely — it watched only `web/`, so root-level
+  `vercel.json` (routing) changes were never auto-deployed (they needed a
+  manual `vercel --prod`), and Vercel reports intentional skips as *failed*
+  deployments in GitHub. The static deploy is cheap enough to run on every
+  push, so no ignore step remains.
 
 ## P1 — consistency
 
