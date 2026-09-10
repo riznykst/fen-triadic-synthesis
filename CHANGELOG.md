@@ -2,6 +2,20 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-10 — Vercel: the Ignored Build Step also lives in project settings (repo-side removal alone is not enough)
+
+- Removing `ignoreCommand` from the root `vercel.json` (entry below) did
+  **not** stop the skip: the very push that removed it (`9013e33`) still
+  produced `"Deployment was blocked"` in GitHub. The Ignored Build Step is a
+  **project setting** (Vercel → Project → Settings → Git → Ignored Build
+  Step) with inverted exit-code semantics (exit 0 = skip), and it takes
+  precedence over the file. **Owner action required:** set it to
+  *Automatic* (or clear the custom command) so every push deploys.
+- CI on that same push was green with a real Docker e2e (4m04s; test job
+  26s), so this is purely a Vercel-project configuration item.
+- Repo-side state is already correct and stays as is: no `ignoreCommand` in
+  `vercel.json`, `web/README.md` documents the intended behaviour.
+
 ## 2026-09-10 — Vercel: `ignoreCommand` removed (every push deploys)
 
 - The Ignored Build Step is gone from the root `vercel.json`. Two reasons:

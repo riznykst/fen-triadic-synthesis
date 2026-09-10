@@ -75,6 +75,11 @@ P3 = structural.
   manual `vercel --prod`), and Vercel reports intentional skips as *failed*
   deployments in GitHub. The static deploy is cheap enough to run on every
   push, so no ignore step remains.
+  PENDING (owner, Vercel dashboard): the project-level **Ignored Build Step**
+  (Project → Settings → Git) still skips the build — verified 2026-09-10:
+  push `9013e33`, which removed the file setting, was still reported as
+  "Deployment was blocked". Set it to *Automatic* (or clear the custom
+  command) to complete this item.
 
 ## P1 — consistency
 
