@@ -70,11 +70,10 @@ at the repo root is the single source of truth (there is intentionally no
   is omitted; "Other" is chosen in the dashboard);
 - no `cleanUrls` — extension-less pretty URLs come from the `rewrites`
   themselves (`cleanUrls: true` broke the routes — 2026-09-03 fix);
-- `ignoreCommand` —
-  `git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- web/ 2>/dev/null || exit 1`
-  exits 0 when the `web/` layer did not change since the previous commit, so
-  backend/docs-only pushes skip the deploy entirely (`VERCEL_GIT_PREVIOUS_SHA`
-  is Vercel-provided; `HEAD^` is the fallback);
+- no `ignoreCommand` — **every push to `main` deploys** (the static deploy is
+  cheap). It was removed on 2026-09-10: the pathspec watched only `web/`, so
+  root-level `vercel.json` changes (the routing itself) never auto-deployed,
+  and Vercel reports intentional skips as *failed* deployments in GitHub;
 - `rewrites` — `/` → landing (`web/index.html`), `/portal` → classic DAO
   portal, `/triadic` → triadic view, `/widget` → widget demo, `/embed` →
   dataset-owner embedding example (all pages live under `web/`); each route
@@ -88,7 +87,7 @@ One-time project setup (Vercel dashboard, import
 
 1. Framework Preset: **Other** · Root Directory: **repository root** ·
    Build/Install commands: empty.
-2. Deploy. Every push to `main` touching `web/` auto-deploys.
+2. Deploy. Every push to `main` auto-deploys (no `ignoreCommand`).
 
 Production notes:
 
