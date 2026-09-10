@@ -77,7 +77,11 @@ at the repo root is the single source of truth (there is intentionally no
   is Vercel-provided; `HEAD^` is the fallback);
 - `rewrites` — `/` → landing (`web/index.html`), `/portal` → classic DAO
   portal, `/triadic` → triadic view, `/widget` → widget demo, `/embed` →
-  dataset-owner embedding example (all pages live under `web/`).
+  dataset-owner embedding example (all pages live under `web/`); each route
+  also has an explicit trailing-slash variant (`/portal/`, `/triadic/`,
+  `/widget/`, `/embed/`) — Vercel does not fold the slash automatically;
+- `redirects` — legacy `.html` paths (`/index.html`, `/portal.html`,
+  `/triadic.html`) 301 to the pretty routes.
 
 One-time project setup (Vercel dashboard, import
 `riznykst/fen-triadic-synthesis`):
