@@ -2,7 +2,7 @@
 
 All notable changes are recorded here in reverse chronological order.
 
-## 2026-09-06 — docs consistency after PR #7 (Vercel trailing slashes; Fuseki wording)
+## 2026-09-10 — docs consistency after PR #7 (Vercel trailing slashes; Fuseki wording)
 
 - `vercel.json` (PR #7) gained explicit trailing-slash rewrites (`/portal/`,
   `/triadic/`, `/widget/`, `/embed/`) and legacy `.html` 301 redirects;
