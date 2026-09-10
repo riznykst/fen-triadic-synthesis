@@ -2,6 +2,26 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-10 — Vercel blocked deploys: the real cause is commit-author attribution, not the Ignored Build Step
+
+- Deployment records (`GET /v6/deployments?projectId=…`) show the actual
+  blocker on `301a0a3`, `9013e33`, `935c64d`:
+  `state: BLOCKED`, `seatBlock.blockCode: COMMIT_AUTHOR_REQUIRED`,
+  `errorMessage: "The deployment was blocked because Vercel couldn't find a
+  Git account for the commit author."`
+- Those commits are authored `Vadym Riznyk <riznykv@gmx.de>` — an address
+  that is **not linked to the GitHub account** `riznykst`. Commits authored
+  with the GitHub noreply identity (`234586649+riznykst@users.noreply.github.com`,
+  the one used by earlier verified merges) deploy normally.
+- The project's Ignored Build Step is **empty** (`commandForIgnoringBuildStep:
+  null` via the API) — the earlier "dashboard setting overrides the file"
+  theory was wrong; the ignore step only explains the older `CANCELED`
+  entries ("Ignored Build Step command returned exit code 0").
+- Fix (this checkout): repo-local git identity set to
+  `Vadym Riznyk <234586649+riznykst@users.noreply.github.com>`.
+  All working chats must use this identity (see FEN-SYNC/CONTEXT rules) —
+  commits with an unlinked e-mail are silently blocked by Vercel.
+
 ## 2026-09-10 — Vercel: the Ignored Build Step also lives in project settings (repo-side removal alone is not enough)
 
 - Removing `ignoreCommand` from the root `vercel.json` (entry below) did
