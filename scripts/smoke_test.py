@@ -9,8 +9,9 @@ waits for the full pipeline to complete:
 
 Checks, in order (each with retries and a timeout):
   1. readiness of Kafka, Fuseki, the webhook and the mock FEN API;
-  2. the outbound consumer group is subscribed (so the candidate is not
-     missed on a fresh group with auto_offset_reset=latest);
+  2. the outbound consumer group is Stable with a real assignment — a plain
+     "a member exists" check is not enough on a fresh group with
+     auto_offset_reset=latest (see wait_for_outbound_group);
   3. a GovernanceDecision for our annotation appears on
      fen.governance.decisions.v1;
   4. the named graph carries gfen:validationStatus (any status);
@@ -59,6 +60,12 @@ OUTBOUND_GROUP_ID = "fen-bridge-outbound"
 READY_TIMEOUT_S = 120.0
 DECISION_TIMEOUT_S = 30.0
 POLL_INTERVAL_S = 1.0
+# The outbound consumer group only has to form; it is up within seconds of the
+# stack starting, but a cold Kafka can take longer (see the e2e in 34686489718).
+GROUP_READY_TIMEOUT_S = 60.0
+# Settle after the group is Stable + assigned, before publishing (see
+# wait_for_outbound_group). Also used by the fallback path.
+SETTLE_S = 3.0
 
 
 def wait_for(predicate: Callable[[], bool], timeout_s: float, description: str):
@@ -135,6 +142,17 @@ def group_members(described, group_id: str) -> list:
     - 2.0.x: ``{group_id: GroupDescription}`` (a mapping);
     - some builds wrap the payload as ``(error, payload)``.
     """
+    info = find_group(described, group_id)
+    if info is None:
+        return []
+    members = info.get("members") if isinstance(info, dict) else getattr(info, "members", None)
+    return list(members or [])
+
+
+def find_group(described, group_id: str):
+    """The description of ``group_id`` inside a ``describe_consumer_groups``
+    result, or None. See ``group_members`` for the shapes handled.
+    """
     if (
         isinstance(described, tuple)
         and len(described) == 2
@@ -142,21 +160,67 @@ def group_members(described, group_id: str) -> list:
     ):
         described = described[1] or []
     if isinstance(described, dict):
-        info = described.get(group_id)
-    else:
-        entries = list(described or [])
-        info = next((e for e in entries if group_id_of(e) == group_id), None)
-        if info is None and len(entries) == 1:
-            info = entries[0]  # only one group is ever described
+        return described.get(group_id)
+    entries = list(described or [])
+    info = next((e for e in entries if group_id_of(e) == group_id), None)
+    if info is None and len(entries) == 1:
+        return entries[0]  # only one group is ever described
+    return info
+
+
+def field_of(info, name: str):
+    """One field of a group/member description (dict in some builds,
+    namedtuple in the version installed here)."""
+    if isinstance(info, dict):
+        return info.get(name)
+    return getattr(info, name, None)
+
+
+def state_text(state) -> str:
+    """The group state as a lowercase string. Kafka answers with a plain
+    string ("Stable", "PreparingRebalance", …), but a build may hand back
+    bytes — do not let that silently disable the readiness check.
+    """
+    if isinstance(state, (bytes, bytearray)):
+        state = state.decode("utf-8", "replace")
+    return str(state).strip().lower()
+
+
+def group_readiness(described, group_id: str) -> str:
+    """How far the outbound consumer group has actually come:
+
+    - ``"absent"``  — the broker does not list the group yet;
+    - ``"joining"`` — a member exists, but the coordinator has not finished the
+      rebalance (state is set and is not ``Stable``) or has not handed out an
+      assignment yet (empty ``member_assignment``);
+    - ``"ready"``   — ``Stable`` with at least one member carrying a non-empty
+      assignment, i.e. the consumer will genuinely be served records.
+
+    "A member exists" is NOT enough, and assuming it was cost a red e2e: the
+    first run with the repaired probe (34686489718) saw a member and published
+    155 ms later, and the candidate was lost — the group was still joining, so
+    the consumer had not yet initialised its fetch position
+    (``auto_offset_reset=latest`` on a fresh group). Hence the state and
+    assignment checks, plus the settle delay in ``wait_for_outbound_group``.
+    """
+    info = find_group(described, group_id)
     if info is None:
-        return []
-    members = info.get("members") if isinstance(info, dict) else getattr(info, "members", None)
-    return list(members or [])
+        return "absent"
+    members = list(field_of(info, "members") or [])
+    if not members:
+        return "joining"
+    state = field_of(info, "state")
+    if state and state_text(state) != "stable":
+        return "joining"
+    assignments = [field_of(member, "member_assignment") for member in members]
+    if any(assignment is not None and len(assignment) == 0 for assignment in assignments):
+        return "joining"  # rebalance done, assignments not handed out yet
+    return "ready"
 
 
-def outbound_group_active(admin: KafkaAdminClient) -> bool:
-    """True once the outbound consumer group exists with at least one active
-    member — i.e. fen-bridge-outbound is subscribed and will see our publish.
+def outbound_group_ready(admin: KafkaAdminClient) -> bool:
+    """True once fen-bridge-outbound is Stable AND assigned — see
+    ``group_readiness`` for why membership alone is not enough.
 
     Handles the kafka-python API drift between 2.0.x and 2.3.x (see
     ``group_id_of`` / ``group_members`` for the concrete shapes).
@@ -172,33 +236,42 @@ def outbound_group_active(admin: KafkaAdminClient) -> bool:
         return False
     describe_fn = getattr(admin, "describe_consumer_groups", None) or getattr(admin, "describe_groups", None)
     described = describe_fn([OUTBOUND_GROUP_ID]) if describe_fn is not None else {}
-    return bool(group_members(described, OUTBOUND_GROUP_ID))
+    return group_readiness(described, OUTBOUND_GROUP_ID) == "ready"
 
 
 def wait_for_outbound_group() -> None:
-    """The outbound consumer must be subscribed BEFORE we publish: it uses a
-    fresh group with auto_offset_reset=latest, so a message published before
-    it joins would be skipped. Uses the broker admin API; if that is
-    unavailable (old tooling) we fall back to a short settle delay.
+    """The outbound consumer must be Stable AND assigned BEFORE we publish:
+    the CI broker container is recreated on every run, so the group is fresh
+    and ``auto_offset_reset=latest`` drops anything produced before the
+    consumer has initialised its fetch position. Uses the broker admin API; if
+    that is unavailable it falls back to a plain settle delay.
     """
     try:
         admin = KafkaAdminClient(bootstrap_servers=KAFKA_BOOTSTRAP)
     except Exception as exc:  # noqa: BLE001 - admin API is best-effort here
-        logger.warning("admin API unavailable (%s); sleeping %ds instead", exc, 5)
-        time.sleep(5)
+        logger.warning("admin API unavailable (%s); sleeping %ds instead", exc, SETTLE_S)
+        time.sleep(SETTLE_S)
         return
     try:
-        wait_for(lambda: outbound_group_active(admin), 15, f"{OUTBOUND_GROUP_ID} consumer group")
+        wait_for(
+            lambda: outbound_group_ready(admin),
+            GROUP_READY_TIMEOUT_S,
+            f"{OUTBOUND_GROUP_ID} consumer group (Stable + assigned)",
+        )
+        # DescribeGroups proves subscription and assignment; it cannot show the
+        # fetch position, which the consumer initialises on its first poll
+        # *after* the assignment. Publishing inside that window loses the
+        # record — run 34686489718 published 155 ms after the group first
+        # reported a member and the candidate was never seen. Hence a settle
+        # that keeps the publish strictly after the position is initialised.
+        logger.info("%s: assigned; settling %.1fs before publishing", OUTBOUND_GROUP_ID, SETTLE_S)
+        time.sleep(SETTLE_S)
     except Exception as exc:  # noqa: BLE001 - the admin API stays best-effort
         # The probe is a safety net, not the assertion under test: if the
         # broker's admin API is unreachable (or answers in yet another shape),
-        # fall back to a settle delay instead of failing the whole e2e — the
-        # outbound consumer joins within seconds, so a short settle preserves
-        # the "do not miss our publish" guarantee. Root cause of the fallback
-        # firing on EVERY run until 2026-09-12: kafka-python 2.3 returns a
-        # list from describe_consumer_groups (see group_members).
-        logger.warning("consumer-group check failed (%s); falling back to %ds settle delay", exc, 5)
-        time.sleep(5)
+        # fall back to a settle delay instead of failing the whole e2e.
+        logger.warning("consumer-group check failed (%s); falling back to %ds settle delay", exc, SETTLE_S)
+        time.sleep(SETTLE_S)
     finally:
         admin.close()
 

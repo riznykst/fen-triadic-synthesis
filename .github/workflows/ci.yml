@@ -124,6 +124,15 @@ jobs:
           npm install --no-save @playwright/test
           npx playwright install chromium
           npx playwright test
+      - name: Dump the stack logs on failure
+        # The smoke test can only report ITS OWN view (e.g. "no
+        # fen.governance.decisions.v1 message within 30s"); whether the
+        # candidate ever reached the bridge is only visible in the container
+        # logs, and the stack is still up here (teardown is `if: always()`).
+        # Without this, a lost/dropped message takes another CI cycle to
+        # diagnose — see run 34686489718.
+        if: failure()
+        run: docker compose --profile virtuoso logs --tail=80 --no-color
       - name: Tear down the stack
         if: always() && steps.docker.outputs.available == 'true'
         run: docker compose --profile virtuoso down

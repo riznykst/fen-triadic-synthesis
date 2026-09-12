@@ -2,24 +2,46 @@
 
 All notable changes are recorded here in reverse chronological order.
 
-## 2026-09-12 — e2e smoke test: the consumer-group readiness guard actually runs now
+## 2026-09-12 — e2e smoke test: the consumer-group guard runs, and it is strict now
 
-- `scripts/smoke_test.py` guards against publishing before the outbound
-  consumer has joined `fen-bridge-outbound` (that group uses
-  `auto_offset_reset=latest`, so an early publish would be missed) — but the
-  probe called `.get()` on the result of `describe_consumer_groups()`, which
-  is a **list** in kafka-python 2.3.x (the version CI installs), not the dict
-  the code assumed. Every e2e run therefore logged `consumer-group check
-  failed (… 'list' object has no attribute 'get'); falling back to 5s settle
-  delay` and check #2 never executed.
-- Fixed by normalising the API shapes (`group_id_of` / `group_members`: dict
-  in 2.0.x, list of namedtuples in 2.3.x, `(error, payload)` wrappers), with
-  the settle delay kept only as a fallback for a genuinely unreachable admin
-  API. Verification: the CI e2e must log `fen-bridge-outbound consumer group:
-  ready` instead of the fallback warning; `docs/TECH-DEBT.md` (P3) records the
-  item and the deferred unit test.
-- Scope: one script plus the two docs. No service, compose, workflow or web
-  change; suite counts unchanged (125 pytest + 18 Node + 5 Playwright UI e2e).
+Two findings from one CI investigation, both fixed in `scripts/smoke_test.py`:
+
+1. **The guard never ran.** The script lists "the outbound consumer group is
+   subscribed before we publish" as its check #2, but the probe called `.get()`
+   on the result of `describe_consumer_groups()` — a **list** of
+   `GroupInformation` namedtuples in kafka-python 2.3.x (the version CI
+   installs), not the dict keyed by group id that the code assumed. Every e2e
+   run logged `consumer-group check failed (… 'list' object has no attribute
+   'get'); falling back to 5s settle delay`, so check #2 never executed: the
+   e2e was green for a weaker reason than it reports.
+2. **"A member exists" is not "ready".** With the probe repaired, run
+   `34686489718` reported the group ready, published the candidate **155 ms
+   later** and the candidate was never seen. The CI broker container is
+   recreated on every run, so the group is fresh and
+   `auto_offset_reset=latest` drops records produced before the consumer
+   initialises its fetch position — which happens on its first poll *after* the
+   assignment. The old 5 s sleep had been covering that window by accident.
+
+Fix: `group_id_of` / `group_members` / `group_readiness` normalise every API
+shape (2.3.x list of namedtuples, 2.0.x dict mapping, `(error, payload)`
+wrappers, unparseable entries are not read as "group absent"); readiness now
+requires `state == Stable` **and** a member with a non-empty
+`member_assignment`; a 3 s settle keeps the publish strictly after the fetch
+position is initialised, and the group gets a 60 s budget to form. The plain
+settle survives only as a fallback for a genuinely unreachable admin API.
+
+Verification: local harness over the real installed kafka-python 2.3.2 shapes
+(23 checks, all green) plus the CI e2e, which must log
+`fen-bridge-outbound consumer group (Stable + assigned): ready`, the settle
+line and all three smoke modes passing.
+
+Related: the e2e job now dumps the container logs when a step fails
+(`if: failure()`), because run `34686489718` could only be diagnosed from the
+smoke test's own output — the stack logs, which show whether the candidate ever
+reached the bridge, were not captured.
+
+Scope: one script, the e2e workflow and the two docs. No service, compose or
+web change; suite counts unchanged (125 pytest + 18 Node + 5 Playwright UI e2e).
 
 ## 2026-09-10 — Vercel deploys: author attribution confirmed; stale red records cleaned
 

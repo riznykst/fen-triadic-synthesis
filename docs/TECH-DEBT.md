@@ -272,19 +272,28 @@ P3 = structural.
   `scripts/smoke_test.py` lists "the outbound consumer group is subscribed (so
   the candidate is not missed)" as its check #2, but the probe assumed
   `describe_consumer_groups()` returns a dict, while kafka-python 2.3.x (the
-  version installed in CI) returns a **list** of descriptions. Every CI run
-  therefore logged
+  version installed in CI) returns a **list** of `GroupInformation` namedtuples.
+  Every CI run therefore logged
   `WARNING consumer-group check failed (… 'list' object has no attribute
   'get'); falling back to 5s settle delay` and the guard never executed — the
   e2e was green for a weaker reason than it reports.
   Fix: normalise both API shapes (`group_id_of` / `group_members`, also
   handling `(error, payload)` wrappers) and keep the settle delay only as a
   fallback for a genuinely unreachable admin API.
-  DONE 2026-09-12: verification = the e2e log of the run on this commit, which
-  must show `fen-bridge-outbound consumer group: ready` and no fallback
-  warning (it previously appeared in all three smoke modes).
-  Follow-up (deferred so the frozen "125 pytest" count stays valid): a unit
-  test for the normalisation helpers.
+  DONE 2026-09-12 (`2d6f009`).
+  SECOND FINDING (same day, run `34686489718`): with the probe repaired, the
+  guard reported "ready" for a group whose member had not finished joining, the
+  candidate was published 155 ms later and was lost (fresh group +
+  `auto_offset_reset=latest`); the red run proved the probe now executes but
+  that membership alone is too weak a condition.
+  Follow-up fix: readiness = `state == Stable` **and** a member with a
+  non-empty `member_assignment`, plus a 3 s settle after readiness and a 60 s
+  budget for the group to form (`group_readiness` / `outbound_group_ready`).
+  Verification: local harness over the real kafka-python 2.3.2 shapes (21
+  checks) + the CI e2e logging
+  `fen-bridge-outbound consumer group (Stable + assigned): ready`.
+  Deferred (keeps the frozen "125 pytest" count valid): a unit test for the
+  normalisation/readiness helpers.
 - [ ] **Retire the TEMPORARY self-hosted CI mode** — ci.yml: matrix reduced
   to system Python 3.10 while images ship 3.11; Windows-only idioms
   (`shell: powershell`, `cmd /c`, `$env:GITHUB_OUTPUT`) in steps that would
