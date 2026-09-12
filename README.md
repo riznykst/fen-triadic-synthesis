@@ -75,7 +75,7 @@ FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
 
 1. **Agentic Scaffolding** — an AI agent guides contributors in structuring linguistic knowledge, without ever deciding on their behalf (a separate FEN-side project, external to this repository — ADR-002).
 2. **Decentralised Validation** — a DAO, using Quadratic Voting and reputation-weighted review, decides whether a candidate entity is accepted, disputed, or rejected. The community remains the final arbiter of meaning.
-3. **Immutable Integration** — the governance decision is anchored (hash only) on-chain and exposed as a dereferenceable PID ([ADR-003](docs/adr/ADR-003-fen-pid-scheme.md)), while the underlying content stays in GRAPHIA's authoritative RDF store.
+3. **Immutable Integration** — the governance decision is anchored by hash only (ADR-001; the MVP writes a **simulated** `0xMOCK` anchor until a real ledger is connected — see the implementation-status table below) and exposed as a dereferenceable PID ([ADR-003](docs/adr/ADR-003-fen-pid-scheme.md)), while the underlying content stays in GRAPHIA's authoritative RDF store.
 
 **FEN does not replace or modify any part of GRAPHIA's core infrastructure.** It connects as an external federation node — the same architectural pattern GRAPHIA already uses for OpenCitations, EHRI, GESIS, and ORKG (D2.2, §2.1) — and touches the DAP only through two new, non-blocking microservices (the FEN Bridge and the Validation Result Consumer) on the existing Kafka event bus, plus a read-only Status API for the web layer ([ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md)).
 
@@ -265,7 +265,7 @@ gfen:validationStatus      a rdf:Property .  # -> pending | validated | disputed
 gfen:validationMethod      a rdf:Property .  # -> QuadraticVoting | PeerReview
 gfen:governanceDecisionId  a rdf:Property .  # -> dereferenceable PID (ark:{FEN_NAAN}/g#####)
 gfen:reputationSnapshot    a rdf:Property .  # -> dereferenceable PID (ark:{FEN_NAAN}/r#####)
-gfen:ledgerAnchor          a rdf:Property .  # on-chain tx hash, anchor only
+gfen:ledgerAnchor          a rdf:Property .  # anchor hash only; simulated (0xMOCK) in the MVP — ADR-001
 gfen:contributorProfile    a rdf:Property .  # -> triple:Profile (reused, not duplicated)
 ```
 

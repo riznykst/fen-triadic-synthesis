@@ -103,4 +103,4 @@ docker compose up --build
 - **Q: What happens if the LLM hallucinated during scaffolding?**
   - **A:** Scaffolding is advisory only. The SHACL validator catches structural errors, and human community voters review and vote on the actual claim before any RDF graph update occurs.
 - **Q: How does FEN handle GDPR right-to-erasure?**
-  - **A:** Follows ADR-001: Only cryptographic hashes of governance decisions are anchored on-chain. Actual content resides in Virtuoso and can be redacted or modified as required by law.
+  - **A:** Follows ADR-001: only a hash of each governance decision is anchored (in the reference MVP the anchor is a simulated `"0xMOCK..."` stub; a real ledger is not connected yet). Actual content resides in Virtuoso and can be redacted or modified as required by law.

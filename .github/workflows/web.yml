@@ -10,6 +10,9 @@ on:
   push:
     branches: [main]
     paths: ['web/**']
+  # Manual runs from the Actions UI ("Run workflow") or CLI
+  # (`gh workflow run Web`): re-runs the unit suite on demand.
+  workflow_dispatch:
 
 jobs:
   test:
