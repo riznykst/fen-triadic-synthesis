@@ -4,10 +4,11 @@ name: CI
 # local runner (label "self-hosted") and CI triggers on push only, so fork
 # PRs cannot execute code on the private machine. The matrix is reduced to
 # the system Python (3.10) because actions/setup-python toolchains are wiped
-# by this environment after jobs; the e2e Docker steps are skipped when
-# Docker is unavailable. Revert to ubuntu-latest + pull_request + the full
-# 3.10/3.11/3.12 matrix + setup-python once the billing issue is resolved —
-# see docs/self-hosted-runner.md, step 7.
+# by this environment after jobs. The e2e job REQUIRES Docker and fails when
+# the daemon is unavailable (it used to skip the steps, which reported a run
+# that verified nothing as green — TECH-DEBT P3). Revert to ubuntu-latest +
+# pull_request + the full 3.10/3.11/3.12 matrix + setup-python once the
+# billing issue is resolved — see docs/self-hosted-runner.md, step 7.
 #
 # e2e scope: this workflow is skipped when a push touches ONLY web/ (native
 # `paths-ignore`) — web-only pushes run the unit suite via .github/workflows/
@@ -90,8 +91,19 @@ jobs:
           # cmd-level redirection: never lets a daemon-down stderr turn into a
           # PowerShell error record (which failed this step with exit 1 before).
           cmd /c "docker version >nul 2>&1"
-          if ($LASTEXITCODE -eq 0) { "available=true" >> $env:GITHUB_OUTPUT } else { "available=false" >> $env:GITHUB_OUTPUT }
-          exit 0
+          if ($LASTEXITCODE -eq 0) {
+            "available=true" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          # FAIL instead of skipping (TECH-DEBT P3). A skipped e2e is reported
+          # as a green run, and that twice looked like a verified pipeline:
+          # 34683789453/34516405912 showed 17-22s "success" runs with every e2e
+          # step skipped because Docker Desktop was off, and 34690189118 did it
+          # again (18s, all steps skipped). A run that verifies nothing must not
+          # be green.
+          "available=false" >> $env:GITHUB_OUTPUT
+          Write-Output "::error::Docker daemon unreachable - this e2e job would verify NOTHING. Start Docker Desktop (docs/self-hosted-runner.md) and re-run the workflow."
+          exit 1
       - name: Start the stack
         if: steps.docker.outputs.available == 'true'
         run: docker compose --profile virtuoso up --build -d

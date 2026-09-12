@@ -307,12 +307,15 @@ P3 = structural.
 - [ ] **Retire the TEMPORARY self-hosted CI mode** — ci.yml: matrix reduced
   to system Python 3.10 while images ship 3.11; Windows-only idioms
   (`shell: powershell`, `cmd /c`, `$env:GITHUB_OUTPUT`) in steps that would
-  break on ubuntu-latest; e2e "passes" silently when Docker is unavailable
-  (steps skipped); `web.yml` duplicates the test job for web-only pushes.
-  Fix (when billing is fixed): restore `runs-on: ubuntu-latest` +
-  `pull_request` + matrix 3.10/3.11/3.12 + setup-python; remove the
-  powershell overrides; make e2e fail (not skip) without Docker; merge
-  web.yml back.
+  break on ubuntu-latest; `web.yml` duplicates the test job for web-only
+  pushes.
+  PARTIAL 2026-09-12: the e2e job now FAILS when the Docker daemon is
+  unreachable instead of skipping every step — the silent-skip mode produced
+  false greens three times (17s/22s/18s "success" runs that verified nothing:
+  `34516405912`, `34683789453`, `34690189118`). Still open: `runs-on:
+  ubuntu-latest` + `pull_request` + the 3.10/3.11/3.12 matrix + setup-python
+  (needs hosted runners / billing), the powershell overrides, and folding
+  `web.yml` back in.
 - [x] **Single env source for compose + k8s** — generate `k8s/configmap.yaml`
   from the same definitions docker-compose uses (see P0 k8s item).
   DONE (k8s side) 2026-09-03/04: `k8s/env-shared.yaml` is the single

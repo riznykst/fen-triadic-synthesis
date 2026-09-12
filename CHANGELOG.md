@@ -55,6 +55,13 @@ reached the bridge, were not captured.
 Scope: one script, the e2e workflow and the two docs. No service, compose or
 web change; suite counts unchanged (125 pytest + 18 Node + 5 Playwright UI e2e).
 
+Also: **the e2e job now fails when Docker is unavailable instead of skipping**
+(`Check Docker availability` exits 1 with an `::error::` annotation). A skipped
+e2e is reported as a green run, and that produced false "verified" signals three
+times — `34516405912` (17s), `34683789453` (22s) and, while writing this entry,
+`34690189118` (18s, every e2e step skipped because Docker Desktop was off).
+Closing that hole is the P3 item "make e2e fail (not skip) without Docker".
+
 ## 2026-09-10 — Vercel deploys: author attribution confirmed; stale red records cleaned
 
 - Corrected the "project-level Ignored Build Step" theory (entry below): the
