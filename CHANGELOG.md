@@ -2,6 +2,22 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-10 — Vercel deploys: author attribution confirmed; stale red records cleaned
+
+- Corrected the "project-level Ignored Build Step" theory (entry below): the
+  blocker was `COMMIT_AUTHOR_REQUIRED` — commits authored as
+  `riznykv@gmx.de` were blocked because that address is not linked to the
+  GitHub account `riznykst`, while the same pushes authored with the
+  repo-linked noreply identity deploy green (`0e6010b`, `8992217`).
+  `docs/TECH-DEBT.md` now records the real cause and the fix; `web/README.md`
+  gained the matching rule in its Vercel section.
+- Removed the stale red deployment records from GitHub (deployments whose
+  latest state was `failure`: the 2026-08-31/09-01 setup-era errors, the
+  old Ignored-Build-Step cancels and the author-blocked pushes) — the
+  Deployments panel now reflects real results only. Metadata removal; no
+  production or Vercel-side impact.
+- Frozen snapshot: released as `v0.2.2`.
+
 ## 2026-09-10 — Vercel blocked deploys: the real cause is commit-author attribution, not the Ignored Build Step
 
 - Deployment records (`GET /v6/deployments?projectId=…`) show the actual

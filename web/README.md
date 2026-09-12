@@ -74,6 +74,10 @@ at the repo root is the single source of truth (there is intentionally no
   cheap). It was removed on 2026-09-10: the pathspec watched only `web/`, so
   root-level `vercel.json` changes (the routing itself) never auto-deployed,
   and Vercel reports intentional skips as *failed* deployments in GitHub;
+- **deploy attribution** — the commit author e-mail must be linked to the
+  GitHub account: Vercel blocks a deployment whose author it cannot map to a
+  team seat (`COMMIT_AUTHOR_REQUIRED`). Use the repo-linked identity
+  (`git config user.email`), not a personal address;
 - `rewrites` — `/` → landing (`web/index.html`), `/portal` → classic DAO
   portal, `/triadic` → triadic view, `/widget` → widget demo, `/embed` →
   dataset-owner embedding example (all pages live under `web/`); each route

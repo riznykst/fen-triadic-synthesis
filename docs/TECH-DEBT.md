@@ -75,11 +75,15 @@ P3 = structural.
   manual `vercel --prod`), and Vercel reports intentional skips as *failed*
   deployments in GitHub. The static deploy is cheap enough to run on every
   push, so no ignore step remains.
-  PENDING (owner, Vercel dashboard): the project-level **Ignored Build Step**
-  (Project → Settings → Git) still skips the build — verified 2026-09-10:
-  push `9013e33`, which removed the file setting, was still reported as
-  "Deployment was blocked". Set it to *Automatic* (or clear the custom
-  command) to complete this item.
+  RESOLVED 2026-09-10: the real blocker was **commit-author attribution**,
+  not an Ignored Build Step — Vercel returned `state: BLOCKED`,
+  `blockCode: COMMIT_AUTHOR_REQUIRED` ("couldn't find a Git account for the
+  commit author") for pushes authored as `riznykv@gmx.de`; the project's
+  `commandForIgnoringBuildStep` is `null` (empty). Fix: every commit must use
+  the Git identity linked to the GitHub account
+  (`Vadym Riznyk <234586649+riznykst@users.noreply.github.com>`, configured
+  repo-locally). Verified: docs-only pushes by that identity deploy green
+  (`0e6010b`, `8992217`).
 
 ## P1 — consistency
 
