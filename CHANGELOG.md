@@ -2,6 +2,25 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-12 — e2e smoke test: the consumer-group readiness guard actually runs now
+
+- `scripts/smoke_test.py` guards against publishing before the outbound
+  consumer has joined `fen-bridge-outbound` (that group uses
+  `auto_offset_reset=latest`, so an early publish would be missed) — but the
+  probe called `.get()` on the result of `describe_consumer_groups()`, which
+  is a **list** in kafka-python 2.3.x (the version CI installs), not the dict
+  the code assumed. Every e2e run therefore logged `consumer-group check
+  failed (… 'list' object has no attribute 'get'); falling back to 5s settle
+  delay` and check #2 never executed.
+- Fixed by normalising the API shapes (`group_id_of` / `group_members`: dict
+  in 2.0.x, list of namedtuples in 2.3.x, `(error, payload)` wrappers), with
+  the settle delay kept only as a fallback for a genuinely unreachable admin
+  API. Verification: the CI e2e must log `fen-bridge-outbound consumer group:
+  ready` instead of the fallback warning; `docs/TECH-DEBT.md` (P3) records the
+  item and the deferred unit test.
+- Scope: one script plus the two docs. No service, compose, workflow or web
+  change; suite counts unchanged (125 pytest + 18 Node + 5 Playwright UI e2e).
+
 ## 2026-09-10 — Vercel deploys: author attribution confirmed; stale red records cleaned
 
 - Corrected the "project-level Ignored Build Step" theory (entry below): the

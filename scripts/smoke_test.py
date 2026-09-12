@@ -1,4 +1,4 @@
-﻿"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
+"""End-to-end smoke test for the local FEN stack (docker-compose.yml).
 
 Publishes one EntityCandidate onto dap.entities.pending_validation.v1 and
 waits for the full pipeline to complete:
@@ -107,37 +107,72 @@ def http_ready(url: str) -> bool:
     return resp.status_code == 200
 
 
+def group_id_of(item) -> Optional[str]:
+    """group_id of one entry of a ``list_consumer_groups`` result.
+
+    kafka-python 2.3.x (the CI version) returns plain ``(group, protocol_type)``
+    2-tuples; other builds return objects carrying ``group_id``/``group``.
+    """
+    if isinstance(item, dict):
+        return item.get("group_id") or item.get("group")
+    group_id = getattr(item, "group_id", None) or getattr(item, "group", None)
+    if group_id is not None:
+        return group_id
+    if isinstance(item, (list, tuple)) and item:  # 2.3.x (group, protocol_type)
+        return item[0]
+    return None
+
+
+def group_members(described, group_id: str) -> list:
+    """Members of ``group_id`` from a ``describe_consumer_groups`` result.
+
+    Normalises the kafka-python API shapes:
+    - 2.3.x (the version installed in CI): a **list** of ``GroupInformation``
+      namedtuples — ``group``/``members`` — exactly the shape that made the
+      old ``described.get(...)`` raise ``'list' object has no attribute 'get'``
+      and silently downgraded this probe to the settle-delay fallback on every
+      run (fixed 2026-09-12);
+    - 2.0.x: ``{group_id: GroupDescription}`` (a mapping);
+    - some builds wrap the payload as ``(error, payload)``.
+    """
+    if (
+        isinstance(described, tuple)
+        and len(described) == 2
+        and isinstance(described[1], (list, dict))
+    ):
+        described = described[1] or []
+    if isinstance(described, dict):
+        info = described.get(group_id)
+    else:
+        entries = list(described or [])
+        info = next((e for e in entries if group_id_of(e) == group_id), None)
+        if info is None and len(entries) == 1:
+            info = entries[0]  # only one group is ever described
+    if info is None:
+        return []
+    members = info.get("members") if isinstance(info, dict) else getattr(info, "members", None)
+    return list(members or [])
+
+
 def outbound_group_active(admin: KafkaAdminClient) -> bool:
     """True once the outbound consumer group exists with at least one active
     member — i.e. fen-bridge-outbound is subscribed and will see our publish.
 
-    Handles the kafka-python API drift between 2.x and 3.x:
-    - 2.x: ``list_consumer_groups()`` -> list of ``(name, protocol_type)``
-      tuples; ``describe_consumer_groups()`` -> {group_id: GroupDescription}.
-    - 3.x: ``list_consumer_groups()`` -> [GroupOverview]; ``describe_groups()``
-      -> {group_id: GroupDescription}.
+    Handles the kafka-python API drift between 2.0.x and 2.3.x (see
+    ``group_id_of`` / ``group_members`` for the concrete shapes).
     """
     list_groups_fn = getattr(admin, "list_consumer_groups", None) or getattr(admin, "list_groups", None)
     raw_groups = list_groups_fn() if list_groups_fn is not None else []
     if isinstance(raw_groups, tuple):  # defensive: (error, groups)
         raw_groups = raw_groups[1] or []
-    known_ids = set()
-    for g in raw_groups:
-        if isinstance(g, (list, tuple)):          # 2.x tuple (name, protocol_type)
-            known_ids.add(g[0])
-        elif isinstance(g, dict):                 # dict shape
-            known_ids.add(g.get("group_id") or g.get("group"))
-        else:                                     # 3.x GroupOverview
-            known_ids.add(getattr(g, "group_id", None) or getattr(g, "group", None))
-    if OUTBOUND_GROUP_ID not in known_ids:
+    # Entries we cannot parse (yet another API shape) are ignored, not treated
+    # as "group absent": the describe_* call below is the authoritative probe.
+    known_ids = {group_id_of(g) for g in raw_groups} - {None}
+    if known_ids and OUTBOUND_GROUP_ID not in known_ids:
         return False
     describe_fn = getattr(admin, "describe_consumer_groups", None) or getattr(admin, "describe_groups", None)
     described = describe_fn([OUTBOUND_GROUP_ID]) if describe_fn is not None else {}
-    if isinstance(described, tuple):  # defensive: (error, descriptions)
-        described = described[1] or {}
-    info = described.get(OUTBOUND_GROUP_ID, {})
-    members = info.get("members") if isinstance(info, dict) else getattr(info, "members", None)
-    return bool(members)
+    return bool(group_members(described, OUTBOUND_GROUP_ID))
 
 
 def wait_for_outbound_group() -> None:
@@ -154,11 +189,14 @@ def wait_for_outbound_group() -> None:
         return
     try:
         wait_for(lambda: outbound_group_active(admin), 15, f"{OUTBOUND_GROUP_ID} consumer group")
-    except Exception as exc:  # noqa: BLE001 - the admin API is flaky on some
-        # kafka-python/broker combinations (e.g. kafka-python 2.3.2 against
-        # Kafka 3.6 on Windows): fall back to a settle delay instead of
-        # failing the whole e2e. The outbound consumer joins within seconds,
-        # so a short settle preserves the "do not miss our publish" guarantee.
+    except Exception as exc:  # noqa: BLE001 - the admin API stays best-effort
+        # The probe is a safety net, not the assertion under test: if the
+        # broker's admin API is unreachable (or answers in yet another shape),
+        # fall back to a settle delay instead of failing the whole e2e — the
+        # outbound consumer joins within seconds, so a short settle preserves
+        # the "do not miss our publish" guarantee. Root cause of the fallback
+        # firing on EVERY run until 2026-09-12: kafka-python 2.3 returns a
+        # list from describe_consumer_groups (see group_members).
         logger.warning("consumer-group check failed (%s); falling back to %ds settle delay", exc, 5)
         time.sleep(5)
     finally:

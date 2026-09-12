@@ -268,6 +268,23 @@ P3 = structural.
 
 ## P3 — structural
 
+- [x] **e2e smoke "consumer group is subscribed" guard silently disabled** —
+  `scripts/smoke_test.py` lists "the outbound consumer group is subscribed (so
+  the candidate is not missed)" as its check #2, but the probe assumed
+  `describe_consumer_groups()` returns a dict, while kafka-python 2.3.x (the
+  version installed in CI) returns a **list** of descriptions. Every CI run
+  therefore logged
+  `WARNING consumer-group check failed (… 'list' object has no attribute
+  'get'); falling back to 5s settle delay` and the guard never executed — the
+  e2e was green for a weaker reason than it reports.
+  Fix: normalise both API shapes (`group_id_of` / `group_members`, also
+  handling `(error, payload)` wrappers) and keep the settle delay only as a
+  fallback for a genuinely unreachable admin API.
+  DONE 2026-09-12: verification = the e2e log of the run on this commit, which
+  must show `fen-bridge-outbound consumer group: ready` and no fallback
+  warning (it previously appeared in all three smoke modes).
+  Follow-up (deferred so the frozen "125 pytest" count stays valid): a unit
+  test for the normalisation helpers.
 - [ ] **Retire the TEMPORARY self-hosted CI mode** — ci.yml: matrix reduced
   to system Python 3.10 while images ship 3.11; Windows-only idioms
   (`shell: powershell`, `cmd /c`, `$env:GITHUB_OUTPUT`) in steps that would
