@@ -61,8 +61,9 @@ READY_TIMEOUT_S = 120.0
 DECISION_TIMEOUT_S = 30.0
 POLL_INTERVAL_S = 1.0
 # The outbound consumer group only has to form; it is up within seconds of the
-# stack starting, but a cold Kafka can take longer (see the e2e in 34686489718).
-GROUP_READY_TIMEOUT_S = 60.0
+# stack starting, so 30 s is a generous ceiling (a probe that cannot confirm
+# readiness falls back to a settle delay — see wait_for_outbound_group).
+GROUP_READY_TIMEOUT_S = 30.0
 # Settle after the group is Stable + assigned, before publishing (see
 # wait_for_outbound_group). Also used by the fallback path.
 SETTLE_S = 3.0
@@ -186,22 +187,40 @@ def state_text(state) -> str:
     return str(state).strip().lower()
 
 
+def assignment_is_empty(assignment) -> bool:
+    """True only when an assignment field is *explicitly* empty (b"", [], {}).
+
+    kafka-python 2.3.x DECODES the assignment into a
+    ``ConsumerProtocolMemberAssignment_v0`` object, which has no ``len()`` at
+    all — the first version of this check called ``len()`` unconditionally and
+    raised ``object of type 'ConsumerProtocolMemberAssignment_v0' has no
+    len()``, which silently disabled the guard again in run 34687001360. An
+    object that exists IS an assignment; ``None`` means "not reported", which
+    must not block readiness either.
+    """
+    if assignment is None:
+        return False
+    if isinstance(assignment, (bytes, bytearray, str, list, tuple, dict, set)):
+        return len(assignment) == 0
+    return False
+
+
 def group_readiness(described, group_id: str) -> str:
     """How far the outbound consumer group has actually come:
 
     - ``"absent"``  — the broker does not list the group yet;
     - ``"joining"`` — a member exists, but the coordinator has not finished the
       rebalance (state is set and is not ``Stable``) or has not handed out an
-      assignment yet (empty ``member_assignment``);
-    - ``"ready"``   — ``Stable`` with at least one member carrying a non-empty
-      assignment, i.e. the consumer will genuinely be served records.
+      assignment yet (an explicitly empty ``member_assignment``);
+    - ``"ready"``   — ``Stable`` with at least one member, i.e. the consumer
+      will genuinely be served records.
 
     "A member exists" is NOT enough, and assuming it was cost a red e2e: the
     first run with the repaired probe (34686489718) saw a member and published
     155 ms later, and the candidate was lost — the group was still joining, so
     the consumer had not yet initialised its fetch position
-    (``auto_offset_reset=latest`` on a fresh group). Hence the state and
-    assignment checks, plus the settle delay in ``wait_for_outbound_group``.
+    (``auto_offset_reset=latest`` on a fresh group). Hence the state check,
+    plus the settle delay in ``wait_for_outbound_group``.
     """
     info = find_group(described, group_id)
     if info is None:
@@ -213,9 +232,19 @@ def group_readiness(described, group_id: str) -> str:
     if state and state_text(state) != "stable":
         return "joining"
     assignments = [field_of(member, "member_assignment") for member in members]
-    if any(assignment is not None and len(assignment) == 0 for assignment in assignments):
+    if any(assignment_is_empty(assignment) for assignment in assignments):
         return "joining"  # rebalance done, assignments not handed out yet
     return "ready"
+
+
+def describe_outbound_group(admin: KafkaAdminClient):
+    """``describe_consumer_groups([OUTBOUND_GROUP_ID])`` — the authoritative
+    view of the group, also used for the fallback diagnostics.
+    """
+    describe_fn = getattr(admin, "describe_consumer_groups", None) or getattr(admin, "describe_groups", None)
+    if describe_fn is None:
+        return []
+    return describe_fn([OUTBOUND_GROUP_ID])
 
 
 def outbound_group_ready(admin: KafkaAdminClient) -> bool:
@@ -234,9 +263,7 @@ def outbound_group_ready(admin: KafkaAdminClient) -> bool:
     known_ids = {group_id_of(g) for g in raw_groups} - {None}
     if known_ids and OUTBOUND_GROUP_ID not in known_ids:
         return False
-    describe_fn = getattr(admin, "describe_consumer_groups", None) or getattr(admin, "describe_groups", None)
-    described = describe_fn([OUTBOUND_GROUP_ID]) if describe_fn is not None else {}
-    return group_readiness(described, OUTBOUND_GROUP_ID) == "ready"
+    return group_readiness(describe_outbound_group(admin), OUTBOUND_GROUP_ID) == "ready"
 
 
 def wait_for_outbound_group() -> None:
@@ -269,8 +296,20 @@ def wait_for_outbound_group() -> None:
     except Exception as exc:  # noqa: BLE001 - the admin API stays best-effort
         # The probe is a safety net, not the assertion under test: if the
         # broker's admin API is unreachable (or answers in yet another shape),
-        # fall back to a settle delay instead of failing the whole e2e.
+        # fall back to a settle delay instead of failing the whole e2e. Log the
+        # group's real state first: run 34687001360 burned three 60 s waits
+        # without ever showing WHY the probe could not confirm readiness.
         logger.warning("consumer-group check failed (%s); falling back to %ds settle delay", exc, SETTLE_S)
+        try:
+            described = describe_outbound_group(admin)
+            logger.warning(
+                "%s: readiness=%s raw=%s",
+                OUTBOUND_GROUP_ID,
+                group_readiness(described, OUTBOUND_GROUP_ID),
+                str(described)[:400],
+            )
+        except Exception:  # noqa: BLE001 - diagnostics must never mask the failure
+            logger.warning("%s: diagnostics unavailable (admin API answered nothing usable)", OUTBOUND_GROUP_ID)
         time.sleep(SETTLE_S)
     finally:
         admin.close()

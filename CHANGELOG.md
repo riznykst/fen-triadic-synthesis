@@ -4,7 +4,7 @@ All notable changes are recorded here in reverse chronological order.
 
 ## 2026-09-12 — e2e smoke test: the consumer-group guard runs, and it is strict now
 
-Two findings from one CI investigation, both fixed in `scripts/smoke_test.py`:
+Three findings from one CI investigation, all fixed in `scripts/smoke_test.py`:
 
 1. **The guard never ran.** The script lists "the outbound consumer group is
    subscribed before we publish" as its check #2, but the probe called `.get()`
@@ -21,17 +21,29 @@ Two findings from one CI investigation, both fixed in `scripts/smoke_test.py`:
    `auto_offset_reset=latest` drops records produced before the consumer
    initialises its fetch position — which happens on its first poll *after* the
    assignment. The old 5 s sleep had been covering that window by accident.
+3. **A decoded assignment has no `len()`.** The first readiness check asked for
+   a "non-empty `member_assignment`" and called `len()` on it; kafka-python
+   2.3.x decodes that field into a `ConsumerProtocolMemberAssignment_v0`
+   object, so the probe raised `object of type
+   'ConsumerProtocolMemberAssignment_v0' has no len()` — the guard was disabled
+   *again*, this time by the check meant to strengthen it, and run `34687001360`
+   burned three 60 s waits before falling back (green e2e, 6m22s instead of
+   ~4m). An assignment object that exists **is** an assignment; only an
+   explicitly empty `b""`/`[]`/`{}` means "not handed out yet", and an
+   unreported `None` must not block readiness.
 
-Fix: `group_id_of` / `group_members` / `group_readiness` normalise every API
-shape (2.3.x list of namedtuples, 2.0.x dict mapping, `(error, payload)`
-wrappers, unparseable entries are not read as "group absent"); readiness now
-requires `state == Stable` **and** a member with a non-empty
-`member_assignment`; a 3 s settle keeps the publish strictly after the fetch
-position is initialised, and the group gets a 60 s budget to form. The plain
-settle survives only as a fallback for a genuinely unreachable admin API.
+Fix: `group_id_of` / `group_members` / `group_readiness` / `assignment_is_empty`
+normalise every API shape (2.3.x list of namedtuples, 2.0.x dict mapping,
+`(error, payload)` wrappers, decoded assignment objects, unparseable entries are
+not read as "group absent"); readiness requires `state == Stable` with a member
+whose assignment is not explicitly empty; a 3 s settle keeps the publish
+strictly after the fetch position is initialised; the group gets a 30 s budget
+to form. The settle survives only as a fallback for an admin API that cannot be
+queried — and that path now logs the group's real state and readiness, so a
+future fallback is diagnosable from the job log alone.
 
 Verification: local harness over the real installed kafka-python 2.3.2 shapes
-(23 checks, all green) plus the CI e2e, which must log
+(29 checks, all green) plus the CI e2e, which must log
 `fen-bridge-outbound consumer group (Stable + assigned): ready`, the settle
 line and all three smoke modes passing.
 

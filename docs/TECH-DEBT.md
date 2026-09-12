@@ -285,12 +285,22 @@ P3 = structural.
   guard reported "ready" for a group whose member had not finished joining, the
   candidate was published 155 ms later and was lost (fresh group +
   `auto_offset_reset=latest`); the red run proved the probe now executes but
-  that membership alone is too weak a condition.
-  Follow-up fix: readiness = `state == Stable` **and** a member with a
-  non-empty `member_assignment`, plus a 3 s settle after readiness and a 60 s
-  budget for the group to form (`group_readiness` / `outbound_group_ready`).
-  Verification: local harness over the real kafka-python 2.3.2 shapes (21
-  checks) + the CI e2e logging
+  that membership alone is too weak a condition. Fix: readiness =
+  `state == Stable` + a real assignment, plus a settle after readiness
+  (`group_readiness` / `outbound_group_ready`), committed as `6504e7b`.
+  THIRD FINDING (run `34687001360`, same commit): that first readiness check
+  called `len()` on `member_assignment`, which kafka-python 2.3.x DECODES into
+  a `ConsumerProtocolMemberAssignment_v0` object — the probe raised
+  `object of type 'ConsumerProtocolMemberAssignment_v0' has no len()` and the
+  guard was disabled *again*, this time by the check meant to strengthen it;
+  the run was green but burned three 60 s waits (e2e 6m22s vs ~4m). Fix:
+  `assignment_is_empty()` treats a decoded object (or an unreported `None`) as
+  present and only an explicitly empty `b""`/`[]`/`{}` as "not handed out yet";
+  the readiness budget is 30 s, and the fallback path now logs the group's real
+  state + readiness (`readiness=… raw=…`) so the next fallback is diagnosable
+  from the job log alone.
+  Verification: local harness over the real kafka-python 2.3.2 shapes (29
+  checks, all green) + the CI e2e logging
   `fen-bridge-outbound consumer group (Stable + assigned): ready`.
   Deferred (keeps the frozen "125 pytest" count valid): a unit test for the
   normalisation/readiness helpers.
