@@ -2,6 +2,18 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-12 — docs: runner guide matches the Docker-required e2e and the real test counts
+
+- `docs/self-hosted-runner.md`: the "skips the Docker steps by design" note is
+  gone — since `676bf6f` a missing Docker daemon makes the `e2e` job **fail**
+  (`Check Docker availability` exits 1), so a false green is impossible; the
+  note now also tells how to recognise a trustworthy green run
+  (`Start the stack`, `E2E SMOKE TEST PASSED` ×3, ~3–5 min).
+- Stale test counts fixed in the same file: `115` → **125 pytest + 18 Node +
+  5 Playwright UI** (two places), and the D:-failure recovery note is marked
+  as "111 at that time".
+- Tests: unchanged (docs only) — verified by the CI run on this commit.
+
 ## 2026-09-12 — e2e smoke test: the consumer-group guard runs, and it is strict now
 
 Three findings from one CI investigation, all fixed in `scripts/smoke_test.py`:

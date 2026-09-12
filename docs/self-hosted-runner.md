@@ -98,8 +98,9 @@ gh run watch --repo riznykst/fen-triadic-synthesis
 
 Notes:
 
-- The `e2e` job needs Docker Desktop running; the first `docker compose up
-  --build` is slow (image pulls).
+- The `e2e` job needs Docker Desktop running — without it the job **fails**
+  on the Docker availability check (see §7, note 2); the first `docker
+  compose up --build` is slow (image pulls).
 - actions/setup-python downloads Python 3.10/3.11/3.12 into the runner cache
   on first use.
 - The Windows runner carries the labels `self-hosted`, `Windows`, `X64` —
@@ -220,7 +221,7 @@ Operating model agreed across the AI working chats (this repo has several
 parallel AI sessions plus the Google Jules bot, which opens PRs) and the owner.
 
 1. **Offline development loop (no Docker).** Most business logic is fully
-   mocked and covered offline: `pytest -q` (115 tests - Kafka schemas, SPARQL
+   mocked and covered offline: `pytest -q` (125 tests - Kafka schemas, SPARQL
    UPDATE generator, QV logic, PID helpers, FastAPI handlers, SSE, FenClient),
    plus
    `python scripts/generate_schemas.py` and `python scripts/shacl_check.py`.
@@ -229,9 +230,12 @@ parallel AI sessions plus the Google Jules bot, which opens PRs) and the owner.
    self-hosted runner; the `e2e` job boots the real stack
    (`COMPOSE_PROJECT_NAME=fen-ci`): Kafka/Fuseki (+ optional Virtuoso profile)
    -> `scripts/smoke_test.py` (auto/community/QV) -> Virtuoso dialect check ->
-   teardown. Prerequisite: **Docker Desktop must be running** - otherwise the
-   job skips the Docker steps by design, and a skipped e2e does NOT count as
-   validation.
+   teardown. Prerequisite: **Docker Desktop must be running**. Since
+   `676bf6f` the `Check Docker availability` step exits 1 with `::error::`
+   when the daemon is unreachable, so a Docker-less run is **red** — it used
+   to skip every e2e step and report a false green (three such runs:
+   17s/22s/18s "success" that validated nothing). A trustworthy green e2e
+   shows `Start the stack`, `E2E SMOKE TEST PASSED` (×3) and takes ~3–5 min.
 3. **Local stack vs CI.** The local dev stack must not hold the published
    ports (3030/8082/8100/8101/8890/9092/9090/3000) when backend pushes are
    expected: CI fails fast with "port is already allocated" by design (it
@@ -243,7 +247,8 @@ parallel AI sessions plus the Google Jules bot, which opens PRs) and the owner.
 5. **Honesty contract.** An offline-green suite is NOT "done" for backend
    changes: a green CI run with the real e2e is required before
    CHANGELOG/BACKLOG/FEN-SYNC claims. Test counts must be the actual `pytest`
-   number (currently 115). Never claim browser-verified or e2e-verified what
+   number (currently 125 pytest + 18 Node + 5 Playwright UI). Never claim
+   browser-verified or e2e-verified what
    was only unit-tested.
 6. **Git hygiene with parallel sessions.** Always `git status -s` before
    committing and before pushing; push only from a clean tree. After any
@@ -288,7 +293,8 @@ Ops notes (learned the hard way):
 - No committed work was lost: the GitHub remote was the source of truth.
 - Recovery (all on C:, NTFS):
   - Repo: cloned to `C:\fen-triadic-synthesis` (HEAD preserved, 111 tests
-    green with the fresh venv `C:\fen-venv`).
+    green at that time with the fresh venv `C:\fen-venv`; the suite is 125
+    pytest + 18 Node + 5 Playwright UI today).
   - Runner: reinstalled from scratch at `C:\actions-runner` (v2.337.0),
     registered as `fen-laptop`, NSSM service `GitHubActionsRunner`
     (`C:\nssm\nssm-2.24\win64\nssm.exe`) running `cmd.exe /c run.cmd`, work
