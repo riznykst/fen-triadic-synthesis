@@ -2,6 +2,29 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-16 — whitepaper v4: store facts corrected (QLever, read-only), paper published
+
+- `docs/FEN-Whitepaper-Triadic-Synthesis.pdf` is now **v4** (rebuilt from the
+  v3 docx; 8 pages; verified by text extraction). All corrections are
+  consortium-facing:
+  - the live public GoTriple Knowledge Graph node (live since 1 September
+    2026) is **served read-only and runs on QLever** — the PDF no longer calls
+    Virtuoso "the same engine GoTriple runs in production". Virtuoso stays the
+    engine named in the D2.2 architecture for the DAP write path, so the
+    dialect check and the §8 request are unchanged in kind, and a read-only
+    public graph cannot accept `gfen:` validation writes — exactly the
+    constraint ADR-002 assumes;
+  - the companion paper is **published** (DOI 10.23726/cij.2026.1829), no
+    longer "accepted for publication / in press";
+  - uniform `ADR-002` spelling, running header `(v3)` → `(v4)`, and a "what
+    changed since v3" note in the preamble.
+- `docs/architecture.md` aligned with the same facts (data-flow diagram, the
+  local-vs-production table, the k8s note) and gained the store note;
+  `CITATION.cff` version bumped to the released software version.
+- Build sources stay outside the repo: `C:\FEN-GRAPHIA\FEN-Whitepaper-Triadic-Synthesis-v4.docx`
+  (`fix-whitepaper-v4.py`, `convert-whitepaper-v4.ps1`).
+- Tests: unchanged (docs only) — verified by the CI run on this commit.
+
 ## 2026-09-16 — the companion paper is PUBLISHED (README + CITATION.cff updated)
 
 - Riznyk, V. — *Decentralised Agentic Governance: A Methodology for

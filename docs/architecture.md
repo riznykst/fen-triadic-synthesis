@@ -31,7 +31,7 @@ fen.governance.decisions.v1
 [ Validation Result Consumer ]       services/validation_consumer/main.py
      │  SPARQL UPDATE into named graph (services/validation_consumer/sparql_updater.py)
      ▼
-dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (GoTriple KG)
+dap.entities.validated.v1  →  Publisher (unchanged)  →  Virtuoso (D2.2 write path) / QLever (live public KG, read-only)
 ```
 
 Web interface layer (zero-build, see `web/api.md`):
@@ -94,11 +94,19 @@ See [`adr/ADR-003-fen-pid-scheme.md`](adr/ADR-003-fen-pid-scheme.md).
 
 | | Local dev (this repo, `docker-compose.yml`) | Production |
 |---|---|---|
-| RDF store | Apache Jena Fuseki | Virtuoso (GRAPHIA's authoritative store) |
+| RDF store | Apache Jena Fuseki | Virtuoso — the engine D2.2 names for the DAP write path; the live public GoTriple KG node is read-only on QLever |
 | DAO / governance | `mock_fen_api/` (random/rule-based outcome) | Real Agentic Scaffolding + Quadratic Voting DAO |
 | On-chain anchor | Stubbed string (`0xMOCK...`) | Real transaction hash |
 | Kafka | Single-broker `docker-compose.yml` | GRAPHIA's production Kafka cluster (PCSS) |
 | PID NAAN | `FEN_NAAN=99999` (local dev) | FEN's registered NAAN (consortium, whitepaper §8) |
+
+> **Store note (2026-09).** The live public GoTriple Knowledge Graph node (live
+> since 1 September 2026) is served **read-only** and runs on **QLever**
+> (SPARQL 1.1, `https://kg-api.gotriple.eu/docs`); Virtuoso is the engine named
+> in the D2.2 architecture for the DAP write path. A read-only public graph
+> cannot accept `gfen:` validation writes at all — the constraint ADR-002
+> assumes, and the reason the write-path check needs a consortium test
+> instance.
 
 Swapping any row on the right only requires changing environment variables
 (`SPARQL_UPDATE_ENDPOINT`, `FEN_API_BASE_URL`, `KAFKA_BOOTSTRAP_SERVERS`,
@@ -210,7 +218,8 @@ decision and overwrite `gfen:validationStatus`, see `webhook.py`).
 SPARQL credentials for the consumer's UPDATE endpoint are likewise NOT
 shipped — create `fen-sparql-credentials` (see configmap.yaml comments).
 
-Kafka and the RDF store (**Virtuoso** in production, Fuseki in local dev) are
+Kafka and the RDF store (**Virtuoso** in the D2.2 production path, Fuseki in
+local dev; the live public GoTriple KG node is read-only on QLever) are
 **external** to this deployment — the manifests assume a DAP-managed broker
 and a SPARQL endpoint, and never run them. Image tags
 (`fen/fen-bridge-*:latest`, `fen/validation-consumer:latest`) are placeholders

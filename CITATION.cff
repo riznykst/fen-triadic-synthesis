@@ -25,8 +25,8 @@ keywords:
   - human-ai
   - decentralized-governance
 license: Apache-2.0
-version: 0.2.2
-date-released: "2026-09-12"
+version: 0.2.5
+date-released: "2026-09-16"
 url: "https://github.com/riznykst/fen-triadic-synthesis"
 doi: "10.23726/cij.2026.1829"
 # Companion paper — PUBLISHED (CERN IdeaSquare J. Exp. Innovation). Cite the
