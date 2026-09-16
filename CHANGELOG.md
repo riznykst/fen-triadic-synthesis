@@ -2,7 +2,7 @@
 
 All notable changes are recorded here in reverse chronological order.
 
-## 2026-09-12 — the companion paper is PUBLISHED (README + CITATION.cff updated)
+## 2026-09-16 — the companion paper is PUBLISHED (README + CITATION.cff updated)
 
 - Riznyk, V. — *Decentralised Agentic Governance: A Methodology for
   Community-Owned Linguistic Datasets and Knowledge Synthesis*, CERN
