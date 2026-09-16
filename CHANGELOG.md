@@ -2,6 +2,29 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-16 — whitepaper v4 (revision 2): the two tables aligned; §8 strengthened
+
+- An owner review of the v4 edit list found two places the prose line-reading
+  had missed — both in **tables**: the ADR table's ADR-001 row ("All content
+  remains in Virtuoso.") and the risk table's GDPR row ("all deletable content
+  stays in Virtuoso…"). Both now read "in the RDF store (Virtuoso as the D2.2
+  authoritative core; the live public node is read-only on QLever)", matching
+  the §4.3 prose. `in Virtuoso` no longer occurs anywhere in the PDF.
+- **§8 strengthened**: the request now says explicitly that, because the live
+  public GoTriple KG node is read-only, it cannot accept validation writes — a
+  writable consortium test instance is the only environment in which the
+  integration can be verified end to end (a lead-in sentence plus a
+  write-access addition to the Kafka bullet).
+- **Evidence for the framing** added to §1: D2.2 §5.2.5 already planned a
+  QLever feasibility study for a read-optimised engine alongside the Virtuoso
+  core, and GRAPHIA WP2 has published its QLever Evaluation Report (Zenodo
+  record 20019957). The same citations were added to the README store note and
+  `docs/architecture.md`.
+- Preamble provenance note: the v3 wording read Virtuoso's role in D2.2
+  (ADR-002) as a statement about the live public node; v4 separates the
+  architecture's write path from the live read-only node.
+- Released as `v0.2.6`. Tests: unchanged (docs only).
+
 ## 2026-09-16 — whitepaper v4: store facts corrected (QLever, read-only), paper published
 
 - `docs/FEN-Whitepaper-Triadic-Synthesis.pdf` is now **v4** (rebuilt from the

@@ -106,7 +106,8 @@ See [`adr/ADR-003-fen-pid-scheme.md`](adr/ADR-003-fen-pid-scheme.md).
 > in the D2.2 architecture for the DAP write path. A read-only public graph
 > cannot accept `gfen:` validation writes at all — the constraint ADR-002
 > assumes, and the reason the write-path check needs a consortium test
-> instance.
+> instance. D2.2 §5.2.5 anticipated this (QLever feasibility study); see
+> GRAPHIA WP2's QLever Evaluation Report, Zenodo record 20019957.
 
 Swapping any row on the right only requires changing environment variables
 (`SPARQL_UPDATE_ENDPOINT`, `FEN_API_BASE_URL`, `KAFKA_BOOTSTRAP_SERVERS`,

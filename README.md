@@ -168,7 +168,10 @@ python scripts/virtuoso_dialect_check.py   # PASSED == dialect + idempotency OK
 > plan (the dialect check still targets the engine the D2.2 DAP writes to), but
 > it matters for the integration contract below: a read-only public graph
 > cannot accept `gfen:` validation writes at all, which is exactly the
-> constraint ADR-002 assumes.
+> constraint ADR-002 assumes. This is not a deviation from the architecture:
+> D2.2 §5.2.5 already planned a QLever feasibility study for a read-optimised
+> engine alongside the Virtuoso core, and GRAPHIA WP2 has since published its
+> [QLever Evaluation Report](https://zenodo.org/records/20019957).
 
 > **CI blocked by GitHub billing?** If Actions jobs fail with *"recent account
 > payments have failed or your spending limit needs to be increased"*, use a
