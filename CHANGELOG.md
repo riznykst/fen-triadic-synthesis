@@ -2,6 +2,26 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-12 — the companion paper is PUBLISHED (README + CITATION.cff updated)
+
+- Riznyk, V. — *Decentralised Agentic Governance: A Methodology for
+  Community-Owned Linguistic Datasets and Knowledge Synthesis*, CERN
+  IdeaSquare Journal of Experimental Innovation,
+  [DOI 10.23726/cij.2026.1829](https://doi.org/10.23726/cij.2026.1829) is now
+  **published** (the repository previously recorded it as "accepted for
+  publication, in press").
+- `README.md`: the citation block, the research-lineage diagram and the
+  "Why it matters" paragraph now say *published*, link the DOI and carry the
+  author's affiliation ("Independent Researcher, Flensburg, Germany") plus the
+  published keywords; a DOI badge was added next to the license badge.
+- `CITATION.cff`: status wording updated; author affiliation added; `version`
+  0.1.0 → 0.2.2 and `date-released` → 2026-09-12 (both still described the
+  first release); new `preferred-citation` entry of type `article` with the
+  paper's title, journal, year, DOI and keywords, so GitHub's "Cite this
+  repository" widget offers the article alongside the software.
+- Docs-only change: no code, workflow or web asset touched; suite counts
+  unchanged (125 pytest + 18 Node + 5 Playwright UI e2e).
+
 ## 2026-09-12 — docs: runner guide matches the Docker-required e2e and the real test counts
 
 - `docs/self-hosted-runner.md`: the "skips the Docker steps by design" note is

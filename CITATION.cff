@@ -7,11 +7,12 @@ abstract: >-
   the community decides, the knowledge graph records. Runnable companion
   implementation of "Decentralised Agentic Governance: A Methodology for
   Community-Owned Linguistic Datasets and Knowledge Synthesis" (Riznyk, 2026,
-  accepted for publication in the CERN IdeaSquare Journal of Experimental
-  Innovation, DOI 10.23726/cij.2026.1829).
+  published in the CERN IdeaSquare Journal of Experimental Innovation,
+  DOI 10.23726/cij.2026.1829).
 authors:
   - family-names: Riznyk
     given-names: Vadym
+    affiliation: "Independent Researcher, Flensburg, Germany"
     orcid: ""
     email: riznykv@gmx.de
 keywords:
@@ -25,8 +26,26 @@ keywords:
   - human-ai
   - decentralized-governance
 license: Apache-2.0
-version: 0.1.0
-date-released: "2026-08-30"
+version: 0.2.2
+date-released: "2026-09-12"
 url: "https://github.com/riznykst/fen-triadic-synthesis"
-# Companion paper (accepted for publication, CERN IdeaSquare J. Exp. Innovation):
 doi: "10.23726/cij.2026.1829"
+# Companion paper — PUBLISHED (CERN IdeaSquare J. Exp. Innovation). Cite the
+# article itself for the methodology; cite this software entry for the code.
+preferred-citation:
+  type: article
+  title: "Decentralised Agentic Governance: A Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis"
+  authors:
+    - family-names: Riznyk
+      given-names: Vadym
+      affiliation: "Independent Researcher, Flensburg, Germany"
+  journal: "CERN IdeaSquare Journal of Experimental Innovation"
+  year: 2026
+  doi: "10.23726/cij.2026.1829"
+  keywords:
+    - Quadratic Voting
+    - Agentic Governance
+    - Decentralized Autonomous Organizations (DAO)
+    - Linguistic Commons
+    - Knowledge Hypergraphs
+    - AI Ethics
