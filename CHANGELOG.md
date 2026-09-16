@@ -2,6 +2,29 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-16 — whitepaper v4 (revision 3): §8 sentence repaired, WP2 cited by DOI, ledger-anchor overclaim removed
+
+- **§8 lead-in repaired.** The insertion from revision 2 broke the sentence after
+  the colon ("…are requested from GRAPHIA partners: One of them is not a
+  convenience: …") and duplicated the point made three lines below. The lead-in
+  is back to its original form; the substance stays in the test-environment
+  bullet, where it is better placed and fully argued.
+- **WP2 report cited by DOI and verified**: the *QLever Evaluation Report* is
+  open access on Zenodo (record 20019957) — Homo, J. & Darty, K. (2026),
+  DOI `10.5281/zenodo.20019957`; a WP2 T2.2 benchmark of QLever against Virtuoso
+  on the GoTriple KG. The whitepaper now cites it as
+  "GRAPHIA WP2's QLever Evaluation Report — Homo & Darty, 2026; DOI
+  10.5281/zenodo.20019957", matching the document's own DOI citation style;
+  the README store note and `docs/architecture.md` follow suit.
+- **The last ledger-anchor overclaim is gone** (three places): the §4.1 ontology
+  comment `# on-chain tx hash, anchor only` → `# anchor hash only; simulated
+  (0xMOCK) in the reference MVP — ADR-001`; the §4.3 sentence now says the
+  anchor hash is immutable *and* that in the reference MVP the anchor is the
+  simulated `0xMOCK...` stub with no blockchain transaction executed yet; the
+  risk table's GDPR row carries the same MVP qualifier. The whitepaper no longer
+  describes a transaction that does not happen.
+- Released as `v0.2.7`. Tests: unchanged (docs only).
+
 ## 2026-09-16 — whitepaper v4 (revision 2): the two tables aligned; §8 strengthened
 
 - An owner review of the v4 edit list found two places the prose line-reading

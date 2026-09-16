@@ -171,7 +171,8 @@ python scripts/virtuoso_dialect_check.py   # PASSED == dialect + idempotency OK
 > constraint ADR-002 assumes. This is not a deviation from the architecture:
 > D2.2 §5.2.5 already planned a QLever feasibility study for a read-optimised
 > engine alongside the Virtuoso core, and GRAPHIA WP2 has since published its
-> [QLever Evaluation Report](https://zenodo.org/records/20019957).
+> [QLever Evaluation Report](https://zenodo.org/records/20019957)
+> (Homo & Darty, 2026; DOI 10.5281/zenodo.20019957).
 
 > **CI blocked by GitHub billing?** If Actions jobs fail with *"recent account
 > payments have failed or your spending limit needs to be increased"*, use a
