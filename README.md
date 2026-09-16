@@ -153,13 +153,22 @@ Observability: Prometheus on http://localhost:9090 and Grafana on
 http://localhost:3000 (dashboard "FEN — Validation Pipeline Overview",
 anonymous access) — `docker compose up` starts both.
 
-Optional: verify SPARQL dialect compatibility against a real Virtuoso
-(GoTriple KG's engine) before touching GRAPHIA's instance:
+Optional: verify SPARQL dialect compatibility against a real Virtuoso (the
+engine named in the D2.2 architecture) before touching GRAPHIA's instance:
 
 ```bash
 docker compose --profile virtuoso up -d virtuoso
 python scripts/virtuoso_dialect_check.py   # PASSED == dialect + idempotency OK
 ```
+
+> **Store note (2026-09).** The first fully implemented node of the SSH KG
+> federation — the GoTriple Knowledge Graph, live since 1 September 2026 — is
+> served **read-only** and runs on **QLever** (SPARQL 1.1,
+> `https://kg-api.gotriple.eu/docs`), not Virtuoso. That does not change the
+> plan (the dialect check still targets the engine the D2.2 DAP writes to), but
+> it matters for the integration contract below: a read-only public graph
+> cannot accept `gfen:` validation writes at all, which is exactly the
+> constraint ADR-002 assumes.
 
 > **CI blocked by GitHub billing?** If Actions jobs fail with *"recent account
 > payments have failed or your spending limit needs to be increased"*, use a
@@ -386,7 +395,7 @@ whitepaper §8 "Request to the Consortium"):
 | Kafka topics | `dap.entities.pending_validation.v1`, `fen.governance.decisions.v1`, `dap.entities.validated.v1`; env aliases `FEN_TOPIC_CANDIDATES` / `FEN_TOPIC_VALIDATED` ready | real DAP topic names + event bus availability |
 | WP4 message schema | `EntityCandidate` (`schemas/kafka-events/`) | align with actual extracted-entity schema (no transformation) |
 | Named graphs | `urn:graphia:document:{id}:graph` | DAP's real named-graph URI scheme (D2.2 §3.5) |
-| SPARQL endpoint | `SPARQL_UPDATE_ENDPOINT` (Fuseki locally) | Virtuoso dialect compatibility of `build_update_query` — verified locally against OpenLink Virtuoso (`virtuoso_dialect_check.py`); production store pending |
+| SPARQL endpoint | `SPARQL_UPDATE_ENDPOINT` (Fuseki locally) | Virtuoso dialect compatibility of `build_update_query` — verified locally against OpenLink Virtuoso (`virtuoso_dialect_check.py`); production store pending. Note: the public GoTriple KG release (1 Sept 2026) is **read-only and QLever-based** — validation writes need the DAP-side store / a consortium test instance (ADR-002) |
 | PID NAAN | `FEN_NAAN=99999` (dev) | registered NAAN + N2T/w3id redirects (ADR-003) |
 | Deployment | docker-compose (dev) | OKD (OpenShift)/Kubernetes manifests for the DAP stack |
 
@@ -494,7 +503,7 @@ awaiting the consortium:
 - [x] FEN Bridge, Validation Result Consumer, and mock DAO implemented and unit-tested (this repo)
 - [x] PID scheme for governance records (ADR-003): `services/common/pid.py`, redirect config artefact
 - [x] Participation model & DAO threshold (ADR-005) + applicability analysis (`docs/applicability-and-limits.md`)
-- [x] SPARQL dialect + idempotency check against a real Virtuoso (OpenLink, the GoTriple KG engine) — `scripts/virtuoso_dialect_check.py`, wired into CI
+- [x] SPARQL dialect + idempotency check against a real Virtuoso (OpenLink, the engine named in the D2.2 architecture) — `scripts/virtuoso_dialect_check.py`, wired into CI
 - [ ] FEN Bridge validated against a real GRAPHIA test Kafka topic + a single low-resource-language WP4 test corpus
 - [ ] End-to-end demo against GRAPHIA's live Virtuoso test instance (local Virtuoso dialect check done; production store still pending)
 - [ ] Real NAAN registered with the consortium; N2T/w3id redirects published

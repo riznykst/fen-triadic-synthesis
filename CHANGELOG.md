@@ -21,6 +21,23 @@ All notable changes are recorded here in reverse chronological order.
   repository" widget offers the article alongside the software.
 - Docs-only change: no code, workflow or web asset touched; suite counts
   unchanged (125 pytest + 18 Node + 5 Playwright UI e2e).
+- Released as `v0.2.4` (annotated tag + GitHub Release, marked *Latest*) on
+  `af5f137`.
+- The repository is **public again** (it was private ~2026-09-11 → 2026-09-16),
+  so the "public repository" statements and the jsDelivr embed snippets are
+  accurate again — and any crawler snapshot from the private window (e.g. one
+  still quoting "104 tests", "submitted separately" or the pre-ADR-001
+  "on-chain" wording) is stale and does not describe `main`.
+- Store facts refreshed for the live federation: the public GoTriple Knowledge
+  Graph (first node, live since 1 September 2026) is **read-only and runs on
+  QLever**, not Virtuoso — README, the integration contract and
+  `docs/integration-verification-plan.md` now say so. ADR-001/002 keep their
+  D2.2-era wording (they are dated decision records); the new note strengthens
+  ADR-002 rather than contradicting it: a read-only graph cannot accept
+  `gfen:` writes at all.
+- `CITATION.cff`: the empty `orcid` field was dropped (an empty string carries
+  no information and falls outside the CFF ORCID pattern, which can make GitHub
+  refuse to render the "Cite this repository" widget).
 
 ## 2026-09-12 — docs: runner guide matches the Docker-required e2e and the real test counts
 

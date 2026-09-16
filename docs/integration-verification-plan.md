@@ -8,6 +8,16 @@ ADR-003.
 
 ## A. Real GRAPHIA (DAP Kafka + Virtuoso)
 
+> **Store update (2026-09-16).** The engine the D2.2 DAP writes to is Virtuoso,
+> but the **public** first node of the federation — the GoTriple Knowledge
+> Graph, live since 1 September 2026 — is served **read-only** and runs on
+> **QLever** (`https://kg-api.gotriple.eu/docs`). Two consequences for this
+> plan: (a) read-only verification against the public graph is possible
+> *today* and needs no consortium grant — good for A2 dialect/contract checks
+> in SELECT form; (b) **no** `gfen:` write can ever land there, so the
+> write-path verification below still requires a consortium test instance
+> (which is what ADR-002 assumes anyway).
+
 **Entry criteria** — the consortium grants (whitepaper §8):
 1. a test-environment Kafka topic mirroring `dap.entities.pending_validation.v1`
    scoped to one low-resource-language WP4 test corpus;
@@ -35,6 +45,10 @@ ADR-003.
       before touching the test instance.
 
 ### A2. SPARQL / Virtuoso dialect — verification steps
+- [ ] **NOW (no grant needed)** — read-only contract check against the public
+      GoTriple KG (QLever, `https://kg-api.gotriple.eu/docs`): do the D2.2 named
+      graph / TRIPLE Ontology assumptions in `architecture.md` match what the
+      live graph actually exposes? Record the differences either way.
 - [ ] Run `build_update_query` output against **real Virtuoso**; check
       `GRAPH` in DELETE/INSERT templates, PREFIX handling, literal quoting.
 - [ ] Replace `urn:graphia:document:{id}:graph` with the real DAP
