@@ -73,6 +73,24 @@ jobs:
       COMPOSE_PROJECT_NAME: fen-ci
     steps:
       - uses: actions/checkout@v5
+      # Run 35439138625 went red for an environment reason, not a code reason:
+      # C: was full, so `npm install` died with ENOSPC inside the Playwright step
+      # and the runner could not even write its own _diag log — which is why the
+      # dump/teardown steps never ran and the fen-ci stack stayed up holding the
+      # ports. Fail here instead, with the real cause on the first line, before
+      # pip/docker/npm consume the remaining space.
+      - name: Check free disk space
+        id: disk
+        shell: powershell
+        run: |
+          $free = [math]::Round((Get-PSDrive C).Free / 1GB, 2)
+          Write-Output "free on C:: $free GB"
+          if ($free -lt 5) {
+            "available=false" >> $env:GITHUB_OUTPUT
+            Write-Output "::error::Only $free GB free on C: - the e2e stack (docker images + npm + Playwright) needs about 5 GB, and a run started now fails mid-step with ENOSPC (see run 35439138625). Free space, then re-run."
+            exit 1
+          }
+          "available=true" >> $env:GITHUB_OUTPUT
       # TEMPORARY: replace with actions/setup-python@v5 when back on hosted.
       - name: Use system Python
         run: python --version
@@ -133,7 +151,16 @@ jobs:
           # the default auto mode (submit -> simulated DAO decides).
           docker compose -f docker-compose.yml -f docker-compose.voting.yml up -d mock-fen-api
           cd web
-          npm install --no-save @playwright/test
+          # Reuse an existing install when the runner still has it: a fresh
+          # `npm install` writes ~50 MB every run and, on a full disk, fails with
+          # ENOSPC instead of a meaningful message (run 35439138625).
+          if (Test-Path 'node_modules\@playwright\test') {
+            Write-Output 'reusing the existing @playwright/test install'
+          } else {
+            npm install --no-save --prefer-offline @playwright/test
+          }
+          # `playwright install` is idempotent: it skips a browser revision that
+          # is already present.
           npx playwright install chromium
           npx playwright test
       - name: Dump the stack logs on failure
