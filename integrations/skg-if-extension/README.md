@@ -49,12 +49,19 @@ ext-cvkg/
 │   ├── ontology/1.0.0/cvkg.ttl       ← extension ontology (draft)
 │   └── shacl/1.0.0/shacl.ttl         ← SHACL shapes (draft)
 ├── context/ver/1.0.0/skg-if.json     ← JSON-LD context (draft)
+├── examples/
+│   └── validation-record.example.jsonld  ← three worked records (validated, automated, disputed)
 └── mappings/fen-to-cvkg.sssom.tsv    ← SSSOM mapping from our working namespace
 ```
 
-Not yet present (required before submission): `current/` copies, versioned
-`data-model/shacl/current/`, `interoperability-framework/` documentation pages,
-`api/` extension notes, `examples/` JSON-LD samples.
+Verified locally (2026-09-18): the ontology parses (rdflib, 108 triples); the
+SHACL document parses and self-validates (pyshacl, 84 triples, `conforms: True`);
+the JSON-LD context parses; the SSSOM file has 8 columns × 7 mappings and no
+ragged rows; **the example records conform to the staged SHACL shapes**
+(pyshacl `conforms: True`). Nothing here is submitted.
+
+Not yet present (required before submission): `current/` copies, the
+`interoperability-framework/` documentation pages and the `api/` extension notes.
 
 ## 4. Non-Interference check (self-assessment, to be completed before submitting)
 

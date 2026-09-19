@@ -1,0 +1,115 @@
+{
+  "@context": {
+    "dprod": "https://w3id.org/dprod/ontology#",
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dct": "http://purl.org/dc/terms/",
+    "odcs": "https://bitol-io.github.io/open-data-contract-standard/",
+    "cvkg": "https://w3id.org/skg-if/extension/cvkg/ontology/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+
+  "// NOTE": "DRAFT example, not a published contract. Values marked SIMULATED are placeholders of the reference implementation, kept visible on purpose. Structure follows LUMEN D4.2 (pp. 17-19, 46-56): a Data Product (DPROD/DCAT) governed by exactly one Data Contract (ODCS profile). Endpoints use the RFC 2606 reserved domain example.org.",
+
+  "@graph": [
+    {
+      "@id": "https://node.example.org/products/low-resource-toponyms",
+      "@type": "dprod:DataProduct",
+      "dct:title": "Community-validated toponyms — low-resource language node",
+      "dct:description": "SIMULATED example: a federated node exposing community-validated toponyms and keeping its own store. Replace the endpoints and owner before any real publication.",
+      "dprod:dataProductOwner": {
+        "@id": "https://node.example.org/community",
+        "dct:title": "PLACEHOLDER — the accountable community/organisation operating this node"
+      },
+      "dprod:purpose": "Make community-validated, AI-assisted knowledge enrichment discoverable while declaring how each contribution was validated.",
+      "dprod:lifecycleStatus": "in progress",
+      "dprod:outputDataset": {
+        "@id": "https://node.example.org/datasets/toponyms",
+        "@type": "dcat:Dataset",
+        "dct:title": "Validated toponym statements"
+      },
+      "dcat:accessService": {
+        "@id": "https://node.example.org/services/sparql",
+        "@type": "dcat:DataService",
+        "dct:title": "Node's own SPARQL 1.1 endpoint (PLACEHOLDER)",
+        "dcat:endpointURL": "https://node.example.org/sparql",
+        "dcat:endpointDescription": "https://node.example.org/sparql/service-description",
+        "dct:conformsTo": "https://www.w3.org/TR/sparql11-query/"
+      }
+    },
+
+    {
+      "@id": "https://node.example.org/contracts/toponyms-v0",
+      "@type": "dprod:DataContract",
+      "dct:title": "Data Contract — community-validated toponyms node (DRAFT)",
+      "odcs:contractVersion": "0.1.0",
+      "odcs:status": "draft",
+      "odcs:dataProduct": "https://node.example.org/products/low-resource-toponyms",
+
+      "odcs:description": {
+        "purpose": "Declare, for every contributed claim, how it was validated and where that judgement is recorded.",
+        "limitations": "SIMULATED reference implementation: the DAO is a mock, the anchor is a 0xMOCK placeholder, the NAAN is a development value."
+      },
+
+      "odcs:roles": [
+        { "role": "producer",   "access": "read",  "description": "The node's community contributes candidate statements." },
+        { "role": "validator",  "access": "read",  "description": "Community members or invited experts adjudicate candidates (quadratic voting with quorum, or peer review)." },
+        { "role": "challenger", "access": "read",  "description": "Anyone may contest a validated statement; a contest creates a new assertion that supersedes the previous one (append-only)." },
+        { "role": "consumer",   "access": "read",  "description": "Federated discovery services query the node read-only through its SPARQL/SKG-IF endpoints." }
+      ],
+
+      "odcs:slaProperties": [
+        { "property": "availability", "value": 99.0, "unit": "percent", "description": "PLACEHOLDER target for the node's read endpoint." },
+        { "property": "freshness",    "value": 24,   "unit": "hours",   "description": "Validated statements are exposed within one day of the decision." }
+      ],
+
+      "odcs:quality": [
+        {
+          "type": "custom",
+          "name": "validation-record-completeness",
+          "description": "Testable expectation: every contributed statement is accompanied by a cvkg:ValidationAssertion carrying a status and a method.",
+          "dimension": "completeness",
+          "mustBe": 1.0
+        },
+        {
+          "type": "custom",
+          "name": "rejection-retention",
+          "description": "Rejected and disputed assertions remain in the graph with a decisionTimestamp (institutional memory; nothing is silently deleted).",
+          "dimension": "consistency",
+          "mustBe": 1.0
+        }
+      ],
+
+      "odcs:servers": [
+        {
+          "server": "node-sparql",
+          "type": "sparql",
+          "location": "https://node.example.org/sparql",
+          "description": "PLACEHOLDER — the node's own store (the public GoTriple KG is read-only and cannot accept validation writes)."
+        }
+      ],
+
+      "odcs:customProperties": [
+        {
+          "property": "validationSemantics",
+          "value": "cvkg:ValidationAssertion",
+          "description": "Vocabulary used to declare how a contribution was validated (SKG-IF extension, draft). Statuses: pending/validated/disputed/rejected. Methods: community vote / expert review / automated."
+        },
+        {
+          "property": "validationRecordTemplate",
+          "value": "https://node.example.org/validation-record/template.jsonld",
+          "description": "PLACEHOLDER — template a consumer can use to verify a claim's validation without copying data."
+        },
+        {
+          "property": "simulatedInfrastructure",
+          "value": true,
+          "description": "True while the reference implementation is in use: mock DAO, simulated 0xMOCK anchor, development NAAN. Keeps demo data distinguishable from production data."
+        },
+        {
+          "property": "noPersonalData",
+          "value": true,
+          "description": "Validation records carry participant classes and aggregate counts only; individual votes never leave the node."
+        }
+      ]
+    }
+  ]
+}

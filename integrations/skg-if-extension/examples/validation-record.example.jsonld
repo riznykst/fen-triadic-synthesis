@@ -1,0 +1,76 @@
+{
+  "@context": {
+    "cvkg": "https://w3id.org/skg-if/extension/cvkg/ontology/",
+    "skgo": "https://w3id.org/skg-if/ontology/",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "hasValidationAssertion": { "@id": "cvkg:hasValidationAssertion", "@type": "@id" },
+    "assertsStatus": { "@id": "cvkg:assertsStatus", "@type": "@id" },
+    "validationMethod": { "@id": "cvkg:validationMethod", "@type": "@id" },
+    "decisionIdentifier": { "@id": "cvkg:decisionIdentifier", "@type": "@id" },
+    "participantClass": { "@id": "cvkg:participantClass" },
+    "participantCount": { "@id": "cvkg:participantCount", "@type": "xsd:nonNegativeInteger" },
+    "decisionTimestamp": { "@id": "cvkg:decisionTimestamp", "@type": "xsd:dateTime" },
+    "disputeWindow": { "@id": "cvkg:disputeWindow" },
+    "supersedes": { "@id": "cvkg:supersedes", "@type": "@id" },
+    "anchorHash": { "@id": "cvkg:anchorHash" },
+    "assertionIsSimulated": { "@id": "cvkg:assertionIsSimulated", "@type": "xsd:boolean" }
+  },
+
+  "@graph": [
+    {
+      "@id": "https://node.example.org/products/low-resource-toponyms",
+      "@type": "skgo:research-product",
+      "dcterms:title": "Community-validated toponyms (low-resource language corpus node)",
+      "hasValidationAssertion": [
+        "https://node.example.org/assertions/a-0001",
+        "https://node.example.org/assertions/a-0002",
+        "https://node.example.org/assertions/a-0003"
+      ]
+    },
+
+    {
+      "@id": "https://node.example.org/assertions/a-0001",
+      "@type": "cvkg:ValidationAssertion",
+      "assertsStatus": "cvkg:status-validated",
+      "validationMethod": "cvkg:method-community-vote",
+      "decisionIdentifier": "https://n2t.net/ark:99999/g00042",
+      "participantClass": "speakers of the language community",
+      "participantCount": 23,
+      "decisionTimestamp": "2026-09-18T09:12:00Z",
+      "disputeWindow": "none",
+      "anchorHash": "0xMOCK00000000000000000000000000000000000000000000000000000000000042",
+      "assertionIsSimulated": true
+    },
+
+    {
+      "@id": "https://node.example.org/assertions/a-0002",
+      "@type": "cvkg:ValidationAssertion",
+      "assertsStatus": "cvkg:status-pending",
+      "validationMethod": "cvkg:method-automated",
+      "participantClass": "WP4 extraction pipeline (no human adjudication yet)",
+      "participantCount": 0,
+      "decisionTimestamp": "2026-09-18T09:20:00Z",
+      "disputeWindow": "none",
+      "anchorHash": "0xMOCK00000000000000000000000000000000000000000000000000000000000043",
+      "assertionIsSimulated": true
+    },
+
+    {
+      "@id": "https://node.example.org/assertions/a-0003",
+      "@type": "cvkg:ValidationAssertion",
+      "assertsStatus": "cvkg:status-disputed",
+      "validationMethod": "cvkg:method-expert-review",
+      "decisionIdentifier": "https://n2t.net/ark:99999/g00043",
+      "participantClass": "domain experts (two reviewers disagreed with the community vote)",
+      "participantCount": 2,
+      "decisionTimestamp": "2026-09-18T10:05:00Z",
+      "disputeWindow": "none",
+      "supersedes": "https://node.example.org/assertions/a-0001",
+      "anchorHash": "0xMOCK00000000000000000000000000000000000000000000000000000000000044",
+      "assertionIsSimulated": true
+    }
+  ]
+}
