@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import socket
 import sys
 import time
@@ -57,7 +58,12 @@ TOPIC_GOVERNANCE_DECISIONS = "fen.governance.decisions.v1"
 TOPIC_VALIDATED = "dap.entities.validated.v1"
 OUTBOUND_GROUP_ID = "fen-bridge-outbound"
 
-READY_TIMEOUT_S = 120.0
+# How long the stack may take to answer on Kafka/Fuseki/webhook/mock/status-api.
+# Overridable because a just-restarted Docker daemon (fresh WSL disk, images being
+# rebuilt) can be slow: run 35441207076 lost the community-mode run to a 120 s
+# Kafka probe right after the Docker data disk had been recreated. CI sets
+# FEN_SMOKE_READY_TIMEOUT_S=240.
+READY_TIMEOUT_S = float(os.environ.get("FEN_SMOKE_READY_TIMEOUT_S", "120"))
 DECISION_TIMEOUT_S = 30.0
 POLL_INTERVAL_S = 1.0
 # The outbound consumer group only has to form; it is up within seconds of the

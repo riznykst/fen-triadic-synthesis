@@ -71,6 +71,10 @@ jobs:
       # ports, the compose up step fails fast with "port is already
       # allocated" instead of silently destroying local state.
       COMPOSE_PROJECT_NAME: fen-ci
+      # A just-restarted Docker daemon (fresh WSL data disk, images being rebuilt)
+      # can answer slowly: run 35441207076 lost the community-mode smoke to a 120 s
+      # Kafka probe. The smoke test reads this for its readiness waits.
+      FEN_SMOKE_READY_TIMEOUT_S: "240"
     steps:
       - uses: actions/checkout@v5
       # Run 35439138625 went red for an environment reason, not a code reason:
@@ -124,22 +128,39 @@ jobs:
           exit 1
       - name: Start the stack
         if: steps.docker.outputs.available == 'true'
-        run: docker compose --profile virtuoso up --build -d
+        # --wait blocks until every container with a healthcheck is healthy, so a
+        # slow start becomes a clear failure here instead of a probe timeout later.
+        run: docker compose --profile virtuoso up --build -d --wait --wait-timeout 300
       - name: Run end-to-end smoke test
         if: steps.docker.outputs.available == 'true'
         run: python scripts/smoke_test.py
-      - name: Run community/QV voting e2e
+      # Community and QV are separate steps on purpose: they used to be one step
+      # with four commands, and GitHub Actions only checks the exit code of the
+      # LAST command. Run 35441207076 proved the hole - the log contained
+      # "ERROR E2E SMOKE TEST FAILED (community mode): timed out after 120s
+      # waiting for Kafka", the step still reported success, and the run went
+      # green. Each mode now ends with the command it asserts, plus explicit
+      # exit-code checks, so a failure cannot hide behind the next command.
+      - name: Run community voting e2e
         if: steps.docker.outputs.available == 'true'
         shell: powershell
         run: |
           $env:FEN_MOCK_VOTING = 'community'
           $env:FEN_MOCK_QUORUM = '2'
-          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d --wait --wait-timeout 300
+          if ($LASTEXITCODE -ne 0) { throw "the stack did not become healthy for community mode (exit $LASTEXITCODE)" }
           python scripts/smoke_test.py --mode community
+          if ($LASTEXITCODE -ne 0) { throw "community-mode smoke test FAILED (exit $LASTEXITCODE)" }
+      - name: Run QV voting e2e
+        if: steps.docker.outputs.available == 'true'
+        shell: powershell
+        run: |
           $env:FEN_MOCK_VOTING = 'qv'
           $env:FEN_MOCK_QV_THRESHOLD = '10'
-          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml --profile virtuoso up -d --wait --wait-timeout 300
+          if ($LASTEXITCODE -ne 0) { throw "the stack did not become healthy for qv mode (exit $LASTEXITCODE)" }
           python scripts/smoke_test.py --mode qv
+          if ($LASTEXITCODE -ne 0) { throw "qv-mode smoke test FAILED (exit $LASTEXITCODE)" }
       - name: Run Virtuoso dialect check
         if: steps.docker.outputs.available == 'true'
         run: python scripts/virtuoso_dialect_check.py
@@ -149,7 +170,8 @@ jobs:
         run: |
           # The voting steps above left the mock in qv mode; UI e2e expects
           # the default auto mode (submit -> simulated DAO decides).
-          docker compose -f docker-compose.yml -f docker-compose.voting.yml up -d mock-fen-api
+          docker compose -f docker-compose.yml -f docker-compose.voting.yml up -d --wait --wait-timeout 120 mock-fen-api
+          if ($LASTEXITCODE -ne 0) { throw "mock-fen-api did not become healthy before the UI e2e (exit $LASTEXITCODE)" }
           cd web
           # Reuse an existing install when the runner still has it: a fresh
           # `npm install` writes ~50 MB every run and, on a full disk, fails with
