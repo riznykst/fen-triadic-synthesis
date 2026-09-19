@@ -143,7 +143,10 @@ jobs:
         # logs, and the stack is still up here (teardown is `if: always()`).
         # Without this, a lost/dropped message takes another CI cycle to
         # diagnose — see run 34686489718.
-        if: failure()
+        # Guarded by the Docker check as well: when the daemon is down (and the
+        # `Check Docker availability` step has already failed the job), `docker
+        # compose logs` fails too and adds a second, meaningless red step.
+        if: failure() && steps.docker.outputs.available == 'true'
         run: docker compose --profile virtuoso logs --tail=80 --no-color
       - name: Tear down the stack
         if: always() && steps.docker.outputs.available == 'true'
