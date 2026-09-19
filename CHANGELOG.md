@@ -2,6 +2,68 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-19 — v0.2.8: positioning corrected, SKG-IF extension staged, CI honesty guards
+
+Patch release: **no application code changed** — the pipeline, the `gfen:`
+ontology, the mock API and the web layer are identical to v0.2.1 … v0.2.7. What
+changed is what the repository *claims*, what it *stages* for the consortium, and
+what CI is able to hide.
+
+**Positioning corrected.** The README argued that GRAPHIA's Data Acquisition
+Platform "commits entities with no step for human review" and that "FEN closes
+that gap". Neither holds: the federation is "a set of autonomous knowledge graphs,
+each keeping its own governance and data" (GRAPHIA, 1 Sept 2026), "each graph
+remains responsible for the provenance, persistence, and quality of its own data"
+(D2.1, p. 18), LUMEN keeps communities responsible "for the internal curation and
+structure of the encapsulated resources" (D4.2, p. 18), and the Rulebook (T5.1)
+already covers governance, function, principles, roles and scope. The README now
+states the narrower question this project investigates — *when a node contributes
+AI-extracted knowledge, how was it validated, and where is that judgement
+recorded* — and lists three integration routes: the Kafka event bus (ADR-002), an
+SKG-IF extension, and a LUMEN-style Data Contract.
+
+**SKG-IF extension staged** (`integrations/skg-if-extension/`, **not submitted**):
+the `gfen:` vocabulary as a candidate extension of the SKG-IF Ontology — new
+`cvkg:ValidationAssertion` entity plus one relation to `skgo:research-product`,
+status and method SKOS schemes (`automated` is a first-class value, so
+unvalidated machine contributions stay visible), SHACL shapes including "a
+disputed or rejected assertion must stay dated", a JSON-LD context, an SSSOM
+mapping, and three worked records. The `w3id.org/skg-if/extension/…` IRIs resolve
+only after RDA WG acceptance, and the *Shared Interest* rule still needs a
+co-proponent.
+
+**Data Contract example** (`integrations/lumen-data-contract/`): the node as a
+Data Product (DPROD/DCAT) with one ODCS Data Contract declaring its validation
+semantics in `customProperties`, testable expectations in `quality[]` and
+producer/validator/challenger roles — with every simulated component marked and
+placeholder endpoints on the reserved `example.org` domain.
+
+**Article citation completed**: Riznyk, V. (2026), CERN IdeaSquare Journal of
+Experimental Innovation **10**(2), 177–185, Special Issue on Co-Creation, section
+"Part 3: Co-Creating with Machines", CC BY 4.0, ISSN 2413-9505.
+
+**Four ways CI could look green without verifying anything are closed:**
+
+- a run without Docker used to skip every e2e step and report success — it now
+  fails (`676bf6f`);
+- the consumer-group readiness guard silently fell back to a 5 s sleep on every
+  run — it is now strict (`Stable` + assignment) and provably running
+  (`2d6f009`, `6504e7b`, `c505c29`);
+- a nearly-full disk produced an ENOSPC deep inside an npm log while the runner
+  could not even write its own diagnostics — the e2e job now fails fast below
+  5 GB free with the real cause (`9e87a17`);
+- the voting step ran four commands and GitHub only checks the exit code of the
+  last one, so a failed community-mode smoke test disappeared behind a passing
+  QV one — the modes are separate steps with explicit exit-code checks, the stack
+  is started with `--wait`, and the smoke test's readiness timeout is configurable
+  (`95df893`).
+
+Verification: run `35442994881` on `95df893` — every e2e step executed, all three
+smoke modes passed, `VIRTUOSO DIALECT CHECK PASSED`, Playwright `5 passed`, the
+guard logged `(Stable + assigned): ready` three times with zero
+`consumer-group check failed` lines, and the test job reported `# skipped 0`.
+Released as `v0.2.8` (annotated tag + GitHub Release).
+
 ## 2026-09-19 — the published article's full citation (verified at the journal)
 
 The journal's own article page (<https://e-publishing.cern.ch/index.php/CIJ/article/view/1829>)
