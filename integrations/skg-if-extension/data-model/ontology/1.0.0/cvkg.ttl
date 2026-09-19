@@ -1,0 +1,154 @@
+@prefix cvkg:   <https://w3id.org/skg-if/extension/cvkg/ontology/> .
+@prefix skgo:   <https://w3id.org/skg-if/ontology/> .
+@prefix prov:   <http://www.w3.org/ns/prov#> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+# =====================================================================
+# DRAFT SKG-IF extension: cvkg — community validation of knowledge
+# contributions.  NOT SUBMITTED.  The cvkg: IRI below resolves only after
+# the extension is accepted by the RDA WG on SKG-IF (see ../README.md).
+#
+# Working namespace in the FEN reference implementation is
+#   gfen: <https://w3id.org/got/fen/ontology#>
+# and stays in place until this extension is endorsed; the mapping between
+# the two is maintained in ../../mappings/fen-to-cvkg.sssom.tsv
+#
+# Honesty markers: the anchor property documents a SIMULATED anchor
+# ("0xMOCK") in the reference implementation — no ledger is connected.
+# =====================================================================
+
+<https://w3id.org/skg-if/extension/cvkg/ontology/>
+    a owl:Ontology ;
+    dcterms:title "CVKG — Community Validation of Knowledge Contributions (SKG-IF extension, draft)"@en ;
+    dcterms:description "Adds a machine-readable validation assertion to SKG-IF research products: how a contributed statement was validated (community vote, expert review, automated extraction), by how many participants of which class, with which decision identifier, and whether it is disputed or rejected."@en ;
+    dcterms:creator "Riznyk, Vadym" ;
+    dcterms:issued "2026-09-18"^^xsd:date ;
+    owl:versionInfo "1.0.0-draft" ;
+    rdfs:comment "Draft extension prepared against SKG-IF extension template v1.0.0. Not submitted."@en ;
+    # Alignment: this extension adds to, and does not modify, the SKG-IF core model.
+    rdfs:seeAlso <https://skg-if.github.io/extensions/> ;
+    owl:imports <https://w3id.org/skg-if/ontology/> .
+
+# ---------------------------------------------------------------------
+# New entity: a validation assertion about a contributed statement
+# ---------------------------------------------------------------------
+cvkg:ValidationAssertion
+    a owl:Class ;
+    rdfs:label "Validation assertion"@en ;
+    rdfs:comment "A statement recording that a contributed knowledge claim was validated, left pending, disputed or rejected, together with the method used and the identifiers that make the decision dereferenceable. It is an assertion ABOUT a contribution, not a replacement for it."@en ;
+    rdfs:isDefinedBy <https://w3id.org/skg-if/extension/cvkg/ontology/> ;
+    rdfs:subClassOf prov:Entity .
+
+# Controlled values for the validation status (skos:ConceptScheme)
+cvkg:ValidationStatus
+    a skos:ConceptScheme ;
+    rdfs:label "Validation status"@en ;
+    skos:hasTopConcept cvkg:status-pending, cvkg:status-validated,
+        cvkg:status-disputed, cvkg:status-rejected .
+
+cvkg:status-pending   a skos:Concept ; skos:prefLabel "pending"@en ;
+    skos:definition "Contributed and exposed, but not yet adjudicated."@en ;
+    skos:inScheme cvkg:ValidationStatus .
+cvkg:status-validated a skos:Concept ; skos:prefLabel "validated"@en ;
+    skos:definition "Confirmed by the declared method."@en ;
+    skos:inScheme cvkg:ValidationStatus .
+cvkg:status-disputed  a skos:Concept ; skos:prefLabel "disputed"@en ;
+    skos:definition "Contested; the assertion records that disagreement exists and remains visible."@en ;
+    skos:inScheme cvkg:ValidationStatus .
+cvkg:status-rejected  a skos:Concept ; skos:prefLabel "rejected"@en ;
+    skos:definition "Refused by the declared method; retained in the record rather than deleted."@en ;
+    skos:inScheme cvkg:ValidationStatus .
+
+cvkg:ValidationMethod
+    a skos:ConceptScheme ;
+    rdfs:label "Validation method"@en ;
+    skos:hasTopConcept cvkg:method-community-vote, cvkg:method-expert-review,
+        cvkg:method-automated .
+
+cvkg:method-community-vote a skos:Concept ; skos:prefLabel "community vote"@en ;
+    skos:definition "Adjudicated by a community using a declared voting procedure (e.g. quadratic voting with a quorum)."@en ;
+    skos:inScheme cvkg:ValidationMethod .
+cvkg:method-expert-review a skos:Concept ; skos:prefLabel "expert review"@en ;
+    skos:definition "Adjudicated by identified domain experts."@en ;
+    skos:inScheme cvkg:ValidationMethod .
+cvkg:method-automated a skos:Concept ; skos:prefLabel "automated extraction"@en ;
+    skos:definition "Contributed by an AI/NLP pipeline without human adjudication. Declaring this value is the point of the scheme: it makes unvalidated machine contributions visible instead of hiding them behind a generic status."@en ;
+    skos:inScheme cvkg:ValidationMethod .
+
+# ---------------------------------------------------------------------
+# Relation added to SKG-IF core entities (core-entity extension)
+# ---------------------------------------------------------------------
+cvkg:hasValidationAssertion
+    a owl:ObjectProperty ;
+    rdfs:label "has validation assertion"@en ;
+    rdfs:comment "Relates a SKG-IF research product (or one of its contributions) to the assertion describing how that knowledge was validated."@en ;
+    rdfs:domain skgo:research-product ;
+    rdfs:range cvkg:ValidationAssertion ;
+    rdfs:isDefinedBy <https://w3id.org/skg-if/extension/cvkg/ontology/> .
+
+# ---------------------------------------------------------------------
+# Properties of the assertion
+# ---------------------------------------------------------------------
+cvkg:assertsStatus
+    a owl:ObjectProperty ;
+    rdfs:label "asserts status"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range skos:Concept ;
+    rdfs:comment "One of the cvkg:ValidationStatus concepts."@en .
+
+cvkg:validationMethod
+    a owl:ObjectProperty ;
+    rdfs:label "validation method"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range skos:Concept ;
+    rdfs:comment "One of the cvkg:ValidationMethod concepts."@en .
+
+cvkg:decisionIdentifier
+    a owl:DatatypeProperty ;
+    rdfs:label "decision identifier"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range xsd:anyURI ;
+    rdfs:comment "Dereferenceable identifier of the governance decision (e.g. an ARK PID). Implementations without a PID infrastructure may omit it; the assertion is still meaningful."@en .
+
+cvkg:participantClass
+    a owl:DatatypeProperty ;
+    rdfs:label "participant class"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range xsd:string ;
+    rdfs:comment "Class of participants (e.g. language community, domain experts, automated process). Individual identities are deliberately NOT modelled here: the shared record carries classes and counts, not votes or persons."@en .
+
+cvkg:participantCount
+    a owl:DatatypeProperty ;
+    rdfs:label "participant count"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range xsd:nonNegativeInteger ;
+    rdfs:comment "Aggregate number of participants. No per-voter data."@en .
+
+cvkg:decisionTimestamp
+    a owl:DatatypeProperty ;
+    rdfs:label "decision timestamp"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range xsd:dateTime .
+
+cvkg:disputeWindow
+    a owl:DatatypeProperty ;
+    rdfs:label "dispute window"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range xsd:string ;
+    rdfs:comment "Duration of an optional contestation window, or the literal 'none'. Reference implementation declares 'none' (no challenge window is active)."@en .
+
+cvkg:supersedes
+    a owl:ObjectProperty ;
+    rdfs:label "supersedes"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range cvkg:ValidationAssertion ;
+    rdfs:comment "Links an assertion to an earlier one it replaces, so that the history of a claim — including rejections — remains traversable (append-only record)."@en .
+
+cvkg:anchorHash
+    a owl:DatatypeProperty ;
+    rdfs:label "anchor hash"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range xsd:string ;
+    rdfs:comment "Optional integrity hash. In the reference implementation this is a SIMULATED placeholder ('0xMOCK…'): no ledger is connected and no transaction exists. Implementations with a real anchoring service may carry a real hash."@en .
+
+cvkg:assertionIsSimulated
+    a owl:DatatypeProperty ;
+    rdfs:label "assertion is simulated"@en ;
+    rdfs:domain cvkg:ValidationAssertion ; rdfs:range xsd:boolean ;
+    rdfs:comment "True when the assertion comes from a reference/demo implementation (mock DAO, simulated anchor, unreviewed extraction). Keeps demo data distinguishable from production data."@en .

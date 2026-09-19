@@ -2,6 +2,58 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-18 — positioning corrected: FEN is the node side of a governance the federation already has
+
+Research work after IPL 2026 (Brussels, 14–18 Sept) changed the project's framing,
+and the README now states it. **No application code, workflow or web asset was
+touched** — ontology package and documentation only.
+
+What was wrong before: the README argued that GRAPHIA's Data Acquisition Platform
+"commits entities with no step for human review" and that "FEN closes that gap".
+That claim is not supported by the consortium's own documents, and it contradicted
+this repository's own "Positioning vs GRAPHIA's own AI services" section (where
+GRAPHIA's human-in-the-loop is described as single-expert review).
+
+What the primary sources actually say (all checked 2026-09-18):
+
+- GRAPHIA's federation is "a set of autonomous knowledge graphs, **each keeping
+  its own governance and data**" (news post, 1 Sept 2026);
+- "Each graph **remains responsible for the provenance, persistence, and quality
+  of its own data**" (GRAPHIA **D2.1**, p. 18);
+- the **Rulebook** (T5.1) defines the terms of reference — governance, function,
+  principles, roles, scope — of the federation (IPL 2026 programme, Day 3);
+- LUMEN's data model keeps a community responsible "for the internal curation and
+  structure of the encapsulated resources" (**D4.2**, p. 18);
+- D2.1 notes that extension-level governance rules "have not been defined at the
+  time of writing" (p. 26), while AI-extracted entities are heading into the
+  shared graph (D2.1, p. 27).
+
+So the honest, narrower question this project investigates is: **when a node
+contributes AI-extracted knowledge, how was it validated — community, experts or
+an automated pipeline — and where is that judgement recorded?** FEN is a
+node-side reference implementation of one answer.
+
+Changes in this commit:
+
+- `README.md` — "What this is" rewritten with the sources above and the three
+  integration routes (Kafka event bus · SKG-IF extension · Data Contract);
+  explicit statement that FEN does not claim the federation lacks governance.
+- `integrations/skg-if-extension/` — **new, staged draft** of the `gfen:`
+  vocabulary as an SKG-IF extension (`cvkg`): ontology (new
+  `cvkg:ValidationAssertion` entity plus one relation to
+  `skgo:research-product`, status/method SKOS schemes with `automated` as a
+  first-class value), SHACL shapes (including "a disputed or rejected assertion
+  must stay dated"), JSON-LD context, and an **SSSOM** mapping from the working
+  `gfen:` namespace. Marked **not submitted**; the `w3id.org/skg-if/extension/…`
+  IRIs resolve only after RDA WG acceptance.
+- `docs/integration-verification-plan.md` — new section D with the three
+  consortium-independent routes (SKG-IF extension, Data Contract/ODCS, read-only
+  GoTriple KG) and their tasks; ownership table extended.
+
+Verified locally: the ontology parses (rdflib, 108 triples), the SHACL document
+parses and self-validates (`pyshacl`, 84 triples, conforms), the JSON-LD context
+parses, the SSSOM file has 8 columns × 7 mappings with no ragged rows.
+
 ## 2026-09-16 — whitepaper v4 (revision 3): §8 sentence repaired, WP2 cited by DOI, ledger-anchor overclaim removed
 
 - **§8 lead-in repaired.** The insertion from revision 2 broke the sentence after

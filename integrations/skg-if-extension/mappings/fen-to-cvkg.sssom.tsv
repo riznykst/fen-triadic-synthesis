@@ -1,0 +1,20 @@
+#curie_map:
+#  cvkg: https://w3id.org/skg-if/extension/cvkg/ontology/
+#  gfen: https://w3id.org/got/fen/ontology#
+#  skos: http://www.w3.org/2004/02/skos/core#
+#  semapv: https://w3id.org/semapv/vocab/
+#  prov: http://www.w3.org/ns/prov#
+#  skgo: https://w3id.org/skg-if/ontology/
+#mapping_set_id: https://w3id.org/got/fen/mappings/fen-to-cvkg
+#mapping_set_description: Working FEN namespace mapped onto the draft cvkg SKG-IF extension. DRAFT — the cvkg: IRIs resolve only after the extension is endorsed.
+#license: https://creativecommons.org/licenses/by/4.0/
+#mapping_date: 2026-09-18
+#author_id: orcid:0000-0000-0000-0000
+subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment
+gfen:validationStatus	validation status	skos:exactMatch	cvkg:assertsStatus	asserts status	semapv:ManualMappingCuration	1.0	Same controlled vocabulary (pending/validated/disputed/rejected); renamed on the extension namespace.
+gfen:validationMethod	validation method	skos:exactMatch	cvkg:validationMethod	validation method	semapv:ManualMappingCuration	1.0	Same three concepts (QuadraticVoting/PeerReview/automated → community vote/expert review/automated).
+gfen:governanceDecisionId	governance decision id	skos:exactMatch	cvkg:decisionIdentifier	decision identifier	semapv:ManualMappingCuration	0.9	FEN uses ARK PIDs (ADR-003); the extension keeps it optional and any-URI so that nodes without a PID service can still participate.
+gfen:reputationSnapshot	reputation snapshot	skos:narrowMatch	cvkg:participantClass	participant class	semapv:ManualMappingCuration	0.6	FEN publishes a separate reputation snapshot PID; the extension models only classes and counts. The snapshot stays node-local for now.
+gfen:ledgerAnchor	ledger anchor	skos:relatedMatch	cvkg:anchorHash	anchor hash	semapv:ManualMappingCuration	0.5	SIMULATED in the reference implementation (0xMOCK, no ledger). The extension deliberately allows any hash and adds cvkg:assertionIsSimulated to keep demo data distinguishable.
+gfen:validationStatus	validation status	skos:relatedMatch	prov:Entity	entity (provenance)	semapv:ManualMappingCuration	0.4	Non-Interference note: the assertion is a prov:Entity so that PROV-O tooling can traverse it, but validation semantics are NOT expressed with PROV-O alone.
+gfen:EntityCandidate	entity candidate	skos:broadMatch	skgo:research-product	research product	semapv:ManualMappingCuration	0.7	A candidate is a contribution to a research product; the extension attaches the assertion to the product and keeps candidates node-side.

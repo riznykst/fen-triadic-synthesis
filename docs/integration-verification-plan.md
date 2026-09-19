@@ -107,11 +107,77 @@ ADR-003.
 - [ ] ADR-003 updated: real NAAN replaces the `99999` placeholder; ADR-006
       accepted/implemented as decided.
 
-## D. Ownership
+## D. Consortium-independent integration routes (**NOW**, no access grant needed)
+
+The plan above assumes consortium access (Kafka topics, a test SPARQL store, a
+NAAN). Two further routes are available **today**, because both are published,
+public and additive. They are useful even if the consortium path never opens.
+
+### D1. SKG-IF extension route (ontology level)
+
+GRAPHIA's own ontology deliverable states that "the GRAPHIA Ontology is built
+upon the SKG-Ontology (SKG-O) and is composed of 1. necessary extensions of
+SKG-O and 2. the collection of mappings between the data models of existing KGs
+and SKG-O" (D2.1, p. 21) and that "these extensions could be aligned under a
+common namespace, forming the GRAPHIA Ontology as **an extension for SSH of SKG
+Ontology**" (p. 22). SKG-IF publishes the extension process and its rules:
+
+- process and participation rules (<https://skg-if.github.io/extensions/>):
+  *Shared Interest/Need* (a collective need, not an individual one) and
+  *Non-Interference* (additive; no duplication of what belongs elsewhere);
+- repository template and binding folder/versioning rules
+  (<https://skg-if.github.io/ext-tmpl/structure.html>), giving permanent URL
+  patterns under `https://w3id.org/skg-if/extension/<acronym>/…`;
+- core model: SKG-O at `https://w3id.org/skg-if/ontology/` (six modules:
+  agent, data-source, grant, research-product, topic, venue), SHACL at
+  `https://w3id.org/skg-if/validation/shacl`.
+
+**Our staging package:** [`integrations/skg-if-extension/`](../integrations/skg-if-extension/README.md)
+— draft ontology (`ValidationAssertion` + one relation to
+`skgo:research-product`), SHACL shapes, JSON-LD context and an SSSOM mapping
+from the working `gfen:` namespace. **Not submitted**: the *Shared Interest*
+rule requires a co-proponent or a documented community need first.
+
+- [ ] Decide the extension acronym and the scope statement (collective need).
+- [ ] Complete the template folders (`current/` copies, `interoperability-framework/`, `api/`, `examples/`).
+- [ ] Cross-check the SSSOM mapping against the SKG-O modules (agent, research-product, topic).
+- [ ] Open the application issue on `github.com/skg-if/extensions`.
+
+### D2. Data Contract route (LUMEN data-mesh level)
+
+LUMEN's data model is deliberately minimal: a **Data Product** (DPROD + DCAT)
+governed by exactly one **Data Contract**, and internal curation stays with the
+community ("communities remain fully responsible for the internal curation and
+structure of the encapsulated resources", D4.2 p. 18). LUMEN adopts **ODCS v3**
+as-is (<https://bitol-io.github.io/open-data-contract-standard/latest/>) through
+a Required/Recommended/Conditional profile, and ODCS
+`customProperties` is documented as the "extension mechanism for governance
+metadata not covered by standard fields" — the natural place to declare
+**how a node validates the knowledge it contributes**.
+
+- [ ] Draft the node's Data Product (DPROD/DCAT) description with honest values
+      (`lifecycleStatus`, `dataProductOwner`, endpoints that actually exist).
+- [ ] Draft the ODCS contract skeleton, marking every simulated component
+      (`simulated: true`; the anchor stays `0xMOCK` until a ledger exists).
+- [ ] Ask the LUMEN data-model authors the four questions in
+      `d42-data-contract-structure.md` §5 (`customProperties` vs `quality[]`,
+      canonical `quality[].type`, `roles[]` vocabulary, publishing a validation
+      record template next to the contract).
+
+### D3. GoTriple KG (read-only, live)
+
+The public node is **read-only and QLever-based** (<https://kg-api.gotriple.eu/docs>):
+it can validate our *query* assumptions today but can never accept `gfen:`
+writes — which is exactly why the external-node design in ADR-002 is a
+constraint, not a preference.
+
+## E. Ownership
 
 | Item | Owner |
 |---|---|
-| Test-instance access (topics, corpus, Virtuoso, OKD ns) | consortium (whitepaper §8 request) |
+| Test-instance access (topics, corpus, Virtuoso/QLever, OKD ns) | consortium (whitepaper §8 request) |
 | NAAN/w3id/N2T registration | FEN (us) + consortium sign-off |
 | Code alignment (messages, kafka auth, pid, shapes) | us |
 | Dialect / SASL pre-checks (**NOW**) | us |
+| SKG-IF extension application (D1) | us (+ co-proponent for *Shared Interest*) |
+| Data Contract draft + questions to LUMEN authors (D2) | us |

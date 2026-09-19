@@ -72,15 +72,27 @@ EVALUATION    GRAPHIA integration + community validation study (next phase)
 
 ## What this is
 
-In the GRAPHIA D2.2 architecture, the Data Acquisition Platform (DAP) describes an automated path in which entities and relations extracted from full-text documents by WP4 AI/NLP services are committed directly into the GoTriple Knowledge Graph, with no step for human review, cultural verification, or contributor attribution. That is adequate for high-resource, well-represented content, but it systematically underserves low-resource languages, minority dialects, and culturally specific material.
+GRAPHIA's SSH Knowledge Graph is a **federation of autonomous knowledge graphs** — "a set of autonomous knowledge graphs, each keeping its own governance and data" ([GRAPHIA, 1 September 2026](https://graphia-ssh.eu/news-blog/graphias-ssh-federation-the-gotriple-knowledge-graph-goes-live/)) — and GRAPHIA's own ontology deliverable states the same principle at the data level: *"Each graph remains responsible for the provenance, persistence, and quality of its own data"* (GRAPHIA D2.1, p. 18). LUMEN's data model draws the boundary in the same place: a community exposes a **Data Product** governed by a **Data Contract**, while "communities remain fully responsible for the internal curation and structure of the encapsulated resources" (LUMEN D4.2, p. 18).
 
-FEN (Federated Epistemic Node) closes that gap with a three-phase pipeline:
+That leaves one question deliberately open, and it is the question this project investigates:
+
+> **When a node contributes AI-extracted knowledge, how was it validated — by a community, by experts, or by an automated pipeline — and where is that judgement recorded?**
+
+The published architecture does not require a node to *declare* its validation method, and D2.1 notes that the governance rules for ontology extensions "have not been defined at the time of writing" (p. 26). Machine-extracted content is meanwhile on its way into the shared graph: the GoTriple KG will include "entities extracted from the full text of documents by AI and NLP-powered services developed in GRAPHIA" (D2.1, p. 27), while the WP4 modules themselves publish their error rates.
+
+FEN (Federated Epistemic Node) is a **node-side reference implementation** of one answer to that question, in a three-phase pipeline:
 
 1. **Agentic Scaffolding** — an AI agent guides contributors in structuring linguistic knowledge, without ever deciding on their behalf (a separate FEN-side project, external to this repository — ADR-002).
 2. **Decentralised Validation** — a DAO, using Quadratic Voting and reputation-weighted review, decides whether a candidate entity is accepted, disputed, or rejected. The community remains the final arbiter of meaning.
 3. **Immutable Integration** — the governance decision is anchored by hash only (ADR-001; the MVP writes a **simulated** `0xMOCK` anchor until a real ledger is connected — see the implementation-status table below) and exposed as a dereferenceable PID ([ADR-003](docs/adr/ADR-003-fen-pid-scheme.md)), while the underlying content stays in GRAPHIA's authoritative RDF store.
 
-**FEN does not replace or modify any part of GRAPHIA's core infrastructure.** It connects as an external federation node — the same architectural pattern GRAPHIA already uses for OpenCitations, EHRI, GESIS, and ORKG (D2.2, §2.1) — and touches the DAP only through two new, non-blocking microservices (the FEN Bridge and the Validation Result Consumer) on the existing Kafka event bus, plus a read-only Status API for the web layer ([ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md)).
+**FEN does not replace or modify any part of GRAPHIA's core infrastructure**, and it does not claim that the federation lacks governance — GRAPHIA's Rulebook (T5.1) covers governance, roles and scope, and the Federation Steering Group is the authority. What this repository offers is the *node side* of that division of labour: a contribution that says how it was validated, and keeps what was rejected. It connects as an external federation node — the pattern GRAPHIA already uses for OpenCitations, GESIS and ORKG — through three routes:
+
+| Integration route | What it is | Status |
+|---|---|---|
+| **Event bus (Kafka)** — [ADR-002](docs/adr/ADR-002-federation-node-not-embedded.md) | the FEN Bridge + Validation Result Consumer on `dap.entities.pending_validation.v1` / `fen.governance.decisions.v1` / `dap.entities.validated.v1` | ✅ implemented; exercised end to end against the real Docker stack in CI |
+| **SKG-IF extension** | the `gfen:` vocabulary offered as a *community-validation* extension of the SKG-IF Ontology (`skg-o`) — the same kind of artefact as the GRAPHIA Ontology itself, which D2.1 defines as "an extension for SSH of SKG Ontology" (p. 22); SKG-IF's extension process is public (<https://skg-if.github.io/extensions/>) | 🟦 draft package staged in [`integrations/skg-if-extension/`](integrations/skg-if-extension/README.md) — **not submitted**; the `cvkg:` IRIs resolve only after RDA WG acceptance |
+| **Data Contract (ODCS)** | the node presented as a LUMEN-style **Data Product** with a machine-actionable **Data Contract**, declaring its validation semantics where LUMEN's own profile allows it (`customProperties` — "extension mechanism for governance metadata not covered by standard fields" — and `quality[]`) | 🟦 design mapped against LUMEN D4.2; no contract published yet |
 
 ## Why it matters
 

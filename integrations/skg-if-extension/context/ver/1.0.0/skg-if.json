@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "skgo": "https://w3id.org/skg-if/ontology/",
+    "cvkg": "https://w3id.org/skg-if/extension/cvkg/ontology/",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "hasValidationAssertion": { "@id": "cvkg:hasValidationAssertion", "@type": "@id" },
+    "assertsStatus": { "@id": "cvkg:assertsStatus", "@type": "@id" },
+    "validationMethod": { "@id": "cvkg:validationMethod", "@type": "@id" },
+    "decisionIdentifier": { "@id": "cvkg:decisionIdentifier", "@type": "@id" },
+    "participantClass": { "@id": "cvkg:participantClass" },
+    "participantCount": { "@id": "cvkg:participantCount", "@type": "xsd:nonNegativeInteger" },
+    "decisionTimestamp": { "@id": "cvkg:decisionTimestamp", "@type": "xsd:dateTime" },
+    "disputeWindow": { "@id": "cvkg:disputeWindow" },
+    "supersedes": { "@id": "cvkg:supersedes", "@type": "@id" },
+    "anchorHash": { "@id": "cvkg:anchorHash" },
+    "assertionIsSimulated": { "@id": "cvkg:assertionIsSimulated", "@type": "xsd:boolean" }
+  }
+}

@@ -1,0 +1,116 @@
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix cvkg:  <https://w3id.org/skg-if/extension/cvkg/ontology/> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+# =====================================================================
+# DRAFT SHACL shapes for the cvkg extension. NOT SUBMITTED.
+# Mirrors the working shapes in docs/ontology/fen-shapes.ttl of the FEN
+# reference implementation, renamed onto the extension namespace.
+# =====================================================================
+
+cvkg:ValidationAssertionShape
+    a sh:NodeShape ;
+    sh:targetClass cvkg:ValidationAssertion ;
+    sh:name "Validation assertion" ;
+    sh:description "A contributed claim must state its validation status and method, and must not present simulated data as production data." ;
+
+    sh:property [
+        sh:path cvkg:assertsStatus ;
+        sh:name "status" ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( cvkg:status-pending cvkg:status-validated
+                cvkg:status-disputed cvkg:status-rejected ) ;
+        sh:message "assertsStatus must be exactly one of pending/validated/disputed/rejected." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:validationMethod ;
+        sh:name "method" ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( cvkg:method-community-vote cvkg:method-expert-review
+                cvkg:method-automated ) ;
+        sh:message "validationMethod must declare HOW the claim was adjudicated (community vote / expert review / automated extraction)." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:decisionIdentifier ;
+        sh:name "decision identifier" ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:message "decisionIdentifier, when present, must be an IRI (e.g. an ARK PID)." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:participantCount ;
+        sh:name "participant count" ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:nonNegativeInteger ;
+        sh:message "participantCount must be a non-negative integer (aggregate only)." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:participantClass ;
+        sh:name "participant class" ;
+        sh:datatype xsd:string ;
+        sh:message "participantClass is a free-text class label; do not record individual identities here." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:decisionTimestamp ;
+        sh:name "decision timestamp" ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:disputeWindow ;
+        sh:name "dispute window" ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "disputeWindow is a duration string or the literal 'none'." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:supersedes ;
+        sh:name "supersedes" ;
+        sh:class cvkg:ValidationAssertion ;
+        sh:message "supersedes must point at another validation assertion (append-only history)." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:anchorHash ;
+        sh:name "anchor hash (may be simulated)" ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "anchorHash is optional. In the reference implementation it is a simulated '0xMOCK…' placeholder." ;
+    ] ;
+
+    sh:property [
+        sh:path cvkg:assertionIsSimulated ;
+        sh:name "simulated flag" ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:boolean ;
+        sh:message "Set to true for demo/reference data (mock DAO, simulated anchor, unreviewed extraction)." ;
+    ] .
+
+# Cross-field rule: a 'rejected' or 'disputed' claim must remain findable —
+# the record is not deleted, and it must carry a timestamp.
+cvkg:RejectedOrDisputedShape
+    a sh:NodeShape ;
+    sh:targetClass cvkg:ValidationAssertion ;
+    sh:description "Rejections and disputes are part of the institutional memory: they must stay in the graph with a date." ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "A disputed or rejected assertion must carry a decisionTimestamp (it is retained, not deleted)." ;
+        sh:select """
+            PREFIX cvkg: <https://w3id.org/skg-if/extension/cvkg/ontology/>
+            SELECT $this WHERE {
+                $this cvkg:assertsStatus ?s .
+                FILTER (?s IN (cvkg:status-disputed, cvkg:status-rejected))
+                FILTER NOT EXISTS { $this cvkg:decisionTimestamp ?t }
+            }
+        """ ;
+    ] .
