@@ -27,10 +27,12 @@ This repository is the runnable companion implementation of:
 > Riznyk, V. — Independent Researcher, Flensburg, Germany (2026).
 > *Decentralised Agentic Governance: A Methodology for Community-Owned
 > Linguistic Datasets and Knowledge Synthesis*. CERN IdeaSquare Journal of
-> Experimental Innovation. **Published** — DOI
-> [10.23726/cij.2026.1829](https://doi.org/10.23726/cij.2026.1829).
-> Keywords: Quadratic Voting, Agentic Governance, Decentralized Autonomous
-> Organizations (DAO), Linguistic Commons, Knowledge Hypergraphs, AI Ethics.
+> Experimental Innovation, **10**(2), 177–185 — Special Issue on Co-Creation,
+> section *Part 3: Co-Creating with Machines*. **Published** (16 September 2026)
+> — DOI [10.23726/cij.2026.1829](https://doi.org/10.23726/cij.2026.1829),
+> CC BY 4.0. Keywords: Quadratic Voting, Agentic Governance, Decentralized
+> Autonomous Organizations (DAO), Linguistic Commons, Knowledge Hypergraphs,
+> AI Ethics.
 
 **The architecture answers the question with a hard boundary** — the same
 boundary the paper argues for (epistemic assistance ≠ epistemic authority):

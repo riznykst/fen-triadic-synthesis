@@ -2,6 +2,24 @@
 
 All notable changes are recorded here in reverse chronological order.
 
+## 2026-09-19 — the published article's full citation (verified at the journal)
+
+The journal's own article page (<https://e-publishing.cern.ch/index.php/CIJ/article/view/1829>)
+was checked after the IPL 2026 session that launched the issue, and it carries
+details the repository did not have:
+
+- **CERN IdeaSquare Journal of Experimental Innovation, Vol. 10 No. 2 (2026):
+  *Special Issue on Co-Creation*** — section **"Part 3: Co-Creating with
+  Machines"**, pages **177–185**, published **16 September 2026**, **CC BY 4.0**,
+  online ISSN **2413-9505**;
+- full citation: Riznyk, V. (2026). *Decentralised Agentic Governance: A
+  Methodology for Community-Owned Linguistic Datasets and Knowledge Synthesis*.
+  CERN IdeaSquare Journal of Experimental Innovation, 10(2), 177–185.
+
+Changes: `README.md` citation block and `CITATION.cff`'s `preferred-citation`
+now carry volume/issue/pages/section/ISSN (the CFF `version` field was also still
+at 0.2.5 while v0.2.7 was released — corrected). Docs only; no code change.
+
 ## 2026-09-18 — positioning corrected: FEN is the node side of a governance the federation already has
 
 Research work after IPL 2026 (Brussels, 14–18 Sept) changed the project's framing,
