@@ -78,15 +78,23 @@ Legend: `[x]` done · `[~]` partial · `[ ]` open. Snapshot: 2026-09-02 (kept cu
 - actions/setup-python toolchains get wiped -> system Python on self-hosted
 - Schannel blocked inside the harness sandbox -> the runner runs as a Windows service (outside the sandbox)
 
-## Technical debt (audit 2026-09-02)
+## Technical debt (audit 2026-09-02, updated current)
 
 Full plan with per-item details: **docs/TECH-DEBT.md** (P0–P3 checklists,
-verified-clean list, environment note). Summary:
+verified-clean list, environment note).
 
-- **P0 — correctness:** outbound.py whole-consumer `commit()` vs shared `commit_offsets` (at-least-once risk); k8s manifests drift vs compose (wrong endpoints, missing SPARQL creds, `:latest`, EMPTY webhook token — fail-open); Vercel `ignoreCommand` `HEAD^` fragility.
-- **P1 — consistency:** SSE fallback drift in triadic.js (inverted onerror, no catch-up); last unescaped XSS surface (statusBadge + vote counters in app.js); URN/IRI/NAAN duplication (annotation URI ×2, predicate IRIs as literals, dead `fen_naan` ×2); JSON-schema freshness unguarded; 5 duplicated Dockerfiles + missing `.dockerignore`; Virtuoso `:latest` floating; compose healthcheck gaps (fuseki/consumers/zookeeper, status-api ping env).
-- **P2 — quality:** shared web module (escape ×3, apiBase ×4, palette ×4, badges ×3); a11y (labels/caption/scope, widget toggle semantics); dead code (poll_batch, renderGraphSvg, `_sseOk`, queue.Full pass); config hygiene (batch/group/timeouts hardcoded, substring-matched HTTP statuses); test blind spots (FenClient, delegation) + 1616 warnings + no lint config; metrics collision (kafka counters ×2 processes); docs drift (architecture /metrics table, self-hosted-runner step 7, ADR-005 numbering, counts).
-- **P3 — structural:** retire TEMPORARY self-hosted CI mode; single env source for compose + k8s; JS-level tests.
+Status: 21 of 22 items from the 2026-09-02 audit are closed. Recent audit fixes:
+- **P1 — Interface & error handling (closed):**
+  - Webhook returns HTTP 503 (degraded on `/readyz`) instead of 500 when Kafka is unreachable (`services/fen_bridge/webhook.py`).
+  - Mock delivers decisions with `Authorization: Bearer <TOKEN>` header when `FEN_WEBHOOK_TOKEN` is configured (`mock_fen_api/main.py`).
+  - Strict Pydantic validation on `POST /candidates` in `mock_fen_api/main.py` returning 422 on invalid/missing fields instead of 500 KeyError.
+  - Standardized JSON logging in `services/status_api/main.py` (`setup_logging`, removal of `sys.path.insert`).
+- **P2 — Hygiene & CI (closed):**
+  - Enforced `ruff check .` in CI workflows (`ci.yml`, `web.yml`) and added `ruff` to `requirements-common.txt`.
+  - Removed UTF-8 BOM byte markers (`services/common/gfen_ontology.py`, `requirements-common.txt`).
+- **P3 — Open debt:**
+  - Retire temporary self-hosted CI mode once GitHub billing is resolved (hosted runners, restore pull_request trigger + full matrix).
+  - Pinned image tags for k8s deployments (once external registry is configured).
 
 ## Flow roadmap (Scaffold → Consensus → Registry) — Top-10 recommendations
 

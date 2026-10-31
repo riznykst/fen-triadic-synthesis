@@ -45,6 +45,17 @@ def test_majority_outcome_and_quorum_total():
     assert mock_main.quorum_total({"validated": 2, "disputed": 1}) == 3
 
 
+def test_submit_candidates_validation_error():
+    client = _client()
+    # Missing required annotation_id inside candidate
+    resp = client.post("/candidates", json={"candidates": [{"entity_label": "no_id"}]})
+    assert resp.status_code == 422
+
+    # Malformed candidates field (not a list)
+    resp_invalid = client.post("/candidates", json={"candidates": "invalid"})
+    assert resp_invalid.status_code == 422
+
+
 def test_candidates_list_in_auto_mode():
     client = _client()
     with mock.patch.object(mock_main, "_get_executor", return_value=_NoopExecutor()):
@@ -143,3 +154,23 @@ def test_community_voting_delivers_exactly_once(monkeypatch):
     assert r3.status_code == 409
 
     assert len(submitted) == 1, "delivery must be scheduled exactly once"
+
+
+def test_deliver_decision_includes_authorization_header_when_token_set(monkeypatch):
+    captured_headers = []
+
+    def _mock_post(url, *args, **kwargs):
+        captured_headers.append(kwargs.get("headers", {}))
+        resp = mock.Mock()
+        resp.raise_for_status = lambda: None
+        return resp
+
+    monkeypatch.setattr(mock_main, "DECISION_DELAY_S", 0.0)
+    monkeypatch.setattr(mock_main, "WEBHOOK_MAX_RETRIES", 1)
+    monkeypatch.setattr(mock_main, "WEBHOOK_TOKEN", "test-auth-token")
+    monkeypatch.setattr(mock_main.requests, "post", _mock_post)
+
+    mock_main._deliver_decision_after_delay({"annotation_id": "a1", "entity_label": "lbl"})
+
+    assert len(captured_headers) == 1
+    assert captured_headers[0].get("Authorization") == "Bearer test-auth-token"

@@ -67,8 +67,16 @@ def receive_decision(request: Request, payload: dict):
         WEBHOOK_VALIDATION_FAILURES.inc()
         raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
-    producer = app.state.producer if hasattr(app.state, "producer") else get_producer()
-    send(producer, _config.topic_governance_decisions, decision.model_dump())
+    try:
+        producer = app.state.producer if hasattr(app.state, "producer") else get_producer()
+        send(producer, _config.topic_governance_decisions, decision.model_dump())
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed to publish decision to Kafka")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Kafka unavailable",
+        ) from exc
+
     WEBHOOK_DECISIONS_RECEIVED.inc()
     return {"status": "accepted", "annotation_id": decision.annotation_id}
 
@@ -85,9 +93,14 @@ def readyz():
     topics; test doubles without that method are treated as ready (they
     cannot be probed offline).
     """
-    producer = app.state.producer if hasattr(app.state, "producer") else get_producer()
-    probe = getattr(producer, "bootstrap_connected", None)
-    connected = probe() if callable(probe) else True
+    try:
+        producer = app.state.producer if hasattr(app.state, "producer") else get_producer()
+        probe = getattr(producer, "bootstrap_connected", None)
+        connected = probe() if callable(probe) else True
+    except Exception:  # noqa: BLE001
+        logger.warning("Kafka producer readiness probe failed")
+        connected = False
+
     return {
         "status": "ok" if connected else "degraded",
         "kafka": "connected" if connected else "unreachable",
