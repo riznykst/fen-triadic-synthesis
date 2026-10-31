@@ -45,13 +45,14 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import asyncio
 import queue
 
 import requests
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -106,6 +107,7 @@ app.add_middleware(
 )
 
 WEBHOOK_URL = os.getenv("FEN_BRIDGE_WEBHOOK_URL", "http://localhost:8101/webhook/decision")
+WEBHOOK_TOKEN = os.getenv("FEN_WEBHOOK_TOKEN") or os.getenv("FEN_BRIDGE_WEBHOOK_TOKEN")
 DECISION_DELAY_S = float(os.getenv("MOCK_FEN_DECISION_DELAY_S", "3"))
 MAX_WORKERS = int(os.getenv("MOCK_FEN_MAX_WORKERS", "8"))
 WEBHOOK_MAX_RETRIES = int(os.getenv("MOCK_FEN_WEBHOOK_RETRIES", "3"))
@@ -353,9 +355,11 @@ def _deliver_decision_after_delay(
     time.sleep(DECISION_DELAY_S)
     decision = _fake_decide(candidate, outcome=forced_outcome, recommendation=recommendation)
     start = time.perf_counter()
+    token = WEBHOOK_TOKEN or os.getenv("FEN_WEBHOOK_TOKEN") or os.getenv("FEN_BRIDGE_WEBHOOK_TOKEN")
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
     for attempt in range(WEBHOOK_MAX_RETRIES):
         try:
-            resp = requests.post(WEBHOOK_URL, json=decision, timeout=10)
+            resp = requests.post(WEBHOOK_URL, json=decision, headers=headers, timeout=10)
             resp.raise_for_status()
             MOCK_DELIVERY_SECONDS.observe(time.perf_counter() - start)
             MOCK_DECISIONS_DELIVERED.inc()
@@ -381,9 +385,27 @@ def _deliver_decision_after_delay(
 
 
 # ------------------------------------------------------------------- routes
+class CandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    annotation_id: str
+    document_id: Optional[str] = None
+    entity_label: Optional[str] = None
+    entity_type: Optional[str] = None
+    extracted_by: Optional[str] = None
+    extracted_at: Optional[Any] = None
+    submitter: Optional[str] = None
+
+
+class SubmitCandidatesRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    candidates: list[CandidatePayload] = Field(default_factory=list)
+
+
 @app.post("/candidates")
-def submit_candidates(payload: dict):
-    candidates = payload.get("candidates", [])
+def submit_candidates(payload: SubmitCandidatesRequest):
+    candidates = [c.model_dump() for c in payload.candidates]
     for candidate in candidates:
         _record_candidate(candidate)
         if VOTING_MODE in ("community", "qv"):

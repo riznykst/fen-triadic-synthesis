@@ -18,7 +18,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import sys
 import time
 from pathlib import Path
 from typing import Callable, Optional
@@ -30,14 +29,13 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from rdflib import Graph, Literal, URIRef
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from services.common import gfen_ontology as ns
+from services.common.graph_uris import annotation_uri
+from services.common.logging_config import log_level_from_env, setup_logging
+from services.common.metrics import metrics_response
+from services.status_api.config import StatusApiConfig
 
-from services.status_api.config import StatusApiConfig  # noqa: E402
-from services.common import gfen_ontology as ns  # noqa: E402
-from services.common.graph_uris import annotation_uri  # noqa: E402
-from services.common.metrics import metrics_response  # noqa: E402
-
-logging.basicConfig(level=logging.INFO)
+setup_logging("fen-status-api", level=log_level_from_env())
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="FEN Status API — read-side web service")

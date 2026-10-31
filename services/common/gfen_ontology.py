@@ -1,4 +1,4 @@
-﻿"""Python constants mirroring ``docs/ontology/fen-ontology.ttl`` — the additive
+"""Python constants mirroring ``docs/ontology/fen-ontology.ttl`` — the additive
 ``gfen:`` namespace. Keep in sync with the .ttl file: if you change one, change
 the other in the same commit (AGENT_PLAN.md, Phase 0, task 3).
 """

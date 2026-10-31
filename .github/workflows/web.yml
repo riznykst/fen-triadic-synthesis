@@ -31,6 +31,8 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install --no-cache-dir -r requirements-common.txt
+      - name: Lint with ruff
+        run: ruff check .
       - name: Run tests
         run: pytest -q
       - name: Verify imports
